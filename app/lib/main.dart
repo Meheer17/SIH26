@@ -4,6 +4,7 @@ import 'features/auth/register_screen.dart';
 import 'features/auth/role_dashboard_screen.dart';
 import 'features/chat/ai_chat_screen.dart';
 import 'features/storage_demo/storage_demo_screen.dart';
+import 'features/sos_demo/sos_demo_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
         '/chat': (context) => const AiChatScreen(),
         '/dashboard': (context) => const RoleDashboardScreen(),
         '/storage-demo': (context) => const StorageDemoScreen(),
+        '/sos-demo': (context) => const SosDemoScreen(),
       },
     );
   }
