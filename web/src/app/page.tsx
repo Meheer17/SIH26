@@ -10,82 +10,82 @@ const APPLICATION_CARDS = [
     id: 'arogya_sathi',
     title: 'ArogyaSathi',
     subtitle: 'Disaster Health & Vitals Monitoring',
-    icon: '🫀',
-    color: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-400',
-    description: 'Continuous health monitoring for rural & disaster-prone areas. Detects heat stress, dehydration probability, AQI respiratory risks, and NDMA advisories.',
+    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    cardBorder: 'hover:border-emerald-400',
+    btnBg: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
+    description: 'Continuous health monitoring for rural & disaster-prone areas. Detects heat stress, dehydration risk, AQI respiratory hazards, and NDMA advisories.',
     targetAgent: 'arogya_sathi_agent',
-    accentBtn: 'bg-emerald-600 hover:bg-emerald-500',
   },
   {
     id: 'medikiosk',
     title: 'MediKiosk',
-    subtitle: 'OPD Clinical Intake & History Triage',
-    icon: '🏥',
-    color: 'from-sky-500/20 to-indigo-500/10 border-sky-500/30 text-sky-400',
-    description: 'Captures structured clinical history (SOCRATES/OLDCARTS/AYUSH Prakriti) before patient enters OPD. Digitizes prescriptions via ML Kit OCR and flags clinical red flags.',
+    subtitle: 'OPD Clinical History & Triage',
+    badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+    cardBorder: 'hover:border-sky-400',
+    btnBg: 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/20',
+    description: 'Captures structured clinical history (SOCRATES/AYUSH Prakriti) before patient enters OPD. Digitizes prescriptions via ML Kit OCR and flags clinical red flags.',
     targetAgent: 'medikiosk_agent',
-    accentBtn: 'bg-sky-600 hover:bg-sky-500',
   },
   {
     id: 'rakshak_mitra',
     title: 'RakshakMitra',
-    subtitle: 'Armed Forces Stress & Burnout Support',
-    icon: '🎖️',
-    color: 'from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-400',
-    description: 'Proactive early-warning burnout predictor for defense & police personnel. Analyzes duty hours, deployment duration, leave gap ratio, and recommends commander welfare actions.',
+    subtitle: 'Armed Forces Stress & Burnout',
+    badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+    cardBorder: 'hover:border-amber-400',
+    btnBg: 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20',
+    description: 'Proactive early-warning burnout predictor for defense & police personnel. Analyzes duty hours, deployment duration, leave gap ratio, and recommends welfare actions.',
     targetAgent: 'rakshak_mitra_agent',
-    accentBtn: 'bg-amber-600 hover:bg-amber-500',
   },
   {
     id: 'nyaya_sahay',
     title: 'NyayaSahay',
     subtitle: 'Atrocity Victim Legal Rehabilitation',
-    icon: '⚖️',
-    color: 'from-purple-500/20 to-pink-500/10 border-purple-500/30 text-purple-400',
+    badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+    cardBorder: 'hover:border-purple-400',
+    btnBg: 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20',
     description: 'Continuous psychological & legal support for SC/ST atrocity victims. Correlates distress scores with legal case stage milestones (FIR, trial) and triggers multi-tier escalation.',
     targetAgent: 'nyaya_sahay_agent',
-    accentBtn: 'bg-purple-600 hover:bg-purple-500',
   },
 ];
 
-const FEATURE_MODULE_LINKS = [
+const PLATFORM_MODULES = [
   {
-    title: '🧠 AI Agent Hub',
+    title: 'AI Agent Hub',
     subtitle: 'Strands & Bedrock Mantle',
     path: '/chat',
-    description: 'Multi-agent reasoning with domain tools (heat stress, triage, burnout, distress).',
+    description: 'Multi-agent reasoning engine with specialized domain tools for clinical & crisis assessment.',
     badge: 'Core Engine',
   },
   {
-    title: '💾 Encrypted Storage SDK',
+    title: 'Encrypted Storage SDK',
     subtitle: 'Offline-First Local DB',
     path: '/storage-demo',
-    description: 'Single-invoke AES-256 local storage with automatic background offline sync queue.',
+    description: 'Single-invoke AES-256 encrypted local storage with background offline sync queue.',
     badge: 'Offline SDK',
   },
   {
-    title: '🆘 One-Tap SOS & Alerts',
-    subtitle: 'Emergency & Multi-Tier',
+    title: 'One-Tap SOS & Alerts',
+    subtitle: 'Emergency Routing',
     path: '/sos-demo',
-    description: 'GPS + vitals snapshot emergency trigger with 5s cancel window and multi-tier routing.',
+    description: 'GPS + vitals snapshot emergency trigger with 5s cancel countdown and multi-tier routing.',
     badge: 'Emergency',
   },
   {
-    title: '📊 Role Dashboard',
+    title: 'Role Dashboard',
     subtitle: 'Multi-Role Access',
     path: '/dashboard',
     description: 'Personalized views for Patients, Doctors, Officers, Counselors, and Administrators.',
     badge: 'Dashboard',
   },
   {
-    title: '🔒 Role Management',
+    title: 'Role Management',
     subtitle: 'Granular RBAC Control',
     path: '/admin/roles',
     description: 'Manage mapped roles, admin privileges, and user access permissions.',
     badge: 'RBAC',
   },
   {
-    title: '✅ Consent Engine',
+    title: 'Consent Engine',
     subtitle: 'DPDP Act Compliance',
     path: '/consent',
     description: 'Granular, purpose-bound consent management with audio explanations for literacy.',
@@ -116,105 +116,50 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-indigo-500 selection:text-white">
-      {/* Top Navigation Bar */}
-      <nav className="sticky top-0 z-50 border-b border-slate-800 bg-slate-900/90 backdrop-blur-xl px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-emerald-500 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-indigo-500/20">
-            S
-          </div>
-          <div>
-            <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-2">
-              SvasthyaSetu
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
-                SIH 2026
-              </span>
-            </span>
-            <p className="text-[11px] text-slate-400">Bridge to Health — Unified Platform</p>
-          </div>
-        </div>
-
-        {/* Header Links */}
-        <div className="hidden lg:flex items-center gap-4 text-xs font-semibold">
-          <Link href="/chat" className="text-slate-300 hover:text-indigo-400 transition">💬 AI Chat Hub</Link>
-          <Link href="/dashboard" className="text-slate-300 hover:text-indigo-400 transition">📊 Dashboard</Link>
-          <Link href="/storage-demo" className="text-slate-300 hover:text-indigo-400 transition">💾 Local Storage SDK</Link>
-          <Link href="/sos-demo" className="text-slate-300 hover:text-indigo-400 transition">🆘 SOS &amp; Alerts</Link>
-          <Link href="/admin/roles" className="text-slate-300 hover:text-indigo-400 transition">🔒 Admin Roles</Link>
-          <Link href="/consent" className="text-slate-300 hover:text-indigo-400 transition">✅ Consent Engine</Link>
-          <a href="http://localhost:8000/docs" target="_blank" rel="noreferrer" className="text-slate-400 hover:text-white transition">📖 API Docs</a>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <Link
-            href="/login"
-            className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-slate-200 border border-slate-700 transition"
-          >
-            🔑 Sign In
-          </Link>
-          <Link
-            href="/register"
-            className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-bold text-white shadow-lg shadow-indigo-600/30 transition"
-          >
-            📝 Register
-          </Link>
-        </div>
-      </nav>
-
-      {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 sm:p-10 space-y-12">
-        {/* Hero Banner */}
-        <section className="relative rounded-3xl p-8 sm:p-12 bg-gradient-to-br from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 shadow-2xl overflow-hidden text-center space-y-6">
-          <div className="absolute -top-32 -left-32 w-80 h-80 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-emerald-600/20 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
-            One Foundation • Four Life-Saving Missions
+    <div className="space-y-12 pb-16 font-sans">
+      {/* Hero Banner */}
+      <section className="bg-gradient-to-b from-indigo-50/70 via-white to-slate-50 border-b border-slate-200 py-16 px-6 sm:px-12 text-center">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-100/80 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
+            <span>SIH 2026 Unified Architecture</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-tight">
-            SvasthyaSetu — <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-emerald-400 bg-clip-text text-transparent">Bridge to Health</span>
+          <h1 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-tight">
+            SvasthyaSetu — <span className="text-indigo-600">Bridge to Health</span>
           </h1>
 
-          <p className="text-slate-300 max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
-            Unified healthcare platform serving general public, hospital OPDs, armed forces personnel, and atrocity victims. Powered by Strands AI Agents, AWS Bedrock Mantle, and Encrypted Offline Storage.
+          <p className="text-slate-600 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed font-normal">
+            Enterprise healthcare intelligence platform serving rural communities, hospital OPDs, armed forces personnel, and atrocity victims.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
             <Link
               href="/chat"
-              className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm shadow-xl shadow-indigo-600/30 transition hover:scale-105 flex items-center gap-2"
+              className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 transition hover:scale-[1.02]"
             >
-              <span>💬 Launch AI Agent Hub</span>
+              Launch AI Agent Hub
             </Link>
             <Link
               href="/login"
-              className="px-6 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-bold text-sm transition hover:scale-105"
+              className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-300 shadow-sm transition hover:scale-[1.02]"
             >
-              🔑 Demo Test Logins
+              Demo Test Logins
             </Link>
-            <a
-              href="http://localhost:8000/docs"
-              target="_blank"
-              rel="noreferrer"
-              className="px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-400 border border-slate-800 font-semibold text-sm transition"
-            >
-              📖 Swagger API Docs
-            </a>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* 4 Core Applications Portal Grid */}
+      {/* Main Content Area */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 space-y-12">
+        {/* 4 Life-Saving Applications Section */}
         <section id="apps" className="space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-slate-200 pb-4 gap-2">
             <div>
-              <h2 className="text-2xl font-black text-white flex items-center gap-2">
-                <span>The Four Life-Saving Applications</span>
-              </h2>
-              <p className="text-xs text-slate-400">Same core foundation, four specialized domain missions</p>
+              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">The Four Platform Applications</h2>
+              <p className="text-xs text-slate-500">Tailored AI reasoning agents built on a single unified architecture</p>
             </div>
-            <Link href="/chat" className="text-xs font-bold text-indigo-400 hover:underline">
-              Explore All AI Agents →
+            <Link href="/chat" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition">
+              Explore All AI Agents &rarr;
             </Link>
           </div>
 
@@ -222,28 +167,27 @@ export default function Home() {
             {APPLICATION_CARDS.map((app) => (
               <div
                 key={app.id}
-                className={`p-6 rounded-3xl bg-slate-900/80 border backdrop-blur-xl ${app.color} space-y-4 hover:border-indigo-500/50 transition duration-300 shadow-xl flex flex-col justify-between`}
+                className={`bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition duration-200 space-y-4 flex flex-col justify-between ${app.cardBorder}`}
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-3xl">{app.icon}</span>
-                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-950/80 border border-slate-800 text-slate-300">
+                    <span className="text-base font-extrabold text-slate-900">{app.title}</span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${app.badgeColor}`}>
                       {app.subtitle}
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-white">{app.title}</h3>
-                  <p className="text-xs text-slate-300 leading-relaxed">{app.description}</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">{app.description}</p>
                 </div>
 
-                <div className="pt-2 flex items-center justify-between">
+                <div className="pt-2 flex items-center justify-between border-t border-slate-100">
                   <Link
                     href={`/chat?agent=${app.targetAgent}`}
-                    className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md ${app.accentBtn} transition`}
+                    className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md ${app.btnBg} transition`}
                   >
                     Open {app.title} AI
                   </Link>
-                  <Link href="/login" className="text-xs font-semibold text-slate-400 hover:text-white">
-                    Sign In as Role →
+                  <Link href="/login" className="text-xs font-bold text-slate-500 hover:text-slate-900">
+                    Sign In as Role &rarr;
                   </Link>
                 </div>
               </div>
@@ -251,30 +195,30 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Core Platform Modules & Navigation Links Grid */}
-        <section className="space-y-6">
-          <div className="border-b border-slate-800 pb-4">
-            <h2 className="text-2xl font-black text-white">Platform Shared Infrastructure Hub</h2>
-            <p className="text-xs text-slate-400">Reusable engines built once and shared across all 4 applications</p>
+        {/* Platform Shared Modules Grid */}
+        <section id="features" className="space-y-6">
+          <div className="border-b border-slate-200 pb-4">
+            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Shared Platform Modules</h2>
+            <p className="text-xs text-slate-500">Core system services integrated across all 4 applications</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {FEATURE_MODULE_LINKS.map((item, idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {PLATFORM_MODULES.map((item, idx) => (
               <Link
                 key={idx}
                 href={item.path}
-                className="p-5 rounded-2xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/40 hover:bg-slate-900 transition duration-200 space-y-2 group shadow-lg"
+                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition duration-200 space-y-2 group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">{item.subtitle}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-950 border border-slate-800 text-slate-400">
+                  <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">{item.subtitle}</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-100 border border-slate-200 text-slate-600 font-semibold">
                     {item.badge}
                   </span>
                 </div>
-                <h3 className="font-bold text-white text-base group-hover:text-indigo-300 transition">{item.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">{item.description}</p>
-                <div className="pt-1 text-[11px] font-semibold text-indigo-400 flex items-center gap-1 group-hover:translate-x-1 transition">
-                  Launch Module →
+                <h3 className="font-bold text-slate-900 text-base group-hover:text-indigo-600 transition">{item.title}</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>
+                <div className="pt-1 text-[11px] font-bold text-indigo-600 flex items-center gap-1 group-hover:translate-x-1 transition">
+                  Launch Module &rarr;
                 </div>
               </Link>
             ))}
@@ -282,49 +226,45 @@ export default function Home() {
         </section>
 
         {/* Live Backend Connection Tester Card */}
-        <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <section className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
             <div>
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                FastAPI Backend Service Status
-              </h2>
-              <p className="text-xs text-slate-400 font-mono mt-0.5">
-                Endpoint: <code className="text-indigo-300">{API_BASE_URL}/health</code>
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                FastAPI Backend Connection Status
+              </h3>
+              <p className="text-xs text-slate-500 font-mono">
+                Target Endpoint: <code className="text-indigo-600">{API_BASE_URL}/health</code>
               </p>
             </div>
             <button
               onClick={testConnection}
               disabled={status === 'loading'}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-bold text-xs transition shadow-lg shadow-indigo-600/30 disabled:opacity-50 flex items-center justify-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm disabled:opacity-50"
             >
-              {status === 'loading' ? <span>Testing API...</span> : <span>Test Live Connection</span>}
+              {status === 'loading' ? <span>Pinging API...</span> : <span>Test API Connection</span>}
             </button>
           </div>
 
           {status === 'success' && healthData && (
-            <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-300 text-xs space-y-1">
-              <div className="font-bold text-emerald-400">✅ FastAPI Backend Connection Healthy</div>
-              <div className="grid grid-cols-3 gap-2 pt-1 font-mono text-[11px]">
-                <div>Service: {healthData.service}</div>
-                <div>Uptime: {healthData.uptime_seconds}s</div>
-                <div>Version: {healthData.version}</div>
-              </div>
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono">
+              <div className="font-bold text-emerald-900 mb-1">FastAPI Backend Online &amp; Resilient</div>
+              <div>Service: {healthData.service} | Uptime: {healthData.uptime_seconds}s | Version: {healthData.version}</div>
             </div>
           )}
 
           {status === 'error' && (
-            <div className="p-4 rounded-2xl bg-rose-950/40 border border-rose-500/30 text-rose-300 text-xs font-mono">
-              ⚠️ {errorMsg}
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-mono">
+              {errorMsg}
             </div>
           )}
         </section>
-      </main>
+      </div>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950 py-8 px-6 text-center text-xs text-slate-500 space-y-2">
-        <p>SvasthyaSetu — Bridge to Health • Unified Platform for ArogyaSathi, MediKiosk, RakshakMitra &amp; NyayaSahay</p>
-        <p className="text-[11px] text-slate-600">Built with Next.js 16, Flutter 3, FastAPI, Strands Agents, &amp; AWS Bedrock Mantle</p>
+      <footer className="border-t border-slate-200 bg-white py-8 px-6 text-center text-xs text-slate-500 space-y-1">
+        <p className="font-semibold text-slate-700">SvasthyaSetu — Bridge to Health Unified Platform</p>
+        <p className="text-[11px] text-slate-400">Next.js 16, Flutter 3, FastAPI, Strands Agents, &amp; AWS Bedrock Mantle</p>
       </footer>
     </div>
   );

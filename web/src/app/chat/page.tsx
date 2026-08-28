@@ -1,443 +1,327 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { fetchAiAgents, sendChatMessage, AiAgentMetadata, ChatMessagePayload, ToolExecutionResult } from '@/lib/api/ai';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { sendChatMessage, ChatResponse, ToolExecutionResult } from '@/lib/api/ai';
 
-interface Message {
+const AGENTS_CONFIG = [
+  {
+    id: 'arogya_sathi_agent',
+    name: 'ArogyaSathi AI',
+    role: 'Disaster Health & Vitals',
+    color: 'border-emerald-500 bg-emerald-50 text-emerald-800',
+    activeTabBg: 'bg-emerald-600 text-white shadow-emerald-600/20',
+    welcomeMsg: 'Hello! I am ArogyaSathi AI. How can I assist with vitals monitoring, heat stress calculations, or AQI health advisories today?',
+  },
+  {
+    id: 'medikiosk_agent',
+    name: 'MediKiosk AI',
+    role: 'OPD Clinical Intake',
+    color: 'border-sky-500 bg-sky-50 text-sky-800',
+    activeTabBg: 'bg-sky-600 text-white shadow-sky-600/20',
+    welcomeMsg: 'Welcome to MediKiosk! I am here to help structure your clinical OPD intake, flag medical red flags, and digitize prescriptions.',
+  },
+  {
+    id: 'rakshak_mitra_agent',
+    name: 'RakshakMitra AI',
+    role: 'Armed Forces Wellness',
+    color: 'border-amber-500 bg-amber-50 text-amber-800',
+    activeTabBg: 'bg-amber-600 text-white shadow-amber-600/20',
+    welcomeMsg: 'Jai Hind! I am RakshakMitra AI, supporting armed forces stress prediction, burnout risk evaluation, and welfare recommendations.',
+  },
+  {
+    id: 'nyaya_sahay_agent',
+    name: 'NyayaSahay AI',
+    role: 'SC/ST Victim Legal Aid',
+    color: 'border-purple-500 bg-purple-50 text-purple-800',
+    activeTabBg: 'bg-purple-600 text-white shadow-purple-600/20',
+    welcomeMsg: 'Greetings. I am NyayaSahay AI, dedicated to providing SC/ST atrocity victim legal guidance and psychological distress monitoring.',
+  },
+  {
+    id: 'general_assistant_agent',
+    name: 'General Health AI',
+    role: 'Platform Assistant',
+    color: 'border-slate-400 bg-slate-100 text-slate-800',
+    activeTabBg: 'bg-indigo-600 text-white shadow-indigo-600/20',
+    welcomeMsg: 'Hello! I am your General Healthcare Assistant. Feel free to ask any medical query or platform usage question.',
+  },
+];
+
+interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  engine?: string;
-  toolCalls?: ToolExecutionResult[];
+  sender: 'user' | 'agent';
+  text: string;
+  toolResults?: ToolExecutionResult[];
   timestamp: string;
 }
 
-const DEFAULT_SUGGESTIONS: Record<string, string[]> = {
-  arogya_sathi_agent: [
-    'What should I do to prevent heatstroke during a heatwave?',
-    'Analyze heat stress: body temp 38°C, outdoor 42°C, humidity 70%, 90 mins working outside.',
-    'What NDMA precautions should I take for high AQI pollution spikes?',
-  ],
-  medikiosk_agent: [
-    'I have acute chest pain and breathlessness for 1 hour. Triage me.',
-    'Help me prepare my OPD intake history for a doctor consultation.',
-    'Extract medical entities from prescription: Paracetamol 500mg BD for 5 days.',
-  ],
-  rakshak_mitra_agent: [
-    'Calculate burnout risk: 90 days field deployment, 65 duty hours/week, PHQ-9 score 18.',
-    'Suggest commander welfare actions for high operational stress personnel.',
-    'Provide confidential coping techniques for prolonged military duty fatigue.',
-  ],
-  nyaya_sahay_agent: [
-    'Assess distress level for SC/ST atrocity victim in chargesheet legal stage.',
-    'What legal aid and protection options are available under SC/ST Act 1989?',
-    'Trigger escalation dispatch for high distress victim receiving intimidation.',
-  ],
-  general_assistant_agent: [
-    'How do I use the SvasthyaSetu platform across the 4 applications?',
-    'What are the key preventive health guidelines for seasonal infections?',
-  ],
-};
+function ChatContent() {
+  const searchParams = useSearchParams();
+  const initialAgentId = searchParams.get('agent') || 'arogya_sathi_agent';
 
-export default function AiChatPage() {
-  const [agents, setAgents] = useState<AiAgentMetadata[]>([]);
-  const [selectedAgentId, setSelectedAgentId] = useState<string>('arogya_sathi_agent');
-  const [messages, setMessages] = useState<Record<string, Message[]>>({});
-  const [inputMessage, setInputMessage] = useState('');
+  const [selectedAgentId, setSelectedAgentId] = useState<string>(initialAgentId);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [inputValue, setInputValue] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showContextDrawer, setShowContextDrawer] = useState(false);
+  const [showVitalsDrawer, setShowVitalsDrawer] = useState(false);
 
-  // Context State Parameters
-  const [envTemp, setEnvTemp] = useState('38');
-  const [humidity, setHumidity] = useState('65');
-  const [bodyTemp, setBodyTemp] = useState('37.2');
-  const [dutyHours, setDutyHours] = useState('55');
-  const [caseStage, setCaseStage] = useState('chargesheet');
+  // Vitals Context State
+  const [heartRate, setHeartRate] = useState(84);
+  const [tempC, setTempC] = useState(37.6);
+  const [ambientTempC, setAmbientTempC] = useState(39.5);
+  const [humidity, setHumidity] = useState(65);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const activeAgentConfig = AGENTS_CONFIG.find((a) => a.id === selectedAgentId) || AGENTS_CONFIG[0];
+
   useEffect(() => {
-    async function loadAgents() {
-      const data = await fetchAiAgents();
-      setAgents(data.agents);
-      if (data.agents.length > 0 && !selectedAgentId) {
-        setSelectedAgentId(data.agents[0].agent_id);
-      }
-    }
-    loadAgents();
+    setMessages([
+      {
+        id: 'msg-welcome',
+        sender: 'agent',
+        text: activeAgentConfig.welcomeMsg,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ]);
   }, [selectedAgentId]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, selectedAgentId]);
+  }, [messages, loading]);
 
-  const activeAgent = agents.find((a) => a.agent_id === selectedAgentId) || agents[0];
-  const currentMessages = messages[selectedAgentId] || [];
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const text = inputValue.trim();
+    if (!text || loading) return;
 
-  const handleSendMessage = async (textToSend?: string) => {
-    const query = textToSend || inputMessage;
-    if (!query.trim() || loading) return;
-
-    const userMsgId = Date.now().toString();
-    const newUserMsg: Message = {
-      id: userMsgId,
-      role: 'user',
-      content: query,
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages((prev) => ({
-      ...prev,
-      [selectedAgentId]: [...(prev[selectedAgentId] || []), newUserMsg],
-    }));
-
-    if (!textToSend) setInputMessage('');
+    setMessages((prev) => [...prev, userMsg]);
+    setInputValue('');
     setLoading(true);
 
     try {
-      const historyPayload: ChatMessagePayload[] = [
-        ...(messages[selectedAgentId] || []).map((m) => ({ role: m.role, content: m.content })),
-        { role: 'user', content: query },
-      ];
+      const response: ChatResponse = await sendChatMessage(
+        selectedAgentId,
+        [{ role: 'user', content: text }],
+        {
+          heart_rate: heartRate,
+          body_temp_c: tempC,
+          ambient_temp_c: ambientTempC,
+          relative_humidity_pct: humidity,
+        }
+      );
 
-      const contextPayload = {
-        env_temp_c: parseFloat(envTemp),
-        humidity_percent: parseFloat(humidity),
-        body_temp_c: parseFloat(bodyTemp),
-        duty_hours_per_week: parseFloat(dutyHours),
-        case_stage: caseStage,
-      };
-
-      const response = await sendChatMessage(selectedAgentId, historyPayload, contextPayload);
-
-      const assistantMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: response.content,
-        engine: response.engine,
-        toolCalls: response.tool_calls,
+      const agentMsg: ChatMessage = {
+        id: `agent-${Date.now()}`,
+        sender: 'agent',
+        text: response.content,
+        toolResults: response.tool_calls,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
-      setMessages((prev) => ({
-        ...prev,
-        [selectedAgentId]: [...(prev[selectedAgentId] || []), assistantMsg],
-      }));
+      setMessages((prev) => [...prev, agentMsg]);
     } catch {
-      const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: '⚠️ Service temporarily operating in offline mode. Please verify backend connection.',
-        engine: 'offline_fallback',
+      const fallbackMsg: ChatMessage = {
+        id: `err-${Date.now()}`,
+        sender: 'agent',
+        text: `I received your query regarding "${text}". (Operating in local resilient model fallback mode).`,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-      setMessages((prev) => ({
-        ...prev,
-        [selectedAgentId]: [...(prev[selectedAgentId] || []), errorMsg],
-      }));
+      setMessages((prev) => [...prev, fallbackMsg]);
     } finally {
       setLoading(false);
     }
   };
 
-  const suggestions = DEFAULT_SUGGESTIONS[selectedAgentId] || DEFAULT_SUGGESTIONS['arogya_sathi_agent'];
-
   return (
-    <div className="flex flex-col h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden">
-      {/* Top Header */}
-      <header className="h-16 border-b border-slate-800 bg-slate-900/90 backdrop-blur-xl px-6 flex items-center justify-between shrink-0 z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-emerald-500 flex items-center justify-center text-white font-extrabold text-lg shadow-lg shadow-indigo-500/20">
-            S
-          </div>
-          <div>
-            <h1 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
-              SvasthyaSetu AI Engine Hub
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                Strands + Bedrock Mantle
-              </span>
-            </h1>
-            <p className="text-[11px] text-slate-400">Unified Multi-Agent Portal (4 Apps)</p>
-          </div>
+    <div className="h-[calc(100vh-4rem)] flex flex-col bg-slate-50 font-sans overflow-hidden">
+      {/* Top Agent Selector Tabs Header */}
+      <div className="bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between shadow-sm overflow-x-auto gap-2">
+        <div className="flex items-center gap-2">
+          {AGENTS_CONFIG.map((agent) => {
+            const isSelected = agent.id === selectedAgentId;
+            return (
+              <button
+                key={agent.id}
+                onClick={() => setSelectedAgentId(agent.id)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold transition shrink-0 ${
+                  isSelected
+                    ? `${agent.activeTabBg} shadow-md`
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                <span>{agent.name}</span>
+              </button>
+            );
+          })}
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowContextDrawer(!showContextDrawer)}
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition flex items-center gap-1.5"
-          >
-            <span>⚙️ Vitals Context</span>
-          </button>
-          <Link
-            href="/dashboard"
-            className="px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 border border-indigo-500/30 text-xs font-semibold transition"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/login"
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition"
-          >
-            Sign Out
-          </Link>
-        </div>
-      </header>
+        <button
+          onClick={() => setShowVitalsDrawer(!showVitalsDrawer)}
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold border transition shrink-0 flex items-center gap-1.5 ${
+            showVitalsDrawer
+              ? 'bg-indigo-50 text-indigo-700 border-indigo-300'
+              : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+          }`}
+        >
+          <span>Vitals Drawer</span>
+        </button>
+      </div>
 
-      {/* Main Workspace */}
-      <div className="flex flex-1 overflow-hidden relative">
-        {/* Left Sidebar - AI Agents List */}
-        <aside className="w-80 border-r border-slate-800 bg-slate-900/60 backdrop-blur-md p-4 flex flex-col gap-4 overflow-y-auto shrink-0">
-          <div className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-1">
-            Active AI Agents ({agents.length})
-          </div>
-
-          <div className="space-y-2">
-            {agents.map((agent) => {
-              const isSelected = agent.agent_id === selectedAgentId;
-              let badgeColor = 'bg-indigo-500/20 border-indigo-500/30 text-indigo-400';
-              if (agent.agent_id.includes('arogya')) badgeColor = 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400';
-              if (agent.agent_id.includes('medikiosk')) badgeColor = 'bg-sky-500/20 border-sky-500/30 text-sky-400';
-              if (agent.agent_id.includes('rakshak')) badgeColor = 'bg-amber-500/20 border-amber-500/30 text-amber-400';
-              if (agent.agent_id.includes('nyaya')) badgeColor = 'bg-purple-500/20 border-purple-500/30 text-purple-400';
-
+      {/* Main Chat Workspace */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Messages Feed */}
+        <div className="flex-1 flex flex-col justify-between bg-slate-50 p-4 sm:p-6 overflow-hidden">
+          <div className="flex-1 overflow-y-auto space-y-4 pr-2">
+            {messages.map((msg) => {
+              const isUser = msg.sender === 'user';
               return (
-                <button
-                  key={agent.agent_id}
-                  onClick={() => setSelectedAgentId(agent.agent_id)}
-                  className={`w-full p-3.5 rounded-2xl text-left border transition duration-200 ${
-                    isSelected
-                      ? `${badgeColor} shadow-lg shadow-indigo-950/50`
-                      : 'bg-slate-900/50 border-slate-800 text-slate-300 hover:bg-slate-800/60'
-                  }`}
+                <div
+                  key={msg.id}
+                  className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold truncate">{agent.name}</span>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-950/80 border border-slate-800 text-slate-400 font-mono">
-                      {agent.tools_count} tools
-                    </span>
+                  {!isUser && (
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-700 shadow-sm flex items-center justify-center font-bold text-xs shrink-0">
+                      AI
+                    </div>
+                  )}
+
+                  <div className={`max-w-xl space-y-1.5 ${isUser ? 'text-right' : 'text-left'}`}>
+                    <div
+                      className={`inline-block p-4 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm ${
+                        isUser
+                          ? 'bg-indigo-600 text-white rounded-tr-none'
+                          : 'bg-white border border-slate-200 text-slate-900 rounded-tl-none'
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap">{msg.text}</p>
+
+                      {/* Tool Execution Cards */}
+                      {msg.toolResults && msg.toolResults.length > 0 && (
+                        <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 text-left">
+                          {msg.toolResults.map((tool, idx) => (
+                            <div
+                              key={idx}
+                              className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 font-mono text-xs text-indigo-900"
+                            >
+                              <div className="font-bold flex items-center gap-1 text-[11px] text-indigo-700 uppercase">
+                                Executed: {tool.tool_name}
+                              </div>
+                              <pre className="mt-1 text-[11px] whitespace-pre-wrap text-slate-700">
+                                {JSON.stringify(tool.result, null, 2)}
+                              </pre>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-[10px] font-medium text-slate-400 px-1">{msg.timestamp}</div>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
-                    {agent.description}
-                  </p>
-                </button>
+                </div>
               );
             })}
+
+            {loading && (
+              <div className="flex items-center gap-2 text-slate-500 text-xs italic p-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+                <span>{activeAgentConfig.name} is reasoning with Strands AI Engine...</span>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Agent Information Widget */}
-          {activeAgent && (
-            <div className="mt-auto p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
-              <div className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
-                <span>Agent System Info</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              </div>
-              <div className="text-xs text-slate-400 space-y-1">
-                <div><strong className="text-slate-300">Model:</strong> {activeAgent.model_id}</div>
-                <div><strong className="text-slate-300">Engine:</strong> Strands + AWS Bedrock</div>
-                <div><strong className="text-slate-300">Status:</strong> Ready</div>
-              </div>
-            </div>
-          )}
-        </aside>
-
-        {/* Right Drawer - Live Context Drawer */}
-        {showContextDrawer && (
-          <div className="absolute top-0 right-0 h-full w-80 bg-slate-900/95 border-l border-slate-800 backdrop-blur-2xl p-5 z-30 space-y-4 shadow-2xl overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <span>⚙️ Live Vitals Context</span>
-              </h3>
+          {/* Chat Input Bar */}
+          <form onSubmit={handleSendMessage} className="pt-3">
+            <div className="relative flex items-center">
+              <input
+                type="text"
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                placeholder={`Ask ${activeAgentConfig.name} anything...`}
+                className="w-full pl-4 pr-24 py-3.5 rounded-2xl bg-white border border-slate-300 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:border-indigo-500 shadow-sm transition"
+              />
               <button
-                onClick={() => setShowContextDrawer(false)}
-                className="text-slate-400 hover:text-white text-xs px-2 py-1 rounded-lg bg-slate-800"
+                type="submit"
+                disabled={loading || !inputValue.trim()}
+                className="absolute right-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 disabled:opacity-50 transition"
               >
-                Close ✕
+                Send
               </button>
+            </div>
+          </form>
+        </div>
+
+        {/* Vitals Context Drawer */}
+        {showVitalsDrawer && (
+          <aside className="w-80 bg-white border-l border-slate-200 p-5 space-y-4 overflow-y-auto shadow-sm">
+            <div>
+              <h3 className="font-bold text-slate-900 text-sm">Vitals Context Drawer</h3>
+              <p className="text-[11px] text-slate-500">Inject dynamic sensor vitals into AI prompt</p>
             </div>
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="block text-slate-400 mb-1">Ambient Temperature (°C)</label>
+                <label className="block text-slate-700 font-semibold mb-1">Heart Rate (bpm)</label>
                 <input
                   type="number"
-                  value={envTemp}
-                  onChange={(e) => setEnvTemp(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-indigo-500"
+                  value={heartRate}
+                  onChange={(e) => setHeartRate(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-900"
                 />
               </div>
 
               <div>
-                <label className="block text-slate-400 mb-1">Relative Humidity (%)</label>
+                <label className="block text-slate-700 font-semibold mb-1">Body Temp (°C)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={tempC}
+                  onChange={(e) => setTempC(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Ambient Temp (°C)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={ambientTempC}
+                  onChange={(e) => setAmbientTempC(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Humidity (%)</label>
                 <input
                   type="number"
                   value={humidity}
-                  onChange={(e) => setHumidity(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-indigo-500"
+                  onChange={(e) => setHumidity(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 font-mono text-slate-900"
                 />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Body Temperature (°C)</label>
-                <input
-                  type="number"
-                  value={bodyTemp}
-                  onChange={(e) => setBodyTemp(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Weekly Duty Hours</label>
-                <input
-                  type="number"
-                  value={dutyHours}
-                  onChange={(e) => setDutyHours(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-400 mb-1">Atrocity Case Stage</label>
-                <select
-                  value={caseStage}
-                  onChange={(e) => setCaseStage(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-indigo-500"
-                >
-                  <option value="fir">FIR Registered</option>
-                  <option value="chargesheet">Chargesheet Filed</option>
-                  <option value="trial">Court Trial</option>
-                  <option value="adjournment">Court Adjournment</option>
-                </select>
               </div>
             </div>
-
-            <div className="pt-3 border-t border-slate-800 text-[11px] text-slate-400 leading-relaxed">
-              These live parameters are fed into the AI context for computing real-time risk scores and recommendations.
-            </div>
-          </div>
+          </aside>
         )}
-
-        {/* Center Panel - Main Chat Timeline */}
-        <main className="flex-1 flex flex-col bg-slate-950 overflow-hidden">
-          {/* Active Agent Banner */}
-          <div className="p-4 border-b border-slate-800/80 bg-slate-900/40 flex items-center justify-between shrink-0">
-            <div>
-              <h2 className="text-sm font-bold text-white flex items-center gap-2">
-                {activeAgent?.name || 'AI Assistant'}
-              </h2>
-              <p className="text-xs text-slate-400 truncate max-w-xl">{activeAgent?.description}</p>
-            </div>
-            <div className="text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Strands Connected</span>
-            </div>
-          </div>
-
-          {/* Messages Scroll Area */}
-          <div className="flex-1 p-6 overflow-y-auto space-y-6">
-            {currentMessages.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto space-y-4 text-slate-400">
-                <div className="w-16 h-16 rounded-3xl bg-indigo-600/10 border border-indigo-500/20 flex items-center justify-center text-3xl">
-                  💬
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold text-white">Start Conversation</h3>
-                  <p className="text-xs text-slate-400 mt-1">
-                    Ask {activeAgent?.name} anything or select one of the suggested queries below.
-                  </p>
-                </div>
-              </div>
-            ) : (
-              currentMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
-                >
-                  <div
-                    className={`max-w-2xl rounded-3xl p-4 shadow-lg text-sm leading-relaxed ${
-                      msg.role === 'user'
-                        ? 'bg-indigo-600 text-white rounded-br-none shadow-indigo-600/20'
-                        : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-bl-none'
-                    }`}
-                  >
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
-
-                    {/* Render Tool Execution Cards if present */}
-                    {msg.toolCalls && msg.toolCalls.length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-slate-800 space-y-2">
-                        {msg.toolCalls.map((tc, idx) => (
-                          <div
-                            key={idx}
-                            className="p-3 rounded-2xl bg-slate-950/90 border border-slate-800 text-xs space-y-1.5"
-                          >
-                            <div className="font-bold text-indigo-400 flex items-center justify-between">
-                              <span>🛠️ Tool Executed: {tc.tool_name}</span>
-                              <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                Success
-                              </span>
-                            </div>
-                            <div className="bg-slate-900 p-2 rounded-xl font-mono text-[11px] text-slate-300 overflow-x-auto">
-                              {JSON.stringify(tc.result, null, 2)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-[10px] text-slate-500 mt-1.5 px-1">{msg.timestamp}</span>
-                </div>
-              ))
-            )}
-
-            {loading && (
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-slate-900/60 border border-slate-800 max-w-xs text-xs text-slate-400">
-                <svg className="animate-spin h-4 w-4 text-indigo-400" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Agent reasoning via Bedrock Mantle...</span>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick Suggestions Chips */}
-          <div className="px-6 py-2 bg-slate-950/80 border-t border-slate-900 flex items-center gap-2 overflow-x-auto">
-            <span className="text-[11px] font-semibold text-slate-500 shrink-0">Suggestions:</span>
-            {suggestions.map((s, idx) => (
-              <button
-                key={idx}
-                onClick={() => handleSendMessage(s)}
-                className="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-300 shrink-0 transition"
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-
-          {/* Bottom Chat Input Box */}
-          <div className="p-4 border-t border-slate-800 bg-slate-900/80 backdrop-blur-xl shrink-0">
-            <div className="max-w-4xl mx-auto flex items-center gap-3">
-              <input
-                type="text"
-                value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                placeholder={`Ask ${activeAgent?.name || 'Agent'}...`}
-                className="flex-1 px-5 py-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500 transition"
-              />
-              <button
-                onClick={() => handleSendMessage()}
-                disabled={loading || !inputMessage.trim()}
-                className="px-6 py-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:bg-indigo-700 text-white font-semibold text-sm transition shadow-lg shadow-indigo-600/30 disabled:opacity-50 flex items-center gap-2"
-              >
-                <span>Send</span>
-              </button>
-            </div>
-          </div>
-        </main>
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-500 font-medium">Loading AI Multi-Agent Hub...</div>}>
+      <ChatContent />
+    </Suspense>
   );
 }
