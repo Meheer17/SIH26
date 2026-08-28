@@ -32,7 +32,7 @@ export default function RegisterPage() {
         primary_role: primaryRole,
         app_context: appContext,
       });
-      router.push('/dashboard');
+      router.push('/chat');
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);

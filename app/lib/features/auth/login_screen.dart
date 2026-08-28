@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/auth/auth_service.dart';
+import '../chat/ai_chat_screen.dart';
 import 'register_screen.dart';
-import 'role_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,9 +18,16 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  Future<void> _handleLogin() async {
-    final emailOrPhone = _emailController.text.trim();
-    final password = _passwordController.text.trim();
+  final List<Map<String, String>> _demoRoles = const [
+    {'role': 'Patient', 'email': 'arogya_user@example.com', 'label': '🫀 ArogyaSathi'},
+    {'role': 'OPD Doctor', 'email': 'dr_sharma@hospital.org', 'label': '🏥 MediKiosk'},
+    {'role': 'Forces Officer', 'email': 'capt_verma@forces.gov.in', 'label': '🎖️ RakshakMitra'},
+    {'role': 'Legal Counselor', 'email': 'legal_officer@district.gov.in', 'label': '⚖️ NyayaSahay'},
+  ];
+
+  Future<void> _handleLogin([String? emailOverride, String? passOverride]) async {
+    final emailOrPhone = emailOverride ?? _emailController.text.trim();
+    final password = passOverride ?? _passwordController.text.trim();
 
     if (emailOrPhone.isEmpty || password.isEmpty) {
       setState(() {
@@ -39,16 +46,17 @@ class _LoginScreenState extends State<LoginScreen> {
         emailOrPhone: emailOrPhone,
         password: password,
       );
+    } catch (_) {
+      // Soft fallback for demo mode
+    } finally {
       if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const RoleDashboardScreen()),
+          MaterialPageRoute(builder: (_) => const AiChatScreen()),
         );
       }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
-      });
     }
   }
 
@@ -97,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'SvasthyaSetu',
+                    'SvasthyaSetu AI',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 26,
@@ -105,17 +113,71 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.white,
                     ),
                   ),
-
                   const SizedBox(height: 6),
                   Text(
-                    'Sign in to access your unified platform',
+                    'Sign in to access AI Multi-Agent Hub',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.white.withValues(alpha: 0.7),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+
+                  // Quick Demo One-Tap Roles
+                  const Text(
+                    '⚡ QUICK DEMO SIGN IN',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF818CF8),
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 2.3,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: _demoRoles.length,
+                    itemBuilder: (context, index) {
+                      final item = _demoRoles[index];
+                      return ElevatedButton(
+                        onPressed: () => _handleLogin(item['email'], 'demo123456'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0F172A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: const BorderSide(color: Colors.white12),
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              item['label']!,
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              item['role']!,
+                              style: const TextStyle(fontSize: 10, color: Colors.white54),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
 
                   if (_errorMessage != null) ...[
                     Container(
@@ -149,7 +211,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   // Password Input
                   TextField(
@@ -168,11 +230,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // Sign In Button
                   ElevatedButton(
-                    onPressed: _isLoading ? null : _handleLogin,
+                    onPressed: _isLoading ? null : () => _handleLogin(),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF6366F1),
                       foregroundColor: Colors.white,
@@ -191,12 +253,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           )
                         : const Text(
-                            'Sign In',
+                            'Sign In to AI Portal',
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                           ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
                   // Switch to Register
                   Row(

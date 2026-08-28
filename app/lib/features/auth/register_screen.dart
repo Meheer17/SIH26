@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/auth/auth_service.dart';
-import 'role_dashboard_screen.dart';
+import '../chat/ai_chat_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -64,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const RoleDashboardScreen()),
+          MaterialPageRoute(builder: (_) => const AiChatScreen()),
           (route) => false,
         );
       }

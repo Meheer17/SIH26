@@ -25,6 +25,11 @@ class Settings(BaseSettings):
         "*"
     ]
 
+    # AWS Bedrock Mantle / OpenAI Model Credentials
+    OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = "https://bedrock-mantle.ap-south-1.api.aws/v1"
+    DEFAULT_LLM_MODEL: str = "mistral.ministral-3-8b-instruct"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
