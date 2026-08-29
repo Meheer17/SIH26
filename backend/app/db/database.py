@@ -19,7 +19,9 @@ class Database:
     _in_memory_collections: Dict[str, List[Dict[str, Any]]] = {
         "users": [],
         "role_mappings": [],
-        "consents": []
+        "consents": [],
+        "otps": [],
+        "refresh_tokens": []
     }
 
 
@@ -43,6 +45,7 @@ async def seed_test_users():
             "mapped_roles": ["PATIENT"],
             "is_active": True,
             "is_admin": False,
+            "is_verified": True,
             "created_at": now_iso
         },
         {
@@ -56,6 +59,7 @@ async def seed_test_users():
             "mapped_roles": ["PHYSICIAN"],
             "is_active": True,
             "is_admin": False,
+            "is_verified": True,
             "created_at": now_iso
         },
         {
@@ -69,6 +73,7 @@ async def seed_test_users():
             "mapped_roles": ["SOLDIER", "WELFARE_OFFICER"],
             "is_active": True,
             "is_admin": False,
+            "is_verified": True,
             "created_at": now_iso
         },
         {
@@ -82,6 +87,7 @@ async def seed_test_users():
             "mapped_roles": ["COUNSELOR"],
             "is_active": True,
             "is_admin": False,
+            "is_verified": True,
             "created_at": now_iso
         },
         {
@@ -95,6 +101,7 @@ async def seed_test_users():
             "mapped_roles": ["SYSTEM_ADMIN", "PHYSICIAN", "WELFARE_OFFICER"],
             "is_active": True,
             "is_admin": True,
+            "is_verified": True,
             "created_at": now_iso
         }
     ]

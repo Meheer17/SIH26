@@ -45,6 +45,7 @@ class UserLoginRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
     user_id: str
     full_name: str
@@ -62,7 +63,24 @@ class UserProfileResponse(BaseModel):
     mapped_roles: List[RoleEnum]
     is_active: bool
     is_admin: bool
+    is_verified: bool = False
     created_at: str
+
+class UserRegisterResponse(BaseModel):
+    message: str = "Registration successful. Please verify with the OTP sent."
+    email_or_phone: str
+    is_verified: bool = False
+
+class VerifyOtpRequest(BaseModel):
+    email_or_phone: str
+    otp_code: str
+
+class ResendOtpRequest(BaseModel):
+    email_or_phone: str
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
 
 # --- RBAC & ROLE MAPPING SCHEMAS ---
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/auth/auth_service.dart';
 import '../chat/ai_chat_screen.dart';
+import 'otp_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -63,9 +64,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         appContext: _selectedAppContext,
       );
       if (mounted) {
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const AiChatScreen()),
-          (route) => false,
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => OtpVerificationScreen(emailOrPhone: emailOrPhone),
+          ),
         );
       }
     } catch (e) {

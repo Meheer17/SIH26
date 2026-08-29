@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/auth/auth_service.dart';
 import '../chat/ai_chat_screen.dart';
 import 'register_screen.dart';
+import 'otp_verification_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -46,16 +47,31 @@ class _LoginScreenState extends State<LoginScreen> {
         emailOrPhone: emailOrPhone,
         password: password,
       );
-    } catch (_) {
-      // Soft fallback for demo mode
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AiChatScreen()),
+        );
+      }
+    } catch (e) {
+      final errorStr = e.toString();
+      if (errorStr.contains('verify') || errorStr.contains('verified')) {
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => OtpVerificationScreen(emailOrPhone: emailOrPhone),
+            ),
+          );
+        }
+      } else {
+        setState(() {
+          _errorMessage = errorStr.replaceAll('Exception: ', '');
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AiChatScreen()),
-        );
       }
     }
   }
