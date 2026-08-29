@@ -41,6 +41,12 @@ async def get_current_user(
             detail="User associated with token not found"
         )
         
+    if not user_doc.get("is_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is not verified. Please verify with OTP."
+        )
+        
     return user_doc
 
 def require_roles(allowed_roles: List[RoleEnum]) -> Callable:

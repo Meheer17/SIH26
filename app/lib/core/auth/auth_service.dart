@@ -11,6 +11,7 @@ class UserModel {
   final List<String> mappedRoles;
   final bool isActive;
   final bool isAdmin;
+  final bool isVerified;
 
   UserModel({
     required this.id,
@@ -21,6 +22,7 @@ class UserModel {
     required this.mappedRoles,
     required this.isActive,
     required this.isAdmin,
+    this.isVerified = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -33,6 +35,7 @@ class UserModel {
       mappedRoles: List<String>.from(json['mapped_roles'] ?? []),
       isActive: json['is_active'] ?? true,
       isAdmin: json['is_admin'] ?? false,
+      isVerified: json['is_verified'] ?? false,
     );
   }
 }
@@ -78,22 +81,25 @@ class ConsentModel {
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
-  AuthService._internal();
+
+  AuthService._internal() {
+    // Interceptor binding: ApiClient retrieves JWT dynamically from here
+    ApiClient.tokenProvider = () => _authToken;
+    ApiClient.onRefreshToken = () => refreshSession();
+  }
 
   final ApiClient _apiClient = ApiClient();
   String? _authToken;
+  String? _refreshToken;
   UserModel? _currentUser;
 
   String? get token => _authToken;
+  String? get refreshToken => _refreshToken;
   UserModel? get currentUser => _currentUser;
   bool get isAuthenticated => _authToken != null && _currentUser != null;
 
-  Map<String, String> get _authHeaders => {
-        if (_authToken != null) 'Authorization': 'Bearer $_authToken',
-      };
-
-  /// Register User
-  Future<UserModel> register({
+  /// Register User (returns registration info, needs verification)
+  Future<Map<String, dynamic>> register({
     required String fullName,
     required String emailOrPhone,
     required String password,
@@ -110,9 +116,38 @@ class AuthService {
         'app_context': appContext,
       },
     );
+    return Map<String, dynamic>.from(response);
+  }
+
+  /// Verify OTP Code and activate login session
+  Future<UserModel> verifyOtp({
+    required String emailOrPhone,
+    required String otpCode,
+  }) async {
+    final response = await _apiClient.post(
+      'auth/verify-otp',
+      body: {
+        'email_or_phone': emailOrPhone,
+        'otp_code': otpCode,
+      },
+    );
 
     _authToken = response['access_token'];
+    _refreshToken = response['refresh_token'];
     return await fetchProfile();
+  }
+
+  /// Resend Verification OTP to terminal
+  Future<Map<String, dynamic>> resendOtp({
+    required String emailOrPhone,
+  }) async {
+    final response = await _apiClient.post(
+      'auth/resend-otp',
+      body: {
+        'email_or_phone': emailOrPhone,
+      },
+    );
+    return Map<String, dynamic>.from(response);
   }
 
   /// Login User
@@ -129,6 +164,7 @@ class AuthService {
     );
 
     _authToken = response['access_token'];
+    _refreshToken = response['refresh_token'];
     return await fetchProfile();
   }
 
@@ -136,17 +172,34 @@ class AuthService {
   Future<UserModel> fetchProfile() async {
     final response = await _apiClient.get(
       ApiEndpoints.profileMe,
-      headers: _authHeaders,
     );
     _currentUser = UserModel.fromJson(response);
     return _currentUser!;
+  }
+
+  /// Refresh Session using refresh token
+  Future<bool> refreshSession() async {
+    if (_refreshToken == null) return false;
+    try {
+      final response = await _apiClient.post(
+        'auth/refresh',
+        body: {
+          'refresh_token': _refreshToken,
+        },
+      );
+      _authToken = response['access_token'];
+      _refreshToken = response['refresh_token'];
+      return true;
+    } catch (_) {
+      await logout();
+      return false;
+    }
   }
 
   /// Admin: List Users
   Future<List<UserModel>> listAllUsers() async {
     final response = await _apiClient.get(
       ApiEndpoints.adminUsers,
-      headers: _authHeaders,
     );
     return (response as List).map((json) => UserModel.fromJson(json)).toList();
   }
@@ -159,7 +212,6 @@ class AuthService {
   }) async {
     return await _apiClient.post(
       ApiEndpoints.adminMapRoles(userId),
-      headers: _authHeaders,
       body: {
         'user_id': userId,
         'roles': roles,
@@ -177,7 +229,6 @@ class AuthService {
   }) async {
     final response = await _apiClient.post(
       ApiEndpoints.consentGrant,
-      headers: _authHeaders,
       body: {
         'grantee_id': 'spec_${DateTime.now().millisecondsSinceEpoch}',
         'grantee_name': granteeName,
@@ -193,7 +244,6 @@ class AuthService {
   Future<List<ConsentModel>> listMyConsents() async {
     final response = await _apiClient.get(
       ApiEndpoints.myConsents,
-      headers: _authHeaders,
     );
     return (response as List).map((json) => ConsentModel.fromJson(json)).toList();
   }
@@ -202,14 +252,22 @@ class AuthService {
   Future<ConsentModel> revokeConsent(String consentId) async {
     final response = await _apiClient.post(
       ApiEndpoints.consentRevoke(consentId),
-      headers: _authHeaders,
     );
     return ConsentModel.fromJson(response);
   }
 
-  /// Logout
-  void logout() {
-    _authToken = null;
-    _currentUser = null;
+  /// Logout and clear token states on server and client
+  Future<void> logout() async {
+    try {
+      if (_authToken != null) {
+        await _apiClient.post('auth/logout');
+      }
+    } catch (_) {
+      // Suppress connection issues during logout teardown
+    } finally {
+      _authToken = null;
+      _refreshToken = null;
+      _currentUser = null;
+    }
   }
 }
