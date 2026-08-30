@@ -171,7 +171,7 @@ export default function ConsentPage() {
                   <div>
                     <p className="text-xs font-semibold text-slate-700">{c.purpose}</p>
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {c.scopes.map((s) => (
+                      {c.scopes.map((s: string) => (
                         <span key={s} className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-mono border border-slate-200">
                           {s}
                         </span>

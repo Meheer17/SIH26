@@ -185,7 +185,7 @@ export default function AdminRolesPage() {
                     <td className="p-4 font-bold text-indigo-600">{u.primary_role}</td>
                     <td className="p-4">
                       <div className="flex flex-wrap gap-1">
-                        {u.mapped_roles.map((r) => (
+                        {u.mapped_roles.map((r: string) => (
                           <span
                             key={r}
                             className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono text-[10px] border border-slate-200 font-semibold"

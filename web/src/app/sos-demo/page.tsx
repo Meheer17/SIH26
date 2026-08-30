@@ -37,7 +37,7 @@ export default function SosDemoPage() {
       },
       emergencyContacts: ['+919876543210', '+919123456789'],
       emergencyReason: 'Severe Heatstroke & Respiratory Distress Emergency',
-      onCountdown: (sec) => {
+      onCountdown: (sec: number) => {
         setSecondsRemaining(sec);
       },
       onConfirmed: (event: WebSosEvent) => {
