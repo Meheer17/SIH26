@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
@@ -8,6 +8,68 @@ import { useAuth } from '@/lib/auth/AuthContext';
 export default function DashboardPage() {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
+
+  const authorizedApps = useMemo(() => {
+    if (!user) return [];
+    const authorized = [];
+    const hasAdmin = user.is_admin || user.mapped_roles.includes('SYSTEM_ADMIN');
+    
+    if (hasAdmin || user.mapped_roles.includes('PATIENT')) {
+      authorized.push({
+        id: 'arogya_sathi',
+        path: '/arogya',
+        title: 'ArogyaSathi',
+        subtitle: 'Disaster Health & Vitals Monitoring',
+        badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        cardBorder: 'hover:border-emerald-400',
+        description: 'Continuous heat stress index, dehydration probability, respiratory AQI risk monitoring, and automated emergency SOS triggers.',
+        role: 'Target Role: PATIENT',
+      });
+    }
+    if (hasAdmin || user.mapped_roles.includes('PHYSICIAN')) {
+      authorized.push({
+        id: 'medikiosk',
+        path: '/medikiosk',
+        title: 'MediKiosk',
+        subtitle: 'OPD Intake & Triage',
+        badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
+        cardBorder: 'hover:border-sky-400',
+        description: 'Conversational clinical history (SOCRATES), OCR document processing, medical NER, AYUSH history mode, and physician terminal.',
+        role: 'Target Role: PHYSICIAN',
+      });
+    }
+    if (hasAdmin || user.mapped_roles.includes('SOLDIER') || user.mapped_roles.includes('WELFARE_OFFICER')) {
+      authorized.push({
+        id: 'rakshak_mitra',
+        path: '/rakshak',
+        title: 'RakshakMitra',
+        subtitle: 'Forces Welfare & Burnout',
+        badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
+        cardBorder: 'hover:border-amber-400',
+        description: 'HRMS data correlation, voice mood journal analysis, burnout prediction models, and anonymized commander heatmaps.',
+        role: 'Target Role: SOLDIER / WELFARE_OFFICER',
+      });
+    }
+    if (hasAdmin || user.mapped_roles.includes('COUNSELOR') || user.mapped_roles.includes('VICTIM')) {
+      authorized.push({
+        id: 'nyaya_sahay',
+        path: '/nyaya',
+        title: 'NyayaSahay',
+        subtitle: 'SC/ST Victim Legal Aid',
+        badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
+        cardBorder: 'hover:border-purple-400',
+        description: 'Proactive multi-channel outreach, voice stress analysis (VSA), case timeline correlation, and multi-tier government escalation.',
+        role: 'Target Role: COUNSELOR',
+      });
+    }
+    return authorized;
+  }, [user]);
+
+  useEffect(() => {
+    if (user && authorizedApps.length === 1) {
+      router.push(authorizedApps[0].path);
+    }
+  }, [user, authorizedApps, router]);
 
   if (loading) {
     return (
@@ -119,87 +181,34 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* ArogyaSathi */}
-            <div className="bg-white border border-slate-200 hover:border-emerald-400 rounded-2xl p-6 transition shadow-sm hover:shadow-md space-y-4 flex flex-col justify-between group">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    Disaster &amp; Health Monitoring
-                  </span>
-                  <span className="text-xs text-slate-400 font-mono">v1.2</span>
+            {authorizedApps.map((app) => (
+              <div
+                key={app.id}
+                className={`bg-white border border-slate-200 ${app.cardBorder} rounded-2xl p-6 transition shadow-sm hover:shadow-md space-y-4 flex flex-col justify-between group`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full border ${app.badgeColor}`}>
+                      {app.subtitle}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">v1.2</span>
+                  </div>
+                  <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-indigo-700 transition mt-2">{app.title}</h3>
+                  <p className="text-xs text-slate-600 leading-relaxed mt-1">
+                    {app.description}
+                  </p>
                 </div>
-                <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-emerald-700 transition">ArogyaSathi</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Continuous heat stress index, dehydration probability, respiratory AQI risk monitoring, and automated emergency SOS triggers.
-                </p>
-              </div>
-              <div className="pt-2 flex items-center justify-between text-xs font-bold text-emerald-700 border-t border-slate-100">
-                <span>Target Role: {user.primary_role}</span>
-                <Link href="/chat?agent=arogya_sathi_agent" className="hover:underline">Launch App &rarr;</Link>
-              </div>
-            </div>
-
-            {/* MediKiosk */}
-            <div className="bg-white border border-slate-200 hover:border-sky-400 rounded-2xl p-6 transition shadow-sm hover:shadow-md space-y-4 flex flex-col justify-between group">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
-                    OPD Intake &amp; Triage
-                  </span>
-                  <span className="text-xs text-slate-400 font-mono">v1.2</span>
+                <div className="pt-2 flex items-center justify-between text-xs font-bold text-indigo-700 border-t border-slate-100">
+                  <span>{app.role}</span>
+                  <Link href={app.path} className="hover:underline">Launch App &rarr;</Link>
                 </div>
-                <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-sky-700 transition">MediKiosk</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Conversational clinical history (SOCRATES), OCR document processing, medical NER, AYUSH history mode, and physician terminal.
-                </p>
               </div>
-              <div className="pt-2 flex items-center justify-between text-xs font-bold text-sky-700 border-t border-slate-100">
-                <span>Target Role: {user.primary_role}</span>
-                <Link href="/chat?agent=medikiosk_agent" className="hover:underline">Launch App &rarr;</Link>
+            ))}
+            {authorizedApps.length === 0 && (
+              <div className="col-span-2 text-center py-12 bg-white border rounded-2xl text-slate-400 text-xs italic">
+                You do not have access to any platform applications. Please contact the administrator.
               </div>
-            </div>
-
-            {/* RakshakMitra */}
-            <div className="bg-white border border-slate-200 hover:border-amber-400 rounded-2xl p-6 transition shadow-sm hover:shadow-md space-y-4 flex flex-col justify-between group">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
-                    Forces Welfare &amp; Burnout
-                  </span>
-                  <span className="text-xs text-slate-400 font-mono">v1.2</span>
-                </div>
-                <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-amber-700 transition">RakshakMitra</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  HRMS data correlation, voice mood journal analysis, burnout prediction models, and anonymized commander heatmaps.
-                </p>
-              </div>
-              <div className="pt-2 flex items-center justify-between text-xs font-bold text-amber-700 border-t border-slate-100">
-                <span>Target Role: {user.primary_role}</span>
-                <Link href="/chat?agent=rakshak_mitra_agent" className="hover:underline">Launch App &rarr;</Link>
-              </div>
-            </div>
-
-            {/* NyayaSahay */}
-            <div className="bg-white border border-slate-200 hover:border-purple-400 rounded-2xl p-6 transition shadow-sm hover:shadow-md space-y-4 flex flex-col justify-between group">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase px-3 py-1 rounded-full bg-purple-50 text-purple-800 border border-purple-200">
-                    Atrocity Victim Support
-                  </span>
-                  <span className="text-xs text-slate-400 font-mono">v1.2</span>
-                </div>
-                <h3 className="text-lg font-extrabold text-slate-900 group-hover:text-purple-700 transition">NyayaSahay</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Proactive multi-channel outreach, voice stress analysis (VSA), case timeline correlation, and multi-tier government escalation.
-                </p>
-              </div>
-              <div className="pt-2 flex items-center justify-between text-xs font-bold text-purple-700 border-t border-slate-100">
-                <span>Target Role: {user.primary_role}</span>
-                <Link href="/chat?agent=nyaya_sahay_agent" className="hover:underline">Launch App &rarr;</Link>
-              </div>
-            </div>
-
+            )}
           </div>
         </section>
 

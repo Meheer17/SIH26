@@ -21,7 +21,11 @@ class Database:
         "role_mappings": [],
         "consents": [],
         "otps": [],
-        "refresh_tokens": []
+        "refresh_tokens": [],
+        "arogya_vitals": [],
+        "medikiosk_intakes": [],
+        "rakshak_burnouts": [],
+        "nyaya_distress": []
     }
 
 
