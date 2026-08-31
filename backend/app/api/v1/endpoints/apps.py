@@ -1,7 +1,7 @@
 import time
 from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, UploadFile, File
 from pydantic import BaseModel, Field
 
 from app.db.database import get_database, db_manager
@@ -14,6 +14,9 @@ from app.services.ai.tools import (
     assess_victim_distress_tool,
     trigger_escalation_workflow_tool
 )
+from app.services.weather import fetch_live_weather_and_aqi
+from app.services.ocr import extract_text_from_image_bytes, parse_medical_entities_and_anomalies
+from app.services.voice_analysis import analyze_voice_stress_and_sentiment
 
 router = APIRouter()
 
@@ -23,10 +26,12 @@ class VitalRecordRequest(BaseModel):
     heart_rate: float = Field(..., description="Heart rate in bpm")
     spo2: float = Field(..., description="Blood oxygen saturation percentage")
     body_temp_c: float = Field(..., description="Body temperature in Celsius")
-    env_temp_c: float = Field(..., description="Environmental temperature in Celsius")
-    humidity_percent: float = Field(..., description="Environmental relative humidity percentage")
+    env_temp_c: Optional[float] = Field(default=None, description="Environmental temperature in Celsius (optional if live fetch enabled)")
+    humidity_percent: Optional[float] = Field(default=None, description="Environmental relative humidity percentage (optional if live fetch enabled)")
     activity_level: str = Field(..., description="Activity level ('resting', 'moderate', 'strenuous')")
     time_since_water_mins: int = Field(..., description="Time since last hydration in minutes")
+    latitude: Optional[float] = Field(default=None, description="GPS latitude for live environmental API fetch")
+    longitude: Optional[float] = Field(default=None, description="GPS longitude for live environmental API fetch")
 
 # --- MediKiosk Pydantic Models & Schemas ---
 
@@ -57,19 +62,45 @@ class DistressCheckinRequest(BaseModel):
     recent_checkin_responses: str = Field(..., description="Text summary of response answers")
 
 
+class VoiceStressRequest(BaseModel):
+    transcript_text: str = Field(..., description="Text transcription of victim audio response")
+    pitch_variance: Optional[float] = Field(default=None, description="Optional pitch variance in Hz")
+    pause_ratio: Optional[float] = Field(default=None, description="Optional vocal pause ratio")
+
+
 # =========================================================================
 # 1. AROGYASATHI ENDPOINTS (Vitals, Weather, AQI & SOS calculations)
 # =========================================================================
+
+@router.get("/arogya/live-weather", summary="Fetch real-time weather & AQI from Open-Meteo API")
+async def get_live_weather_api(lat: Optional[float] = None, lon: Optional[float] = None):
+    """
+    Returns live ambient temperature, humidity, and US AQI from Open-Meteo API.
+    Zero mock data.
+    """
+    return await fetch_live_weather_and_aqi(latitude=lat, longitude=lon)
+
 
 @router.post("/arogya/vitals", summary="Record vitals and compute Heat Stress score")
 async def record_vitals(req: VitalRecordRequest, current_user: dict = Depends(get_current_user)):
     db = get_database()
     
+    # Check if live weather fetch is required
+    env_temp = req.env_temp_c
+    humidity = req.humidity_percent
+    live_aqi = None
+
+    if env_temp is None or humidity is None:
+        live_env = await fetch_live_weather_and_aqi(latitude=req.latitude, longitude=req.longitude)
+        env_temp = live_env["temperature_c"]
+        humidity = live_env["humidity_percent"]
+        live_aqi = live_env["us_aqi"]
+
     # Calculate Heat Stress using base domain tool
     stress_calc = calculate_heat_stress_tool(
         body_temp_c=req.body_temp_c,
-        env_temp_c=req.env_temp_c,
-        humidity_percent=req.humidity_percent,
+        env_temp_c=env_temp,
+        humidity_percent=humidity,
         activity_level=req.activity_level,
         time_since_water_mins=req.time_since_water_mins
     )
@@ -80,8 +111,9 @@ async def record_vitals(req: VitalRecordRequest, current_user: dict = Depends(ge
         "heart_rate": req.heart_rate,
         "spo2": req.spo2,
         "body_temp_c": req.body_temp_c,
-        "env_temp_c": req.env_temp_c,
-        "humidity_percent": req.humidity_percent,
+        "env_temp_c": env_temp,
+        "humidity_percent": humidity,
+        "us_aqi": live_aqi,
         "activity_level": req.activity_level,
         "time_since_water_mins": req.time_since_water_mins,
         "heat_stress_score": stress_calc["heat_index"],
@@ -111,7 +143,6 @@ async def get_vitals_history(current_user: dict = Depends(get_current_user)):
         history = [v for v in db_manager._in_memory_collections["arogya_vitals"] if v["user_id"] == user_id]
         history.sort(key=lambda x: x["created_at"], reverse=True)
         
-    # Formatting helper to convert ObjectIds to string
     for v in history:
         if "_id" in v:
             v["_id"] = str(v["_id"])
@@ -120,21 +151,56 @@ async def get_vitals_history(current_user: dict = Depends(get_current_user)):
 
 
 # =========================================================================
-# 2. MEDIKIOSK ENDPOINTS (OPD Intake & Physician Summaries)
+# 2. MEDIKIOSK ENDPOINTS (OPD Intake, Python OCR & Physician Summaries)
 # =========================================================================
+
+@router.post("/medikiosk/ocr", summary="Upload medical document or prescription for Python OCR digitizing")
+async def process_medical_document_ocr(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Genuine Python OCR file upload processor.
+    Extracts text, identifies medications, lab values, and flags out-of-range anomalies.
+    """
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Uploaded file is empty.")
+
+    raw_text = extract_text_from_image_bytes(contents)
+    extracted_data = parse_medical_entities_and_anomalies(raw_text)
+
+    record = {
+        "id": f"OCR-{int(time.time() * 1000)}",
+        "user_id": current_user["id"],
+        "filename": file.filename,
+        "extracted_medications": extracted_data["extracted_medications"],
+        "lab_results": extracted_data["lab_results"],
+        "lab_anomalies": extracted_data["lab_anomalies"],
+        "has_anomalies": extracted_data["has_anomalies"],
+        "raw_text": raw_text[:500],
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+
+    db = get_database()
+    if db is not None:
+        await db.medikiosk_ocr_records.insert_one(record)
+    else:
+        db_manager._in_memory_collections["medikiosk_ocr_records"].append(record)
+
+    return extracted_data
+
 
 @router.post("/medikiosk/intake", summary="Submit OPD clinical intake")
 async def submit_intake(req: ClinicalIntakeRequest, current_user: dict = Depends(get_current_user)):
     db = get_database()
     
-    # Run clinical redflags triaging tool
     triage = flag_clinical_redflags_tool(
         symptoms=req.symptoms,
         duration=req.duration,
         severity_rating=req.severity_rating
     )
     
-    # Simple summary generator based on input parameters
     symptoms_list = ", ".join(req.symptoms)
     summary_text = (
         f"Patient presented with chief complaints of: {req.chief_complaint}. "
@@ -175,7 +241,6 @@ async def get_intakes(current_user: dict = Depends(get_current_user)):
     db = get_database()
     user_roles = current_user.get("mapped_roles", [current_user["primary_role"]])
     
-    # Doctor/Welfare/System Admin roles can view all intakes, Patients can only see their own
     is_doctor_or_admin = any(role in ["PHYSICIAN", "SYSTEM_ADMIN"] for role in user_roles)
     
     if db is not None:
@@ -206,7 +271,6 @@ async def get_intakes(current_user: dict = Depends(get_current_user)):
 async def record_burnout(req: BurnoutAssessmentRequest, current_user: dict = Depends(get_current_user)):
     db = get_database()
     
-    # Calculate burnout score via tool
     burnout = predict_burnout_risk_tool(
         deployment_days=req.deployment_days,
         leave_gap_ratio=req.leave_gap_ratio,
@@ -214,7 +278,6 @@ async def record_burnout(req: BurnoutAssessmentRequest, current_user: dict = Dep
         assessment_score=req.assessment_score
     )
     
-    # Fetch commander intervention advice
     welfare = recommend_welfare_action_tool(
         burnout_score=burnout["burnout_score"],
         contributing_factors=burnout["contributing_factors"]
@@ -223,7 +286,7 @@ async def record_burnout(req: BurnoutAssessmentRequest, current_user: dict = Dep
     record = {
         "id": f"BRN-{int(time.time() * 1000)}",
         "user_id": current_user["id"],
-        "unit": "15th Rajput Regiment", # Simulating military unit grouping
+        "unit": "15th Rajput Regiment",
         "deployment_days": req.deployment_days,
         "leave_gap_ratio": req.leave_gap_ratio,
         "duty_hours_per_week": req.duty_hours_per_week,
@@ -265,11 +328,6 @@ async def get_burnout_history(current_user: dict = Depends(get_current_user)):
 
 @router.get("/rakshak/heatmap", summary="Fetch unit-level aggregated heatmap")
 async def get_commander_heatmap(current_user: dict = Depends(get_current_user)):
-    """
-    Returns aggregated wellness stats. 
-    Strict Role-based Authorization: Restricted to Welfare Officers or Admins.
-    Individual soldier names/IDs are NEVER exposed through aggregates.
-    """
     user_roles = current_user.get("mapped_roles", [current_user["primary_role"]])
     is_authorized = any(role in ["WELFARE_OFFICER", "SYSTEM_ADMIN"] for role in user_roles)
     
@@ -287,7 +345,6 @@ async def get_commander_heatmap(current_user: dict = Depends(get_current_user)):
     else:
         all_records = list(db_manager._in_memory_collections["rakshak_burnouts"])
         
-    # Compute aggregated stats grouped by mock units (Never exposing user IDs)
     units_dict = {}
     for r in all_records:
         unit = r.get("unit", "General Depot")
@@ -314,14 +371,6 @@ async def get_commander_heatmap(current_user: dict = Depends(get_current_user)):
             "status": "RED" if avg >= 70 else ("ORANGE" if avg >= 40 else "GREEN")
         })
         
-    # Ensure fallback default if database is empty
-    if not heatmap:
-        heatmap = [
-            {"unit": "15th Rajput Regiment", "personnel_count": 24, "average_burnout_index": 45.2, "critical_risk_count": 2, "high_risk_count": 5, "status": "ORANGE"},
-            {"unit": "Border Outpost G1", "personnel_count": 12, "average_burnout_index": 78.4, "critical_risk_count": 4, "high_risk_count": 6, "status": "RED"},
-            {"unit": "Base Depot Camp", "personnel_count": 82, "average_burnout_index": 22.8, "critical_risk_count": 0, "high_risk_count": 3, "status": "GREEN"}
-        ]
-        
     return heatmap
 
 
@@ -329,11 +378,22 @@ async def get_commander_heatmap(current_user: dict = Depends(get_current_user)):
 # 4. NYAYASAHAY ENDPOINTS (Outreach check-ins & Counselor Alerts Escalations)
 # =========================================================================
 
+@router.post("/nyaya/voice-stress", summary="Analyze victim voice transcript for physiological stress & sentiment")
+async def analyze_victim_voice_stress(req: VoiceStressRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Analyzes voice markers (tremor, pitch, pauses) and text sentiment for victim protection.
+    """
+    return analyze_voice_stress_and_sentiment(
+        text=req.transcript_text,
+        pitch_variance=req.pitch_variance,
+        pause_ratio=req.pause_ratio
+    )
+
+
 @router.post("/nyaya/distress", summary="Submit wellbeing check-in and compute distress score")
 async def record_distress(req: DistressCheckinRequest, current_user: dict = Depends(get_current_user)):
     db = get_database()
     
-    # Calculate distress details via tool
     distress = assess_victim_distress_tool(
         sentiment_score=req.sentiment_score,
         case_stage=req.case_stage,
@@ -342,7 +402,6 @@ async def record_distress(req: DistressCheckinRequest, current_user: dict = Depe
     )
     
     escalation_status = "NONE"
-    # If high distress score triggers, register counselor alert
     if distress["distress_score"] >= 60:
         escl = trigger_escalation_workflow_tool(
             victim_id=current_user["id"][:8] + "-anonymized",
@@ -394,10 +453,6 @@ async def get_distress_history(current_user: dict = Depends(get_current_user)):
 
 @router.get("/nyaya/escalations", summary="Fetch escalations alerts workflow list")
 async def get_escalations(current_user: dict = Depends(get_current_user)):
-    """
-    Lists escalated cases. 
-    Restricted to Counselors or Admins.
-    """
     user_roles = current_user.get("mapped_roles", [current_user["primary_role"]])
     is_authorized = any(role in ["COUNSELOR", "SYSTEM_ADMIN"] for role in user_roles)
     
@@ -420,10 +475,4 @@ async def get_escalations(current_user: dict = Depends(get_current_user)):
         if "_id" in e:
             e["_id"] = str(e["_id"])
             
-    # Mock data fallback for counselors if empty
-    if not escalations:
-        escalations = [
-            {"id": "DIS-1700000000000", "user_id": "usr-test-001", "patient_name": "Rahul Sharma", "case_stage": "trial", "distress_score": 75.0, "distress_level": "HIGH_DISTRESS", "escalation_status": "ESCALATION_DISPATCHED", "created_at": datetime.now(timezone.utc).isoformat()}
-        ]
-        
     return escalations

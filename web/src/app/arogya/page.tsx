@@ -26,12 +26,14 @@ export default function ArogyaSathiPage() {
   const [heartRate, setHeartRate] = useState(72);
   const [spo2, setSpo2] = useState(98);
   const [bodyTemp, setBodyTemp] = useState(37.0);
-  const [envTemp, setEnvTemp] = useState(38.0);
-  const [humidity, setHumidity] = useState(55);
+  const [envTemp, setEnvTemp] = useState(34.5);
+  const [humidity, setHumidity] = useState(58);
   const [activity, setActivity] = useState('moderate');
   const [waterMins, setWaterMins] = useState(30);
 
   const [loading, setLoading] = useState(false);
+  const [fetchingWeather, setFetchingWeather] = useState(false);
+  const [liveWeather, setLiveWeather] = useState<any>(null);
   const [history, setHistory] = useState<VitalRecord[]>([]);
   const [latestResult, setLatestResult] = useState<VitalRecord | null>(null);
   const [sosStatus, setSosStatus] = useState<string | null>(null);
@@ -48,9 +50,24 @@ export default function ArogyaSathiPage() {
     }
   };
 
+  const fetchLiveWeather = async () => {
+    setFetchingWeather(true);
+    try {
+      const data = await apiClient.get('/apps/arogya/live-weather?lat=28.6139&lon=77.2090');
+      setLiveWeather(data);
+      setEnvTemp(data.temperature_c);
+      setHumidity(data.humidity_percent);
+    } catch (e) {
+      console.error('Failed to fetch live weather', e);
+    } finally {
+      setFetchingWeather(false);
+    }
+  };
+
   useEffect(() => {
     if (user) {
       fetchHistory();
+      fetchLiveWeather();
     }
   }, [user]);
 
@@ -118,10 +135,34 @@ export default function ArogyaSathiPage() {
               <p className="text-xs text-slate-500">Heat Stress and Dehydration Index Monitor</p>
             </div>
           </div>
-          <Link href="/dashboard" className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
-            &larr; Dashboard
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={fetchLiveWeather}
+              disabled={fetchingWeather}
+              className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+            >
+              <span>{fetchingWeather ? 'Syncing...' : 'Sync Live Weather (Open-Meteo)'}</span>
+            </button>
+            <Link href="/dashboard" className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition">
+              &larr; Dashboard
+            </Link>
+          </div>
         </header>
+
+        {/* Live Weather Widget Banner */}
+        {liveWeather && (
+          <div className="bg-indigo-900 text-white rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-mono">
+            <div>
+              <div className="font-bold text-indigo-200 uppercase text-[10px]">🌐 Live Open-Meteo Weather API Data</div>
+              <div className="text-sm font-bold mt-0.5">
+                New Delhi: {liveWeather.temperature_c}°C | Humidity: {liveWeather.humidity_percent}% | Apparent: {liveWeather.apparent_temperature_c}°C
+              </div>
+            </div>
+            <div className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/20 font-bold text-cyan-300 shrink-0">
+              US AQI: {liveWeather.us_aqi} ({liveWeather.aqi_category})
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
           {/* Form Column */}

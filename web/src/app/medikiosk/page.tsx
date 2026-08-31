@@ -33,6 +33,9 @@ export default function MediKioskPage() {
   const [ayushMode, setAyushMode] = useState(false);
   
   const [loading, setLoading] = useState(false);
+  const [uploadingOcr, setUploadingOcr] = useState(false);
+  const [ocrResult, setOcrResult] = useState<any>(null);
+
   const [intakes, setIntakes] = useState<ClinicalIntake[]>([]);
   const [selectedIntake, setSelectedIntake] = useState<ClinicalIntake | null>(null);
 
@@ -50,6 +53,38 @@ export default function MediKioskPage() {
       fetchIntakes();
     }
   }, [user]);
+
+  const handleOcrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingOcr(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem('svasthya_access_token');
+      const response = await fetch('http://localhost:8000/api/v1/apps/medikiosk/ocr', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('OCR Document Digitizing Failed');
+      }
+
+      const resData = await response.json();
+      setOcrResult(resData);
+      alert('Medical Document Digitized via Python OCR engine!');
+    } catch (err: any) {
+      alert(err.message || 'OCR Upload Failed');
+    } finally {
+      setUploadingOcr(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,7 +212,7 @@ export default function MediKioskPage() {
                   </div>
 
                   <div className="p-4 bg-slate-50 border rounded-xl space-y-2 text-xs">
-                    <span className="block text-indigo-700 font-black uppercase text-[10px]">Doctor-ready AI Summary Summary</span>
+                    <span className="block text-indigo-700 font-black uppercase text-[10px]">Doctor-ready AI Summary</span>
                     <p className="text-slate-700 leading-relaxed font-sans">{selectedIntake.summary}</p>
                   </div>
 
@@ -199,102 +234,146 @@ export default function MediKioskPage() {
           // ==========================================
           // PATIENT KIOSK VIEW
           // ==========================================
-          <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 max-w-xl mx-auto">
-            <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider border-b pb-2">Structured Symptom Dialogues</h2>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Chief Complaint (Short summary of reason for visit)</label>
+          <div className="space-y-6 max-w-xl mx-auto">
+            {/* Python Document OCR Dropzone */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-3">
+              <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider border-b pb-2">
+                📸 Python Medical Document &amp; Prescription OCR Scanner
+              </h2>
+              <p className="text-xs text-slate-500">
+                Upload paper prescriptions or lab reports to auto-extract medications and flag lab anomalies.
+              </p>
               <input
-                type="text"
-                required
-                value={chiefComplaint}
-                onChange={(e) => setChiefComplaint(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs"
-                placeholder="e.g. Coughing and chest heaviness"
+                type="file"
+                accept="image/*,.pdf"
+                onChange={handleOcrUpload}
+                disabled={uploadingOcr}
+                className="w-full text-xs text-slate-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 transition"
               />
+
+              {ocrResult && (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-3 font-mono">
+                  <div className="font-bold text-sky-800 border-b pb-1">Extracted Prescriptions &amp; Lab Entities:</div>
+                  <div>
+                    <span className="font-bold text-slate-700">Medications:</span>
+                    <ul className="list-disc pl-4 text-slate-600 font-sans mt-0.5">
+                      {ocrResult.extracted_medications.map((m: string, idx: number) => (
+                        <li key={idx}>{m}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {ocrResult.lab_anomalies.length > 0 && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 font-sans">
+                      <div className="font-bold text-amber-900 mb-1">⚠️ Out-Of-Range Lab Anomalies Flagged:</div>
+                      {ocrResult.lab_anomalies.map((anom: any, idx: number) => (
+                        <div key={idx} className="text-[11px]">
+                          • {anom.parameter}: {anom.observed_value} {anom.unit} (Ref: {anom.reference_range})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Symptoms (comma separated)</label>
-              <input
-                type="text"
-                required
-                value={symptomsInput}
-                onChange={(e) => setSymptomsInput(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs"
-                placeholder="cough, headache, fever"
-              />
-            </div>
+            <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+              <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider border-b pb-2">Structured Symptom Dialogues</h2>
 
-            <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Duration</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Chief Complaint (Short summary of reason for visit)</label>
                 <input
                   type="text"
                   required
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border rounded-xl"
-                  placeholder="e.g. 5 days"
+                  value={chiefComplaint}
+                  onChange={(e) => setChiefComplaint(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs"
+                  placeholder="e.g. Coughing and chest heaviness"
                 />
               </div>
+
               <div>
-                <label className="block text-slate-600 font-bold mb-1">Severity scale (1 to 10)</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Symptoms (comma separated)</label>
                 <input
-                  type="number"
-                  min="1"
-                  max="10"
+                  type="text"
                   required
-                  value={severityRating}
-                  onChange={(e) => setSeverityRating(Number(e.target.value))}
-                  className="w-full px-3 py-2 bg-slate-50 border rounded-xl"
+                  value={symptomsInput}
+                  onChange={(e) => setSymptomsInput(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs"
+                  placeholder="cough, headache, fever"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">History of Present Illness (HPI Timeline)</label>
-              <textarea
-                required
-                value={hpi}
-                onChange={(e) => setHpi(e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs"
-                placeholder="Describe when and how the symptoms evolved..."
-              />
-            </div>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Duration</label>
+                  <input
+                    type="text"
+                    required
+                    value={duration}
+                    onChange={(e) => setDuration(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border rounded-xl"
+                    placeholder="e.g. 5 days"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-bold mb-1">Severity scale (1 to 10)</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="10"
+                    required
+                    value={severityRating}
+                    onChange={(e) => setSeverityRating(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-slate-50 border rounded-xl"
+                  />
+                </div>
+              </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Review of Systems (ROS Other symptoms)</label>
-              <textarea
-                required
-                value={ros}
-                onChange={(e) => setRos(e.target.value)}
-                rows={2}
-                className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs"
-                placeholder="Note any other organs, stomach problems, sleep cycles..."
-              />
-            </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">History of Present Illness (HPI Timeline)</label>
+                <textarea
+                  required
+                  value={hpi}
+                  onChange={(e) => setHpi(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs"
+                  placeholder="Describe when and how the symptoms evolved..."
+                />
+              </div>
 
-            <div className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                id="ayushCheck"
-                checked={ayushMode}
-                onChange={(e) => setAyushMode(e.target.checked)}
-                className="rounded"
-              />
-              <label htmlFor="ayushCheck" className="text-slate-600 font-bold">Include traditional AYUSH Prakriti profiling questionnaire</label>
-            </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Review of Systems (ROS Other symptoms)</label>
+                <textarea
+                  required
+                  value={ros}
+                  onChange={(e) => setRos(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 bg-slate-50 border rounded-xl text-xs"
+                  placeholder="Note any other organs, stomach problems, sleep cycles..."
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition disabled:opacity-50"
-            >
-              {loading ? 'Processing intake summary...' : 'Submit Symptoms Intake'}
-            </button>
-          </form>
+              <div className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  id="ayushCheck"
+                  checked={ayushMode}
+                  onChange={(e) => setAyushMode(e.target.checked)}
+                  className="rounded"
+                />
+                <label htmlFor="ayushCheck" className="text-slate-600 font-bold">Include traditional AYUSH Prakriti profiling questionnaire</label>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition disabled:opacity-50"
+              >
+                {loading ? 'Processing intake summary...' : 'Submit Symptoms Intake'}
+              </button>
+            </form>
+          </div>
         )}
 
       </div>
