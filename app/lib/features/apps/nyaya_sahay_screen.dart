@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/speech/speech_service.dart';
 
 class NyayaSahayScreen extends StatefulWidget {
   const NyayaSahayScreen({super.key});
@@ -12,23 +13,70 @@ class NyayaSahayScreen extends StatefulWidget {
 class _NyayaSahayScreenState extends State<NyayaSahayScreen> {
   final ApiClient _apiClient = ApiClient();
   final _authService = AuthService();
+  final SpeechService _speechService = SpeechService();
 
-  // Victim checkin controllers
   double _sentimentValue = -0.2;
   String _selectedStage = 'trial';
   final _daysController = TextEditingController(text: '90');
   final _diaryController = TextEditingController(text: 'Anxious before the court trial.');
 
   bool _isLoading = false;
+  bool _isDictating = false;
   List<dynamic> _history = [];
   List<dynamic> _escalations = [];
   Map<String, dynamic>? _latestResult;
+  Map<String, dynamic>? _voiceStressResult;
 
   @override
   void initState() {
     super.initState();
+    _speechService.init();
     _fetchHistory();
     _fetchEscalations();
+  }
+
+  void _toggleDictation() {
+    if (_isDictating) {
+      _speechService.stopListening(onStatusChange: (listening) {
+        setState(() {
+          _isDictating = listening;
+        });
+      });
+    } else {
+      _speechService.listen(
+        onResult: (text) {
+          setState(() {
+            _diaryController.text = text;
+          });
+        },
+        onStatusChange: (listening) {
+          setState(() {
+            _isDictating = listening;
+          });
+        },
+      );
+    }
+  }
+
+  Future<void> _analyzeVoiceStress() async {
+    try {
+      final res = await _apiClient.post(
+        'apps/nyaya/voice-stress',
+        body: {
+          'transcript_text': _diaryController.text,
+          'pitch_variance': 32.5,
+          'pause_ratio': 0.38,
+        },
+      );
+      setState(() {
+        _voiceStressResult = Map<String, dynamic>.from(res);
+        _sentimentValue = (res['sentiment_score'] as num).toDouble();
+      });
+
+      _speechService.speak("Voice stress index evaluated at ${res['voice_stress_score']}. Sentiment classification is ${res['emotion_classification']}.");
+    } catch (e) {
+      debugPrint("Voice stress error: $e");
+    }
   }
 
   Future<void> _fetchHistory() async {
@@ -158,9 +206,9 @@ class _NyayaSahayScreenState extends State<NyayaSahayScreen> {
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Sentiment Level (-1 for anxious, 1 for calm):',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                Text(
+                  'Sentiment Level: ${_sentimentValue.toStringAsFixed(2)}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
                 Slider(
                   value: _sentimentValue,
@@ -213,15 +261,50 @@ class _NyayaSahayScreenState extends State<NyayaSahayScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                TextField(
-                  controller: _diaryController,
-                  maxLines: 2,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Wellness Diary response',
-                    labelStyle: TextStyle(color: Colors.white60),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _diaryController,
+                        maxLines: 2,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Wellness Diary response',
+                          labelStyle: TextStyle(color: Colors.white60),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _isDictating ? Icons.mic : Icons.mic_none,
+                        color: _isDictating ? Colors.redAccent : Colors.amberAccent,
+                      ),
+                      tooltip: 'Record Native Speech Input',
+                      onPressed: _toggleDictation,
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: _analyzeVoiceStress,
+                  icon: const Icon(Icons.graphic_eq_rounded, color: Colors.amberAccent, size: 18),
+                  label: const Text('Analyze Voice Stress & Acoustic Markers', style: TextStyle(color: Colors.amberAccent, fontSize: 11)),
+                ),
+                if (_voiceStressResult != null) ...[
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.amber.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      'Voice Stress Index: ${_voiceStressResult!["voice_stress_score"]} | Emotion: ${_voiceStressResult!["emotion_classification"]}',
+                      style: const TextStyle(color: Colors.amberAccent, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  )
+                ],
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: _isLoading ? null : _submitWellbeing,

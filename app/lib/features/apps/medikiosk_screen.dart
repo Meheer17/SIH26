@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/speech/speech_service.dart';
 
 class MediKioskScreen extends StatefulWidget {
   const MediKioskScreen({super.key});
@@ -12,6 +13,7 @@ class MediKioskScreen extends StatefulWidget {
 class _MediKioskScreenState extends State<MediKioskScreen> {
   final ApiClient _apiClient = ApiClient();
   final _authService = AuthService();
+  final SpeechService _speechService = SpeechService();
 
   // Form Controllers
   final _complaintController = TextEditingController(text: 'Sore throat & headache');
@@ -23,12 +25,15 @@ class _MediKioskScreenState extends State<MediKioskScreen> {
   bool _ayushMode = false;
 
   bool _isLoading = false;
+  bool _isDictating = false;
   List<dynamic> _intakes = [];
   Map<String, dynamic>? _selectedIntake;
+  Map<String, dynamic>? _ocrResult;
 
   @override
   void initState() {
     super.initState();
+    _speechService.init();
     _fetchIntakes();
   }
 
@@ -43,6 +48,29 @@ class _MediKioskScreenState extends State<MediKioskScreen> {
     }
   }
 
+  void _toggleNativeDictation() {
+    if (_isDictating) {
+      _speechService.stopListening(onStatusChange: (listening) {
+        setState(() {
+          _isDictating = listening;
+        });
+      });
+    } else {
+      _speechService.listen(
+        onResult: (text) {
+          setState(() {
+            _complaintController.text = text;
+          });
+        },
+        onStatusChange: (listening) {
+          setState(() {
+            _isDictating = listening;
+          });
+        },
+      );
+    }
+  }
+
   Future<void> _submitIntake() async {
     setState(() {
       _isLoading = true;
@@ -50,7 +78,7 @@ class _MediKioskScreenState extends State<MediKioskScreen> {
 
     try {
       final symptomsList = _symptomsController.text.split(',').map((s) => s.trim()).toList();
-      await _apiClient.post(
+      final res = await _apiClient.post(
         'apps/medikiosk/intake',
         body: {
           'symptoms': symptomsList,
@@ -64,6 +92,10 @@ class _MediKioskScreenState extends State<MediKioskScreen> {
       );
 
       _fetchIntakes();
+
+      // Native TTS Audio Synthesis
+      _speechService.speak("Clinical history submitted. Triage status is ${res['triage_level']}.");
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Clinical intake successfully recorded!')),
@@ -116,17 +148,33 @@ class _MediKioskScreenState extends State<MediKioskScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Symptom Intake Kiosk',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Symptom Intake Kiosk',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          _isDictating ? Icons.mic : Icons.mic_none,
+                          color: _isDictating ? Colors.redAccent : Colors.lightBlueAccent,
+                        ),
+                        tooltip: 'Native ASR Voice Dictation',
+                        onPressed: _toggleNativeDictation,
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   TextField(
                     controller: _complaintController,
                     style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Chief Complaint',
-                      labelStyle: TextStyle(color: Colors.white60),
+                      labelStyle: const TextStyle(color: Colors.white60),
+                      suffixIcon: _isDictating
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : null,
                     ),
                   ),
                   TextField(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
 import '../../core/auth/auth_service.dart';
+import '../../core/speech/speech_service.dart';
 
 class RakshakMitraScreen extends StatefulWidget {
   const RakshakMitraScreen({super.key});
@@ -12,8 +13,8 @@ class RakshakMitraScreen extends StatefulWidget {
 class _RakshakMitraScreenState extends State<RakshakMitraScreen> {
   final ApiClient _apiClient = ApiClient();
   final _authService = AuthService();
+  final SpeechService _speechService = SpeechService();
 
-  // Soldier form controllers
   final _daysController = TextEditingController(text: '90');
   final _leaveController = TextEditingController(text: '0.8');
   final _dutyController = TextEditingController(text: '60');
@@ -21,6 +22,7 @@ class _RakshakMitraScreenState extends State<RakshakMitraScreen> {
   final _voiceController = TextEditingController(text: 'Tension before patrol duties.');
 
   bool _isLoading = false;
+  bool _isDictating = false;
   List<dynamic> _history = [];
   List<dynamic> _heatmap = [];
   Map<String, dynamic>? _latestResult;
@@ -28,8 +30,32 @@ class _RakshakMitraScreenState extends State<RakshakMitraScreen> {
   @override
   void initState() {
     super.initState();
+    _speechService.init();
     _fetchHistory();
     _fetchHeatmap();
+  }
+
+  void _toggleVoiceJournalDictation() {
+    if (_isDictating) {
+      _speechService.stopListening(onStatusChange: (listening) {
+        setState(() {
+          _isDictating = listening;
+        });
+      });
+    } else {
+      _speechService.listen(
+        onResult: (text) {
+          setState(() {
+            _voiceController.text = text;
+          });
+        },
+        onStatusChange: (listening) {
+          setState(() {
+            _isDictating = listening;
+          });
+        },
+      );
+    }
   }
 
   Future<void> _fetchHistory() async {
@@ -84,6 +110,10 @@ class _RakshakMitraScreenState extends State<RakshakMitraScreen> {
         _latestResult = Map<String, dynamic>.from(res);
       });
       _fetchHistory();
+      
+      // Speech audio output
+      _speechService.speak("Burnout index is ${res['burnout_score']}. Risk tier is ${res['risk_tier']}.");
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Wellbeing log recorded successfully!')),
@@ -196,14 +226,28 @@ class _RakshakMitraScreenState extends State<RakshakMitraScreen> {
                     ),
                   ],
                 ),
-                TextField(
-                  controller: _voiceController,
-                  maxLines: 2,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: const InputDecoration(
-                    labelText: 'Voice Mood Journal Transcription',
-                    labelStyle: TextStyle(color: Colors.white60),
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _voiceController,
+                        maxLines: 2,
+                        style: const TextStyle(color: Colors.white),
+                        decoration: const InputDecoration(
+                          labelText: 'Voice Mood Journal Transcription',
+                          labelStyle: TextStyle(color: Colors.white60),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        _isDictating ? Icons.mic : Icons.mic_none,
+                        color: _isDictating ? Colors.redAccent : Colors.amberAccent,
+                      ),
+                      tooltip: 'Record Voice Mood Journal',
+                      onPressed: _toggleVoiceJournalDictation,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton(
@@ -301,7 +345,7 @@ class _RakshakMitraScreenState extends State<RakshakMitraScreen> {
         ),
         const SizedBox(height: 16),
         ..._heatmap.map((item) {
-          final score = item["average_burnout_index"] as double;
+          final score = (item["average_burnout_index"] as num).toDouble();
           final status = item["status"] as String;
           Color statusColor = Colors.greenAccent;
           if (status == "RED") {
