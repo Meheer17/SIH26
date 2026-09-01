@@ -96,7 +96,7 @@ export default function DashboardPage() {
           Please log in or register an account to access the SvasthyaSetu role-based portal.
         </p>
         <div className="flex gap-3">
-          <Link href="/login" className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition">
+          <Link href="/" className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition">
             Sign In
           </Link>
           <Link href="/register" className="px-5 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs shadow-sm transition">

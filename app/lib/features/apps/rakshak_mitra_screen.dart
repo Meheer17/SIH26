@@ -299,6 +299,30 @@ class _RakshakMitraScreenState extends State<RakshakMitraScreen> {
                     style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                   ...List<String>.from(_latestResult!["recommended_actions"]).map((a) => Text('• $a', style: const TextStyle(color: Colors.greenAccent, fontSize: 12))),
+                  if (_latestResult!["mood_trajectory"] != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.indigo.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.indigoAccent.withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Mood Trajectory: ${_latestResult!["mood_trajectory"]["trajectory_label"] ?? "Stable"}',
+                            style: const TextStyle(color: Colors.indigoAccent, fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          if (_latestResult!["mood_trajectory"]["detected_markers"] != null)
+                            ...List<String>.from(_latestResult!["mood_trajectory"]["detected_markers"]).map(
+                              (m) => Text('• $m', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
