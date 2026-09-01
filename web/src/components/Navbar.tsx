@@ -18,19 +18,46 @@ export default function Navbar() {
       .catch(() => setIsBackendOnline(false));
   }, []);
 
-  const loggedInNavLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'AI Agent Hub', href: '/chat' },
-    { label: 'Dashboard', href: '/dashboard' },
-    { label: 'Storage SDK', href: '/storage-demo' },
-    { label: 'SOS System', href: '/sos-demo' },
-  ];
+  const roles = user?.mapped_roles || (user ? [user.primary_role] : []);
+  const isAdmin = user?.is_admin || roles.includes('SYSTEM_ADMIN');
 
-  const loggedOutNavLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'Applications', href: '/#apps' },
-    { label: 'Platform Features', href: '/#features' },
-  ];
+  // Dynamic role-based navigation links
+  const getNavLinks = () => {
+    if (!isAuthenticated || !user) {
+      return [
+        { label: 'Sign In', href: '/' },
+        { label: 'Register', href: '/register' },
+      ];
+    }
+
+    if (isAdmin) {
+      return [
+        { label: 'Admin Dashboard', href: '/dashboard' },
+        { label: '🎖️ RakshakMitra', href: '/rakshak' },
+        { label: '🫀 ArogyaSathi', href: '/arogya' },
+        { label: '🏥 MediKiosk', href: '/medikiosk' },
+        { label: '⚖️ NyayaSahay', href: '/nyaya' },
+        { label: 'RBAC Control', href: '/admin/roles' },
+      ];
+    }
+
+    const links = [];
+    if (roles.includes('SOLDIER') || roles.includes('WELFARE_OFFICER')) {
+      links.push({ label: '🎖️ RakshakMitra Workspace', href: '/rakshak' });
+    }
+    if (roles.includes('PATIENT')) {
+      links.push({ label: '🫀 ArogyaSathi Health', href: '/arogya' });
+    }
+    if (roles.includes('PHYSICIAN')) {
+      links.push({ label: '🏥 MediKiosk OPD', href: '/medikiosk' });
+    }
+    if (roles.includes('COUNSELOR') || roles.includes('VICTIM')) {
+      links.push({ label: '⚖️ NyayaSahay Legal Aid', href: '/nyaya' });
+    }
+    return links;
+  };
+
+  const navLinks = getNavLinks();
 
   return (
     <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm font-sans">
@@ -49,7 +76,7 @@ export default function Navbar() {
                   SIH 2026
                 </span>
               </span>
-              <span className="text-[10px] font-medium text-slate-500">Bridge to Health Platform</span>
+              <span className="text-[10px] font-medium text-slate-500">Bridge to Health &amp; Defense Platform</span>
             </div>
           </Link>
 
@@ -68,9 +95,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Auth-Gated Navigation Tab Links */}
+        {/* Role-tailored Navigation Links */}
         <nav className="hidden md:flex items-center gap-1 text-xs font-semibold text-slate-600">
-          {(isAuthenticated ? loggedInNavLinks : loggedOutNavLinks).map((link) => {
+          {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
               <Link
@@ -78,7 +105,7 @@ export default function Navbar() {
                 href={link.href}
                 className={`px-3.5 py-2 rounded-lg transition ${
                   isActive
-                    ? 'bg-indigo-50 text-indigo-700 font-bold'
+                    ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-100'
                     : 'hover:bg-slate-100 hover:text-slate-900'
                 }`}
               >
@@ -86,20 +113,9 @@ export default function Navbar() {
               </Link>
             );
           })}
-          <a
-            href="http://localhost:8000/docs"
-            target="_blank"
-            rel="noreferrer"
-            className="px-3.5 py-2 rounded-lg hover:bg-slate-100 text-slate-600 hover:text-slate-900 transition flex items-center gap-1"
-          >
-            <span>API Docs</span>
-            <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </a>
         </nav>
 
-        {/* Auth Right CTA Actions */}
+        {/* Auth Actions */}
         <div className="flex items-center gap-3">
           {isAuthenticated && user ? (
             <div className="flex items-center gap-3">
@@ -109,7 +125,7 @@ export default function Navbar() {
               </div>
               <button
                 onClick={logout}
-                className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition"
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-semibold text-xs transition border border-slate-200"
               >
                 Sign Out
               </button>
@@ -117,8 +133,8 @@ export default function Navbar() {
           ) : (
             <div className="flex items-center gap-2">
               <Link
-                href="/login"
-                className="px-3.5 py-2 rounded-lg text-slate-700 hover:text-slate-900 font-bold text-xs hover:bg-slate-100 transition"
+                href="/"
+                className="px-3.5 py-2 rounded-xl text-slate-700 hover:text-slate-900 font-bold text-xs hover:bg-slate-100 transition"
               >
                 Sign In
               </Link>
@@ -126,7 +142,7 @@ export default function Navbar() {
                 href="/register"
                 className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition hover:scale-[1.02]"
               >
-                Get Started
+                Register
               </Link>
             </div>
           )}

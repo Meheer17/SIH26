@@ -157,6 +157,55 @@ def predict_burnout_risk_tool(
 
 
 @strands_tool
+def analyze_voice_mood_trajectory_tool(
+    journal_text: str,
+    pitch_jitter_score: float = 0.2,
+    speech_rate_wpm: int = 120
+) -> Dict[str, Any]:
+    """
+    Analyze transcribed voice mood journal entry for psychological sentiment, fatigue, and trajectory.
+    
+    Args:
+        journal_text: Transcribed speech/audio diary entry text
+        pitch_jitter_score: Acoustic voice stress/jitter indicator (0.0 to 1.0)
+        speech_rate_wpm: Words spoken per minute
+    """
+    lower_text = journal_text.lower()
+    fatigue_keywords = ["tired", "fatigue", "exhausted", "sleep", "night watch", "insomnia", "drained", "headache", "heavy"]
+    strain_keywords = ["tense", "anxious", "isolated", "stress", "pressure", "patrol", "conflict", "worried", "alert"]
+    positive_keywords = ["calm", "good", "fine", "rested", "stable", "ready", "confident", "healthy", "peaceful"]
+    
+    fatigue_matches = sum(1 for w in fatigue_keywords if w in lower_text)
+    strain_matches = sum(1 for w in strain_keywords if w in lower_text)
+    positive_matches = sum(1 for w in positive_keywords if w in lower_text)
+    
+    # Calculate sentiment polarity (-1.0 to +1.0)
+    net_score = (positive_matches * 0.4) - (strain_matches * 0.4) - (fatigue_matches * 0.3) - (pitch_jitter_score * 0.3)
+    sentiment_polarity = max(-1.0, min(1.0, round(net_score, 2)))
+    
+    if sentiment_polarity <= -0.5 or fatigue_matches >= 2:
+        trajectory_state = "CRITICAL_FATIGUE"
+        trajectory_label = "Exhaustion & Circadian Disruption"
+    elif sentiment_polarity < 0.0 or strain_matches >= 1:
+        trajectory_state = "MODERATE_STRAIN"
+        trajectory_label = "Operational Stress Pattern"
+    else:
+        trajectory_state = "STABLE"
+        trajectory_label = "Psychological Resilience Stable"
+        
+    return {
+        "sentiment_polarity": sentiment_polarity,
+        "trajectory_state": trajectory_state,
+        "trajectory_label": trajectory_label,
+        "detected_markers": [
+            *(["Circadian Fatigue / Sleep Deficit"] if fatigue_matches > 0 else []),
+            *(["Operational High-Alert Tension"] if strain_matches > 0 else []),
+            *(["Resilient Morale"] if positive_matches > 0 else [])
+        ] or ["Baseline Psychological Equilibrium"]
+    }
+
+
+@strands_tool
 def recommend_welfare_action_tool(
     burnout_score: int,
     contributing_factors: List[str]
@@ -242,6 +291,7 @@ TOOL_FUNCTIONS: Dict[str, Callable] = {
     "flag_clinical_redflags_tool": flag_clinical_redflags_tool,
     "extract_medical_entities_tool": extract_medical_entities_tool,
     "predict_burnout_risk_tool": predict_burnout_risk_tool,
+    "analyze_voice_mood_trajectory_tool": analyze_voice_mood_trajectory_tool,
     "recommend_welfare_action_tool": recommend_welfare_action_tool,
     "assess_victim_distress_tool": assess_victim_distress_tool,
     "trigger_escalation_workflow_tool": trigger_escalation_workflow_tool
@@ -315,6 +365,22 @@ OPENAI_TOOLS_SCHEMAS = [
                     "assessment_score": {"type": "integer"}
                 },
                 "required": ["duty_hours_per_week"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_voice_mood_trajectory_tool",
+            "description": "Analyze transcribed voice mood journal entry for psychological sentiment, fatigue, and trajectory.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "journal_text": {"type": "string", "description": "Transcribed speech diary text"},
+                    "pitch_jitter_score": {"type": "number", "description": "Acoustic voice stress indicator (0.0 to 1.0)"},
+                    "speech_rate_wpm": {"type": "integer", "description": "Speech rate in words per minute"}
+                },
+                "required": ["journal_text"]
             }
         }
     },

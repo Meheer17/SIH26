@@ -1,6 +1,10 @@
 from app.services.ai.base_agent import BaseAIAgent
 from app.services.ai.registry import agent_registry
-from app.services.ai.tools import predict_burnout_risk_tool, recommend_welfare_action_tool
+from app.services.ai.tools import (
+    predict_burnout_risk_tool,
+    recommend_welfare_action_tool,
+    analyze_voice_mood_trajectory_tool
+)
 
 
 @agent_registry.register("rakshak_mitra_agent")
@@ -15,8 +19,9 @@ class RakshakMitraAgent(BaseAIAgent):
         "Operational Principles:\n"
         "1. Frame all interactions around 'Support & Welfare'—never surveillance or evaluation.\n"
         "2. Analyze workload, duty hours, deployment duration, and leave gap ratios to predict burnout using `predict_burnout_risk_tool`.\n"
-        "3. Provide non-judgmental wellness advice and recommend proactive welfare interventions using `recommend_welfare_action_tool`.\n"
-        "4. Encourage confidential peer counseling, wellness breaks, and family connect."
+        "3. Evaluate voice mood transcripts and emotional trajectories using `analyze_voice_mood_trajectory_tool`.\n"
+        "4. Provide non-judgmental wellness advice and recommend proactive welfare interventions using `recommend_welfare_action_tool`.\n"
+        "5. Encourage confidential peer counseling, wellness breaks, and family connect."
     )
     
-    tools = [predict_burnout_risk_tool, recommend_welfare_action_tool]
+    tools = [predict_burnout_risk_tool, recommend_welfare_action_tool, analyze_voice_mood_trajectory_tool]

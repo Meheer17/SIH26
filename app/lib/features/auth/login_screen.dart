@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../core/auth/auth_service.dart';
-import '../chat/ai_chat_screen.dart';
 import 'register_screen.dart';
 import 'otp_verification_screen.dart';
+import 'role_dashboard_screen.dart';
+import '../apps/arogya_sathi_screen.dart';
+import '../apps/medikiosk_screen.dart';
+import '../apps/rakshak_mitra_screen.dart';
+import '../apps/nyaya_sahay_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -48,9 +52,41 @@ class _LoginScreenState extends State<LoginScreen> {
         password: password,
       );
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AiChatScreen()),
-        );
+        final user = _authService.currentUser;
+        if (user != null) {
+          final roles = user.mappedRoles;
+          final hasAdmin = user.isAdmin || roles.contains('SYSTEM_ADMIN');
+
+          if (hasAdmin) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const RoleDashboardScreen()),
+            );
+          } else if (roles.contains('PATIENT')) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const ArogyaSathiScreen()),
+            );
+          } else if (roles.contains('PHYSICIAN')) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const MediKioskScreen()),
+            );
+          } else if (roles.contains('SOLDIER') || roles.contains('WELFARE_OFFICER')) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const RakshakMitraScreen()),
+            );
+          } else if (roles.contains('COUNSELOR') || roles.contains('VICTIM')) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const NyayaSahayScreen()),
+            );
+          } else {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const RoleDashboardScreen()),
+            );
+          }
+        } else {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const RoleDashboardScreen()),
+          );
+        }
       }
     } catch (e) {
       final errorStr = e.toString();

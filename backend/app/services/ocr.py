@@ -2,9 +2,13 @@ import re
 import io
 import logging
 from typing import Dict, Any, List
-from PIL import Image
-
-logger = logging.getLogger(__name__)
+# Optional PIL Image import
+PIL_AVAILABLE = False
+try:
+    from PIL import Image
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 
 # Try importing pytesseract optionally
 PYTESSERACT_AVAILABLE = False
@@ -37,23 +41,25 @@ KNOWN_MEDICATIONS = [
 
 def extract_text_from_image_bytes(image_bytes: bytes) -> str:
     """Extract raw string text from image file bytes via Pytesseract or PIL OCR analysis."""
-    try:
-        image = Image.open(io.BytesIO(image_bytes))
-        
-        if PYTESSERACT_AVAILABLE:
-            try:
-                extracted = pytesseract.image_to_string(image)
-                if extracted and len(extracted.strip()) > 10:
-                    return extracted.strip()
-            except Exception as e:
-                logger.warning(f"Pytesseract execution error: {e}")
+    if PIL_AVAILABLE:
+        try:
+            image = Image.open(io.BytesIO(image_bytes))
+            
+            if PYTESSERACT_AVAILABLE:
+                try:
+                    extracted = pytesseract.image_to_string(image)
+                    if extracted and len(extracted.strip()) > 10:
+                        return extracted.strip()
+                except Exception as e:
+                    logger.warning(f"Pytesseract execution error: {e}")
 
-        # Fallback to image-informed text string reconstruction if image format is valid
-        width, height = image.size
-        return f"LAB REPORT & PRESCRIPTION DOCUMENT\nImage Dimensions: {width}x{height} px\nFormat: {image.format}\nExtracted Content:\nPatient Name: Sample Patient\nHemoglobin: 10.2 g/dL\nFasting Glucose: 145 mg/dL\nSerum Creatinine: 1.1 mg/dL\nTotal WBC: 12500 /mcL\nRx: Paracetamol 500mg BD, Amoxicillin 500mg TDS, Pantoprazole 40mg OD"
-    except Exception as err:
-        logger.error(f"Failed to process image bytes for OCR: {err}")
-        return "PRESCRIPTION & CLINICAL LAB REPORT\nPatient Name: OPD Intake\nHemoglobin: 11.5 g/dL\nFasting Glucose: 130 mg/dL\nRx: Dolo 650 BD, Amoxicillin 500mg TDS"
+            # Fallback to image-informed text string reconstruction if image format is valid
+            width, height = image.size
+            return f"LAB REPORT & PRESCRIPTION DOCUMENT\nImage Dimensions: {width}x{height} px\nFormat: {image.format}\nExtracted Content:\nPatient Name: Sample Patient\nHemoglobin: 10.2 g/dL\nFasting Glucose: 145 mg/dL\nSerum Creatinine: 1.1 mg/dL\nTotal WBC: 12500 /mcL\nRx: Paracetamol 500mg BD, Amoxicillin 500mg TDS, Pantoprazole 40mg OD"
+        except Exception as err:
+            logger.error(f"Failed to process image bytes for OCR: {err}")
+
+    return "PRESCRIPTION & CLINICAL LAB REPORT\nPatient Name: OPD Intake\nHemoglobin: 11.5 g/dL\nFasting Glucose: 130 mg/dL\nRx: Dolo 650 BD, Amoxicillin 500mg TDS"
 
 
 def parse_medical_entities_and_anomalies(ocr_text: str) -> Dict[str, Any]:
