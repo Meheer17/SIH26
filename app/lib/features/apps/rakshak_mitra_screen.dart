@@ -142,10 +142,13 @@ class _RakshakMitraScreenState extends State<RakshakMitraScreen> {
     final isWelfare = user.mappedRoles.contains('WELFARE_OFFICER') || user.mappedRoles.contains('SYSTEM_ADMIN');
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
-        title: Text(isWelfare ? 'RakshakMitra Commander Desk' : 'RakshakMitra Soldier Checkin'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        title: const Text('RakshakMitra Forces Stress Predictor', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(

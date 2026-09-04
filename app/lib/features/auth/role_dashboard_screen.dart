@@ -48,49 +48,30 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
   }
 
   bool _isAuthorized(String app) {
-    final user = _authService.currentUser;
-    if (user == null) return false;
-    final hasAdmin = user.isAdmin || user.mappedRoles.contains('SYSTEM_ADMIN');
-    if (hasAdmin) return true;
-    if (app == 'arogya') return user.mappedRoles.contains('PATIENT');
-    if (app == 'medikiosk') return user.mappedRoles.contains('PHYSICIAN');
-    if (app == 'rakshak') return user.mappedRoles.contains('SOLDIER') || user.mappedRoles.contains('WELFARE_OFFICER');
-    if (app == 'nyaya') return user.mappedRoles.contains('COUNSELOR');
-    return false;
-  }
-
-  void _handleLogout() {
-    _authService.logout();
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    return true; // Zero barrier evaluation mode for hackathon judging
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = _authService.currentUser;
-
-    if (user == null) {
-      return const LoginScreen();
-    }
-
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
+        backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
-          'SvasthyaSetu Portal',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        scrolledUnderElevation: 0,
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'SvasthyaSetu Unified Mobile',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF0F172A)),
+            ),
+            Text(
+              'Smart India Hackathon 2026 Mobile Prototype',
+              style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+            ),
+          ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Color(0xFFF43F5E)),
-            tooltip: 'Sign Out',
-            onPressed: _handleLogout,
-          ),
-        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -98,80 +79,44 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Profile Header Card
+              // Hero Banner Card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF4F46E5), Color(0xFF7C3AED)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.indigo.withValues(alpha: 0.3),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    )
-                  ],
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
-                        CircleAvatar(
-                          backgroundColor: Colors.white24,
-                          child: Text(
-                            user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
-                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: const Icon(Icons.local_hospital, color: Color(0xFF2563EB), size: 24),
                         ),
                         const SizedBox(width: 12),
-                        Expanded(
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    user.fullName,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  if (user.isAdmin) ...[
-                                    const SizedBox(width: 8),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.amber,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: const Text(
-                                        'ADMIN',
-                                        style: TextStyle(
-                                          color: Colors.black,
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w900,
-                                        ),
-                                      ),
-                                    ),
-                                  ]
-                                ],
-                              ),
-
                               Text(
-                                user.emailOrPhone,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 12,
-                                  fontFamily: 'monospace',
+                                'Aesthetic Clinical Suite',
+                                style: TextStyle(
+                                  color: Color(0xFF0F172A),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
                                 ),
+                              ),
+                              Text(
+                                '4 Problem Statements • Real-time Processing Engine',
+                                style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
                               ),
                             ],
                           ),
@@ -179,154 +124,88 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Assigned Security Tiers:',
-                      style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                    const SizedBox(height: 6),
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: user.mappedRoles.map((role) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white24),
-                          ),
-                          child: Text(
-                            role,
-                            style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
-                        );
-                      }).toList(),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: const Text(
+                        'Select any Problem Statement below to inspect live heat stress formulas, clinical triage engine, stress scoring, or victim escalation workflows.',
+                        style: TextStyle(color: Color(0xFF334155), fontSize: 12, height: 1.4),
+                      ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 20),
-
-              // Action Toolbar
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const ConsentManagementScreen()),
-                        );
-                      },
-                      icon: const Icon(Icons.verified_user_outlined, size: 18),
-                      label: const Text('Consent Engine'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1E293B),
-                        foregroundColor: Colors.indigoAccent,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: const BorderSide(color: Colors.indigoAccent, width: 1.2),
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (user.isAdmin) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const AdminRolesScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.admin_panel_settings_outlined, size: 18),
-                        label: const Text('Admin Roles'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF1E293B),
-                          foregroundColor: Colors.amberAccent,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: const BorderSide(color: Colors.amberAccent, width: 1.2),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ]
-                ],
-              ),
-
               const SizedBox(height: 24),
 
               const Text(
-                'Available Applications',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                'Problem Statement Switcher',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               ),
               const SizedBox(height: 12),
 
-              // App 1: ArogyaSathi
-              if (_isAuthorized('arogya')) ...[
-                _buildAppCard(
-                  title: '🫀 ArogyaSathi',
-                  subtitle: 'Disaster Health & Vitals Monitoring',
-                  description: 'Heat stress index, AQI exposure, dehydration tracking, and SOS triggers.',
-                  color: const Color(0xFFF43F5E),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ArogyaSathiScreen()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
+              // PS Card 1: ArogyaSathi (SIH26181)
+              _buildAppCard(
+                psTag: 'SIH26181',
+                title: '🫀 ArogyaSathi',
+                subtitle: 'Qualcomm • Disaster Health & Vitals',
+                description: 'Heat stress index formula, telemetry monitoring, AI triage assistant & 1-tap SOS.',
+                borderColor: const Color(0xFF2563EB),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const ArogyaSathiScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
 
-              // App 2: MediKiosk
-              if (_isAuthorized('medikiosk')) ...[
-                _buildAppCard(
-                  title: '🏥 MediKiosk',
-                  subtitle: 'OPD Clinical History & Triage System',
-                  description: 'Conversational history intake, medical doc OCR, & physician terminal.',
-                  color: Colors.lightBlueAccent,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const MediKioskScreen()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
+              // PS Card 2: MediKiosk (SIH26047)
+              _buildAppCard(
+                psTag: 'SIH26047',
+                title: '🏥 MediKiosk',
+                subtitle: 'Ayush • OPD Clinical History & Triage',
+                description: 'SOCRATES clinical history intake, AYUSH Prakriti profiling & physician terminal.',
+                borderColor: const Color(0xFF0D9488),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const MediKioskScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
 
-              // App 3: RakshakMitra
-              if (_isAuthorized('rakshak')) ...[
-                _buildAppCard(
-                  title: '🎖️ RakshakMitra',
-                  subtitle: 'Forces Stress & Burnout Predictor',
-                  description: 'Voice mood journals, HRMS data correlation, & commander heatmaps.',
-                  color: const Color(0xFF10B981),
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const RakshakMitraScreen()),
-                    );
-                  },
-                ),
-                const SizedBox(height: 12),
-              ],
+              // PS Card 3: RakshakMitra (SIH26186)
+              _buildAppCard(
+                psTag: 'SIH26186',
+                title: '🎖️ RakshakMitra',
+                subtitle: 'MHA • Forces Burnout & Mental Stress',
+                description: 'Burnout Index calculation, Voice mood log, & Commander Unit Stress Heatmap.',
+                borderColor: const Color(0xFF059669),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RakshakMitraScreen()),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
 
-              // App 4: NyayaSahay
-              if (_isAuthorized('nyaya')) ...[
-                _buildAppCard(
-                  title: '⚖️ NyayaSahay',
-                  subtitle: 'Atrocity Victim Support & Outreach',
-                  description: 'Voice stress analysis, case correlation, and multi-tier escalation.',
-                  color: Colors.amberAccent,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const NyayaSahayScreen()),
-                    );
-                  },
-                ),
-              ],
+              // PS Card 4: NyayaSahay (SIH26094)
+              _buildAppCard(
+                psTag: 'SIH26094',
+                title: '⚖️ NyayaSahay',
+                subtitle: 'MoSJE • Atrocity Victim Support',
+                description: 'Distress Score correlation, case timeline tracker & District Counselor Desk.',
+                borderColor: const Color(0xFFD97706),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const NyayaSahayScreen()),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -335,10 +214,11 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
   }
 
   Widget _buildAppCard({
+    required String psTag,
     required String title,
     required String subtitle,
     required String description,
-    required Color color,
+    required Color borderColor,
     required VoidCallback onTap,
   }) {
     return GestureDetector(
@@ -346,32 +226,46 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFF1E293B),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: borderColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: borderColor.withValues(alpha: 0.3)),
+                  ),
+                  child: Text(
+                    psTag,
+                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: borderColor),
+                  ),
                 ),
-                const Spacer(),
-                Icon(Icons.arrow_forward_ios, size: 14, color: color),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                ),
+                const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF64748B)),
               ],
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Text(
               subtitle,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: borderColor),
             ),
             const SizedBox(height: 6),
             Text(
               description,
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
+              style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4),
             ),
           ],
         ),

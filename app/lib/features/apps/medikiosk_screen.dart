@@ -124,10 +124,13 @@ class _MediKioskScreenState extends State<MediKioskScreen> {
     final isDoctor = user.mappedRoles.contains('PHYSICIAN') || user.mappedRoles.contains('SYSTEM_ADMIN');
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
-        title: Text(isDoctor ? 'MediKiosk Physician Terminal' : 'MediKiosk Patient Intake'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        title: const Text('MediKiosk Clinical History Intake', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
       ),
       body: SafeArea(
         child: isDoctor ? _buildDoctorView() : _buildPatientView(),

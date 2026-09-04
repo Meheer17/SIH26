@@ -266,15 +266,18 @@ class _ArogyaSathiScreenState extends State<ArogyaSathiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
-        title: const Text('ArogyaSathi Monitor'),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        title: const Text('ArogyaSathi Monitor', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
             icon: _isFetchingWeather
-                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Icon(Icons.cloud_sync_rounded, color: Colors.cyanAccent),
+                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF2563EB)))
+                : const Icon(Icons.cloud_sync_rounded, color: Color(0xFF2563EB)),
             tooltip: 'Sync Live Weather & AQI',
             onPressed: _fetchLiveWeather,
           ),
