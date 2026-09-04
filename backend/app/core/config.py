@@ -31,11 +31,13 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = "https://bedrock-mantle.ap-south-1.api.aws/v1"
     DEFAULT_LLM_MODEL: str = "mistral.ministral-3-8b-instruct"
+    AWS_REGION: str = "ap-south-1"
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        case_sensitive=True
+        case_sensitive=True,
+        extra="ignore"
     )
 
 

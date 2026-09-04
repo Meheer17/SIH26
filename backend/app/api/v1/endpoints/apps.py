@@ -11,6 +11,7 @@ from app.services.ai.tools import (
     flag_clinical_redflags_tool,
     predict_burnout_risk_tool,
     recommend_welfare_action_tool,
+    analyze_voice_mood_trajectory_tool,
     assess_victim_distress_tool,
     trigger_escalation_workflow_tool
 )
@@ -26,12 +27,10 @@ class VitalRecordRequest(BaseModel):
     heart_rate: float = Field(..., description="Heart rate in bpm")
     spo2: float = Field(..., description="Blood oxygen saturation percentage")
     body_temp_c: float = Field(..., description="Body temperature in Celsius")
-    env_temp_c: Optional[float] = Field(default=None, description="Environmental temperature in Celsius (optional if live fetch enabled)")
-    humidity_percent: Optional[float] = Field(default=None, description="Environmental relative humidity percentage (optional if live fetch enabled)")
+    env_temp_c: float = Field(..., description="Environmental temperature in Celsius")
+    humidity_percent: float = Field(..., description="Environmental relative humidity percentage")
     activity_level: str = Field(..., description="Activity level ('resting', 'moderate', 'strenuous')")
     time_since_water_mins: int = Field(..., description="Time since last hydration in minutes")
-    latitude: Optional[float] = Field(default=None, description="GPS latitude for live environmental API fetch")
-    longitude: Optional[float] = Field(default=None, description="GPS longitude for live environmental API fetch")
 
 # --- MediKiosk Pydantic Models & Schemas ---
 
@@ -52,6 +51,9 @@ class BurnoutAssessmentRequest(BaseModel):
     duty_hours_per_week: float = Field(..., description="Weekly duty workload in hours")
     assessment_score: int = Field(..., description="PHQ-9/GAD-7 clinical assessment score")
     voice_journal_text: Optional[str] = Field(default=None, description="Transcribed voice journal entry text")
+    phq9_answers: Optional[List[int]] = Field(default=None, description="Detailed 9-item PHQ-9 responses (0-3)")
+    gad7_answers: Optional[List[int]] = Field(default=None, description="Detailed 7-item GAD-7 responses (0-3)")
+    pitch_jitter_score: Optional[float] = Field(default=0.2, description="Acoustic stress indicator (0.0 to 1.0)")
 
 # --- NyayaSahay Pydantic Models & Schemas ---
 
@@ -282,6 +284,13 @@ async def record_burnout(req: BurnoutAssessmentRequest, current_user: dict = Dep
         burnout_score=burnout["burnout_score"],
         contributing_factors=burnout["contributing_factors"]
     )
+
+    mood_trajectory = None
+    if req.voice_journal_text:
+        mood_trajectory = analyze_voice_mood_trajectory_tool(
+            journal_text=req.voice_journal_text,
+            pitch_jitter_score=req.pitch_jitter_score or 0.2
+        )
     
     record = {
         "id": f"BRN-{int(time.time() * 1000)}",
@@ -291,11 +300,14 @@ async def record_burnout(req: BurnoutAssessmentRequest, current_user: dict = Dep
         "leave_gap_ratio": req.leave_gap_ratio,
         "duty_hours_per_week": req.duty_hours_per_week,
         "assessment_score": req.assessment_score,
+        "phq9_answers": req.phq9_answers or [],
+        "gad7_answers": req.gad7_answers or [],
         "burnout_score": burnout["burnout_score"],
         "risk_tier": burnout["risk_tier"],
         "contributing_factors": burnout["contributing_factors"],
         "recommended_actions": welfare["recommended_actions"],
         "voice_journal_text": req.voice_journal_text,
+        "mood_trajectory": mood_trajectory,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     

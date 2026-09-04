@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import apiClient from '@/lib/api/apiClient';
+import Link from 'next/link';
+import { useAuth } from '@/lib/auth/AuthContext';
+import { apiClient } from '@/lib/api/apiClient';
 
 interface DistressRecord {
   id: string;
@@ -12,7 +14,7 @@ interface DistressRecord {
   distress_score: number;
   distress_level: string;
   escalation_status: string;
-  proactive_outreach_needed?: boolean;
+  proactive_outreach_needed: boolean;
   created_at: string;
 }
 
@@ -27,30 +29,74 @@ interface EscalationRecord {
   created_at: string;
 }
 
-export default function NyayaSahayPage() {
-  const [activeTab, setActiveTab] = useState<'victim' | 'counselor'>('victim');
+const DEFAULT_ESCALATIONS: EscalationRecord[] = [
+  {
+    id: 'esc_101',
+    user_id: 'u_891',
+    patient_name: 'Sunita Devi (Victim Case #412)',
+    case_stage: 'Trial Proceedings (Court Adjournment)',
+    distress_score: 84,
+    distress_level: 'SEVERE_DISTRESS',
+    escalation_status: 'DISTRICT_COLLECTOR_NOTIFIED',
+    created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'esc_102',
+    user_id: 'u_892',
+    patient_name: 'Manish Kumar (Witness Case #308)',
+    case_stage: 'Chargesheet Filing & Witness Protection',
+    distress_score: 66,
+    distress_level: 'MODERATE_DISTRESS',
+    escalation_status: 'COUNSELOR_ASSIGNED',
+    created_at: new Date(Date.now() - 120 * 60 * 1000).toISOString(),
+  },
+];
 
-  // Victim Check-in State
-  const [sentiment, setSentiment] = useState(-0.4); // scale -1.0 to 1.0
+const LEGAL_MILESTONES = [
+  { id: 'fir', label: '1. FIR Lodged', desc: 'Initial police report filed under SC/ST PoA Act' },
+  { id: 'chargesheet', label: '2. Chargesheet Filed', desc: 'Investigation concluded by IO' },
+  { id: 'trial', label: '3. Trial in Court', desc: 'Special Court hearing & evidence submission' },
+  { id: 'adjournment', label: '4. Cross-Examination / Adjournment', desc: 'Defense arguments & witness testimony' },
+  { id: 'compensation', label: '5. State Compensation Disbursal', desc: 'Relief grant release under SC/ST Rules' },
+];
+
+export default function NyayaSahayPage() {
+  const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState<'CHECKIN' | 'ESCALATIONS' | 'CHAT' | 'HISTORY'>('CHECKIN');
+
+  // Victim Form State
+  const [sentiment, setSentiment] = useState(-0.45);
   const [caseStage, setCaseStage] = useState('trial');
-  const [daysSince, setDaysSince] = useState(45);
-  const [responsesText, setResponsesText] = useState('Experiencing severe anxiety and fear of intimidation prior to court hearing next week.');
+  const [threatLevel, setThreatLevel] = useState('High Alert (Hostile Pressure)');
+  const [daysSince, setDaysSince] = useState(72);
+  const [responsesText, setResponsesText] = useState(
+    'Experiencing severe anxiety and fear of intimidation prior to court hearing next week. Need guidance on witness protection.'
+  );
 
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<DistressRecord[]>([]);
-  const [escalations, setEscalations] = useState<EscalationRecord[]>([]);
+  const [escalations, setEscalations] = useState<EscalationRecord[]>(DEFAULT_ESCALATIONS);
   const [latestResult, setLatestResult] = useState<DistressRecord | null>(null);
+  const [selectedEscalation, setSelectedEscalation] = useState<EscalationRecord | null>(DEFAULT_ESCALATIONS[0]);
 
-  // Client-side real processing distress index equation
+  // AI Chat State
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
+    {
+      role: 'assistant',
+      content:
+        'Namaste. I am your NyayaSahay Legal & Psychological Support Counselor. I am here to stand by you, explain your legal rights under the SC/ST (Prevention of Atrocities) Act, assist with FIR & compensation tracking, and ensure your safety. How can I help you today?',
+    },
+  ]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatLoading, setChatLoading] = useState(false);
+
   const calculateDistressIndex = (sent: number, stage: string, days: number, txt: string): DistressRecord => {
     let stageMultiplier = 20;
     if (stage === 'trial' || stage === 'adjournment') stageMultiplier = 35;
     if (stage === 'chargesheet') stageMultiplier = 25;
 
     let score = Math.round(
-      ((1 - sent) / 2) * 50 +
-      stageMultiplier +
-      (days < 60 ? 15 : 5)
+      ((1 - sent) / 2) * 50 + stageMultiplier + (days < 60 ? 15 : 5)
     );
     score = Math.max(10, Math.min(98, score));
 
@@ -90,8 +136,8 @@ export default function NyayaSahayPage() {
         setLatestResult(data[0]);
         return;
       }
-    } catch {
-      // Graceful fallback
+    } catch (e) {
+      console.error('Maintaining pre-seeded distress history', e);
     }
 
     const initial = calculateDistressIndex(sentiment, caseStage, daysSince, responsesText);
@@ -104,16 +150,10 @@ export default function NyayaSahayPage() {
       const data = await apiClient.get<EscalationRecord[]>('/apps/nyaya/escalations');
       if (Array.isArray(data) && data.length > 0) {
         setEscalations(data);
-        return;
       }
-    } catch {
-      // Graceful fallback
+    } catch (e) {
+      console.error('Maintaining pre-seeded counselor escalations', e);
     }
-
-    setEscalations([
-      { id: 'esc_101', user_id: 'u_1', patient_name: 'Sunita Devi', case_stage: 'Trial Proceedings', distress_score: 82, distress_level: 'SEVERE_DISTRESS', escalation_status: 'DISTRICT_COLLECTOR_NOTIFIED', created_at: new Date().toISOString() },
-      { id: 'esc_102', user_id: 'u_2', patient_name: 'Manish Kumar', case_stage: 'Chargesheet Review', distress_score: 64, distress_level: 'MODERATE_DISTRESS', escalation_status: 'COUNSELOR_ASSIGNED', created_at: new Date().toISOString() },
-    ]);
   };
 
   useEffect(() => {
@@ -124,8 +164,8 @@ export default function NyayaSahayPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     let record: DistressRecord;
+
     try {
       record = await apiClient.post<DistressRecord>('/apps/nyaya/distress', {
         sentiment_score: sentiment,
@@ -142,272 +182,421 @@ export default function NyayaSahayPage() {
     setLoading(false);
   };
 
-  const acknowledgeCase = (id: string) => {
-    setEscalations((prev) => prev.filter((item) => item.id !== id));
+  const handleSendChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const userMsg = chatInput.trim();
+    setChatInput('');
+    const newMessages = [...chatMessages, { role: 'user' as const, content: userMsg }];
+    setChatMessages(newMessages);
+    setChatLoading(true);
+
+    try {
+      const res = await apiClient.post<any>('/ai/chat', {
+        agent_id: 'nyaya_sahay_agent',
+        messages: newMessages,
+      });
+      setChatMessages([...newMessages, { role: 'assistant', content: res.content }]);
+    } catch {
+      setChatMessages([
+        ...newMessages,
+        {
+          role: 'assistant',
+          content:
+            'Namaste. Under Section 15A of the SC/ST (Prevention of Atrocities) Act, you are entitled to complete protection, legal aid, and state compensation during trial. You are not alone.',
+        },
+      ]);
+    } finally {
+      setChatLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 sm:p-6 space-y-6">
       <div className="max-w-6xl mx-auto space-y-6">
         
-        {/* Module Header */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-xl">
+        {/* Header Banner */}
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-200 flex items-center justify-center text-2xl shadow-sm">
               ⚖️
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold text-slate-900">NyayaSahay</h1>
-                <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-100 text-indigo-800 font-bold border border-indigo-200">
-                  SIH26094 • Ministry of Social Justice
+                <h1 className="text-xl font-black text-slate-900">NyayaSahay Victim Support</h1>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-indigo-100 text-indigo-800 border border-indigo-200 uppercase">
+                  SIH26094 • MoSJE Track
                 </span>
               </div>
-              <p className="text-xs text-slate-500">AI Dynamic Mental Health &amp; Distress Prediction System for Atrocity Victims</p>
+              <p className="text-xs text-slate-500">Dynamic Psychological Distress Index, Case Milestone Correlation &amp; District Protection Desk</p>
             </div>
           </div>
-
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md border border-slate-200 text-xs font-semibold">
-            <button
-              onClick={() => setActiveTab('victim')}
-              className={`px-3 py-1.5 rounded transition ${activeTab === 'victim' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              👤 Victim Mental Health Monitor
-            </button>
-            <button
-              onClick={() => setActiveTab('counselor')}
-              className={`px-3 py-1.5 rounded transition ${activeTab === 'counselor' ? 'bg-white text-slate-900 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}`}
-            >
-              ⚖️ Counselor Escalation Desk ({escalations.length})
-            </button>
+          <div className="flex items-center gap-2">
+            {user ? (
+              <div className="px-3 py-1.5 bg-slate-100 border rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                <span>{user.full_name} ({user.primary_role})</span>
+              </div>
+            ) : (
+              <span className="px-2.5 py-1 bg-slate-100 border text-slate-600 rounded-lg text-xs font-semibold">
+                Evaluation Mode Active
+              </span>
+            )}
           </div>
         </header>
 
-        {activeTab === 'victim' ? (
-          /* VICTIM MENTAL HEALTH & DISTRESS MONITOR */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Feature Tabs */}
+        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+          <button
+            onClick={() => setActiveTab('CHECKIN')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 ${
+              activeTab === 'CHECKIN'
+                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <span>📊</span>
+            <span>Psychological Distress Check-in</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ESCALATIONS')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 ${
+              activeTab === 'ESCALATIONS'
+                ? 'bg-slate-900 text-white shadow-md'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <span>🏛️</span>
+            <span>District Counselor Escalations ({escalations.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('CHAT')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 ${
+              activeTab === 'CHAT'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <span>💬</span>
+            <span>AI Legal &amp; Mental Companion</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('HISTORY')}
+            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 ${
+              activeTab === 'HISTORY'
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/20'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            <span>📜</span>
+            <span>Check-in Logs ({history.length})</span>
+          </button>
+        </div>
+
+        {/* TAB 1: VICTIM CHECKIN */}
+        {activeTab === 'CHECKIN' && (
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
             
-            {/* Form Left */}
-            <form onSubmit={handleSubmit} className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Psychological Wellbeing Check-in</h2>
-                <span className="text-[10px] font-mono bg-indigo-50 text-indigo-800 px-2 py-0.5 rounded font-bold border border-indigo-100">SC/ST Protection</span>
-              </div>
-
-              <div className="text-xs space-y-1.5">
-                <label className="block text-slate-700 font-semibold">Self-Reported Sentiment Scale (-1.0 to +1.0)</label>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm">😨</span>
-                  <input
-                    type="range"
-                    min="-1"
-                    max="1"
-                    step="0.1"
-                    value={sentiment}
-                    onChange={(e) => setSentiment(Number(e.target.value))}
-                    className="w-full"
-                  />
-                  <span className="text-sm">🙂</span>
-                  <span className="font-mono text-xs text-indigo-700 font-bold w-10 text-right">{sentiment}</span>
+            {/* Input Form */}
+            <div className="md:col-span-6">
+              <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 text-xs">
+                <div className="border-b pb-2 flex items-center justify-between">
+                  <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Distress Index Parameters</h2>
+                  <span className="text-[10px] font-mono text-indigo-700 font-bold bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                    SC/ST PoA Act
+                  </span>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Legal Case Stage</label>
+                  <label className="block font-bold text-slate-700 mb-1">Legal Milestone Stage</label>
                   <select
                     value={caseStage}
                     onChange={(e) => setCaseStage(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md text-xs font-medium"
+                    className="w-full px-3 py-2 bg-slate-50 border rounded-xl font-bold"
                   >
-                    <option value="fir">FIR Registration</option>
-                    <option value="chargesheet">Chargesheet Review</option>
-                    <option value="trial">Trial Proceedings</option>
-                    <option value="adjournment">Court Adjournment</option>
+                    {LEGAL_MILESTONES.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.label} ({m.desc})
+                      </option>
+                    ))}
                   </select>
                 </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Days Since Incident</label>
+                    <input
+                      type="number"
+                      value={daysSince}
+                      onChange={(e) => setDaysSince(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-slate-50 border rounded-xl"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Sentiment Score (-1.0 to +1.0)</label>
+                    <input
+                      type="number"
+                      step="0.05"
+                      min="-1.0"
+                      max="1.0"
+                      value={sentiment}
+                      onChange={(e) => setSentiment(Number(e.target.value))}
+                      className="w-full px-3 py-2 bg-slate-50 border rounded-xl"
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-slate-700 font-semibold mb-1">Days since Incident</label>
-                  <input
-                    type="number"
-                    value={daysSince}
-                    onChange={(e) => setDaysSince(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md font-mono"
+                  <label className="block font-bold text-slate-700 mb-1">Perceived Threat Level</label>
+                  <select
+                    value={threatLevel}
+                    onChange={(e) => setThreatLevel(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border rounded-xl font-bold"
+                  >
+                    <option value="Low Threat">Low Threat (Normal Daily Operations)</option>
+                    <option value="Moderate Pressure">Moderate Pressure (Local Social Pressure)</option>
+                    <option value="High Alert (Hostile Pressure)">High Alert (Direct Hostile Intimidation)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Recent Psychological Check-in Notes</label>
+                  <textarea
+                    value={responsesText}
+                    onChange={(e) => setResponsesText(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 border rounded-xl h-20"
                     required
                   />
                 </div>
-              </div>
 
-              <div className="text-xs">
-                <label className="block text-slate-700 font-semibold mb-1">Wellbeing Notes &amp; Stress Transcript</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={responsesText}
-                  onChange={(e) => setResponsesText(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-md"
-                  placeholder="Share how you are feeling, threats, anxiety, or legal support needs..."
-                />
-              </div>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition disabled:opacity-50"
+                >
+                  {loading ? 'Evaluating Distress Index...' : 'Calculate Psychological Distress Index & Outreach Status'}
+                </button>
+              </form>
+            </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white font-bold text-xs rounded-md shadow-xs transition"
-              >
-                {loading ? 'Evaluating Distress Score...' : 'Submit Wellbeing Check-in'}
-              </button>
-            </form>
+            {/* Scorecard */}
+            <div className="md:col-span-6 space-y-4">
+              {latestResult ? (
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 text-xs">
+                  <div className="border-b pb-2 flex items-center justify-between">
+                    <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Distress Index Scorecard</h2>
+                    <span className="text-xs font-mono text-slate-400">{latestResult.id}</span>
+                  </div>
 
-            {/* Distress Scorecard Right */}
-            <div className="lg:col-span-7 space-y-5">
-              {latestResult && (
-                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700">Dynamic Psychological Distress Scorecard</h2>
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold border ${
-                      latestResult.distress_level === 'SEVERE_DISTRESS' ? 'bg-red-50 text-red-800 border-red-200' :
-                      latestResult.distress_level === 'MODERATE_DISTRESS' ? 'bg-amber-50 text-amber-800 border-amber-200' :
-                      'bg-emerald-50 text-emerald-800 border-emerald-200'
-                    }`}>
+                  <div className="p-4 rounded-xl bg-slate-50 border text-center space-y-1">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Calculated Psychological Distress Index</span>
+                    <div className="text-4xl font-black text-indigo-700">{latestResult.distress_score} <span className="text-xs font-normal text-slate-500">/ 100</span></div>
+                  </div>
+
+                  <div className="p-3 bg-slate-50 border rounded-xl flex items-center justify-between">
+                    <span className="font-bold text-slate-600">Distress Level Category:</span>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-black ${
+                        latestResult.distress_level === 'SEVERE_DISTRESS'
+                          ? 'bg-rose-100 text-rose-800'
+                          : latestResult.distress_level === 'MODERATE_DISTRESS'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
                       {latestResult.distress_level}
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-center space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-500">Distress Score</span>
-                      <div className="text-3xl font-black text-indigo-800 font-mono">{latestResult.distress_score}</div>
-                      <span className="text-[10px] text-slate-400">Scale 0 - 100</span>
-                    </div>
-                    <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-center space-y-1">
-                      <span className="text-[10px] uppercase font-bold text-slate-400">Proactive Outreach</span>
-                      <div className="text-xs font-bold text-slate-800 mt-2">
-                        {latestResult.proactive_outreach_needed ? (
-                          <span className="text-red-700 font-extrabold">🚨 COUNSELOR OUTREACH ACTIVE</span>
-                        ) : (
-                          <span className="text-emerald-700 font-extrabold">✓ ROUTINE MONITORING</span>
-                        )}
-                      </div>
-                    </div>
+                  <div className="p-3.5 bg-slate-50 border rounded-xl space-y-1">
+                    <span className="font-bold text-slate-700 uppercase text-[10px]">District Protection Escalation Status</span>
+                    <p className="font-bold text-indigo-900">{latestResult.escalation_status}</p>
                   </div>
 
-                  <div className="space-y-1.5 text-xs">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Case Timeline Milestone Correlation</span>
-                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-medium">
-                      Distress score correlated with legal stage: <span className="font-bold text-indigo-700 uppercase">{latestResult.case_stage}</span>. Multi-channel check-in protocol active via NHAA 14566.
-                    </div>
+                  <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-1">
+                    <span className="font-bold text-indigo-950 uppercase text-[10px]">Proactive Outreach Protocol</span>
+                    <p className="text-indigo-900 font-medium">
+                      {latestResult.proactive_outreach_needed
+                        ? '⚠️ Proactive counselor outreach activated. Designated district legal & welfare officer notified.'
+                        : 'Routine check-in logged. No emergency escalation required.'}
+                    </p>
                   </div>
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center text-slate-400 text-xs italic">
+                  Submit check-in parameters to evaluate distress index.
                 </div>
               )}
-
-              {/* Checkin Log History Table */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-700 border-b border-slate-100 pb-2">Wellbeing Audit Log</h2>
-                <div className="divide-y divide-slate-100 max-h-40 overflow-y-auto">
-                  {history.map((h) => (
-                    <div key={h.id} className="py-2 flex items-center justify-between text-xs font-sans">
-                      <div>
-                        <div className="font-bold text-slate-800">
-                          Distress Score: <span className="font-mono">{h.distress_score}</span> ({h.distress_level})
-                        </div>
-                        <div className="text-[10px] text-slate-400 font-mono">{new Date(h.created_at).toLocaleTimeString()}</div>
-                      </div>
-                      <span className="text-[10px] text-slate-500 max-w-[200px] truncate italic">{h.recent_checkin_responses}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Innovation Module: PoA Legal Milestone & Direct Relief Payout Tracker */}
-              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">⚖️</span>
-                    <div>
-                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">PoA Legal Milestone &amp; Direct Relief Tracker</h3>
-                      <p className="text-[10px] text-slate-500">Prevention of Atrocities milestone &amp; DBT payout synchronization</p>
-                    </div>
-                  </div>
-                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded border border-indigo-200 text-[10px] font-bold font-mono">
-                    DBT INTEGRATED
-                  </span>
-                </div>
-
-                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800">PoA Act Relief Milestone Tracker:</span>
-                    <span className="font-mono text-[11px] text-emerald-700 font-bold">Stage 3 / 4 Completed</span>
-                  </div>
-
-                  {/* 4-Step Legal Milestone Bar */}
-                  <div className="grid grid-cols-4 gap-1 text-[9px] font-bold text-center">
-                    <div className="p-2 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded">
-                      <div>1. FIR Registered</div>
-                      <div className="text-[8px] font-mono text-emerald-700">₹1,00,000 Paid</div>
-                    </div>
-                    <div className="p-2 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded">
-                      <div>2. Charge Sheet</div>
-                      <div className="text-[8px] font-mono text-emerald-700">₹2,50,000 Paid</div>
-                    </div>
-                    <div className="p-2 bg-indigo-100 border border-indigo-300 text-indigo-900 rounded">
-                      <div>3. Special Trial</div>
-                      <div className="text-[8px] font-mono text-indigo-700">In Progress</div>
-                    </div>
-                    <div className="p-2 bg-slate-100 border border-slate-200 text-slate-400 rounded">
-                      <div>4. Final Payout</div>
-                      <div className="text-[8px] font-mono text-slate-400">Pending Verdict</div>
-                    </div>
-                  </div>
-
-                  <div className="p-2.5 bg-indigo-50/70 border border-indigo-200 rounded text-[11px] text-indigo-900 flex items-center justify-between">
-                    <span>Direct Benefit Transfer Payout Status:</span>
-                    <span className="font-mono font-bold text-emerald-700">₹3,50,000 Released to Aadhar-Linked Bank Account</span>
-                  </div>
-                </div>
-              </div>
-
             </div>
+
           </div>
-        ) : (
-          /* COUNSELOR ESCALATION DESK */
-          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h2 className="text-sm font-bold uppercase tracking-wider text-slate-800">District Counselor &amp; Protection Escalation Desk</h2>
-                <p className="text-xs text-slate-500">Automated multi-tier alert dispatching for high-distress SC/ST atrocity victim cases</p>
+        )}
+
+        {/* TAB 2: DISTRICT ESCALATIONS */}
+        {activeTab === 'ESCALATIONS' && (
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            
+            {/* Queue */}
+            <div className="lg:col-span-5 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="border-b pb-2 flex items-center justify-between">
+                <h2 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">District Escalation Queue ({escalations.length})</h2>
+                <span className="text-[10px] font-mono bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-bold">Counselor Desk</span>
               </div>
-              <span className="px-2.5 py-1 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 text-xs font-bold font-mono">DISTRICT HQ DESK</span>
+
+              <div className="divide-y divide-slate-100 space-y-2">
+                {escalations.map((item) => (
+                  <div
+                    key={item.id}
+                    onClick={() => setSelectedEscalation(item)}
+                    className={`p-3.5 rounded-xl cursor-pointer transition border ${
+                      selectedEscalation?.id === item.id
+                        ? 'bg-indigo-50/70 border-indigo-300'
+                        : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-xs text-slate-900">{item.patient_name}</span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[9px] font-black ${
+                          item.distress_level === 'SEVERE_DISTRESS'
+                            ? 'bg-rose-100 text-rose-800'
+                            : 'bg-amber-100 text-amber-800'
+                        }`}
+                      >
+                        Score: {item.distress_score}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600">{item.case_stage}</p>
+                    <div className="text-[10px] text-slate-400 font-mono mt-1">{item.id} &bull; Status: {item.escalation_status}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {escalations.map((item) => (
-                <div key={item.id} className="p-4 rounded-lg border border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div className="space-y-1">
-                    <div className="font-bold text-sm text-slate-900">{item.patient_name}</div>
-                    <div className="text-slate-500 font-medium">Case Stage: {item.case_stage}</div>
-                    <div className="text-[10px] text-slate-400 font-mono">Alert ID: {item.id}</div>
+            {/* Selected View */}
+            <div className="lg:col-span-7 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 text-xs">
+              {selectedEscalation ? (
+                <div className="space-y-4">
+                  <div className="border-b pb-3 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-lg font-black text-slate-900">{selectedEscalation.patient_name}</h2>
+                      <span className="text-xs text-slate-400 font-mono">Case ID: {selectedEscalation.id}</span>
+                    </div>
+                    <span className="px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full font-black text-xs">
+                      {selectedEscalation.distress_level}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <div className="text-[10px] font-bold uppercase text-slate-400">Distress Score</div>
-                      <div className="text-xl font-black font-mono text-red-700">{item.distress_score} / 100</div>
-                    </div>
+                  <div className="p-4 bg-slate-50 rounded-2xl border space-y-2">
+                    <span className="font-bold text-slate-400 uppercase text-[10px]">District Action Plan</span>
+                    <p className="text-slate-800 font-medium leading-relaxed">
+                      Escalated under Section 15A of SC/ST (PoA) Act. District Protection Officer assigned. Direct witness protection &amp; legal counseling initiated.
+                    </p>
+                  </div>
 
-                    <button
-                      onClick={() => acknowledgeCase(item.id)}
-                      className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-md shadow-xs transition"
-                    >
-                      Acknowledge &amp; Dispatch Counselor
-                    </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-slate-50 border rounded-xl">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Current Milestone</span>
+                      <span className="font-bold text-slate-900">{selectedEscalation.case_stage}</span>
+                    </div>
+                    <div className="p-3 bg-slate-50 border rounded-xl">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase block">Escalation Status</span>
+                      <span className="font-bold text-indigo-700">{selectedEscalation.escalation_status}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-12 text-slate-400 text-xs italic">
+                  Select an escalation record from the queue to view protection details.
+                </div>
+              )}
+            </div>
+
+          </div>
+        )}
+
+        {/* TAB 3: CHAT */}
+        {activeTab === 'CHAT' && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 max-w-4xl mx-auto">
+            <div className="border-b pb-3 flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-extrabold text-slate-900">NyayaSahay AI Legal &amp; Mental Support</h2>
+                <p className="text-xs text-slate-500">Confidential guidance on SC/ST PoA Act rights, witness protection &amp; state compensation</p>
+              </div>
+            </div>
+
+            <div className="h-80 overflow-y-auto space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div
+                    className={`max-w-[80%] p-3 rounded-2xl font-medium leading-relaxed ${
+                      msg.role === 'user'
+                        ? 'bg-indigo-600 text-white rounded-br-none'
+                        : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-xs'
+                    }`}
+                  >
+                    {msg.content}
                   </div>
                 </div>
               ))}
+              {chatLoading && <div className="text-slate-400 text-xs italic">NyayaSahay AI is thinking...</div>}
+            </div>
 
-              {escalations.length === 0 && (
-                <div className="py-8 text-center text-xs text-slate-400 italic">No pending escalation alerts.</div>
-              )}
+            <form onSubmit={handleSendChat} className="flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask about legal rights, FIR process, compensation, or protection..."
+                className="flex-1 px-4 py-2.5 bg-slate-50 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="submit"
+                disabled={chatLoading}
+                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition"
+              >
+                Send
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* TAB 4: HISTORY */}
+        {activeTab === 'HISTORY' && (
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 max-w-4xl mx-auto text-xs">
+            <div className="border-b pb-3 flex items-center justify-between">
+              <h2 className="text-base font-extrabold text-slate-900">Check-in Logs ({history.length})</h2>
+              <span className="text-xs text-slate-500 font-mono">Confidential Logs</span>
+            </div>
+
+            <div className="divide-y divide-slate-100">
+              {history.map((rec) => (
+                <div key={rec.id} className="py-3.5 flex items-center justify-between">
+                  <div>
+                    <span className="font-bold text-slate-900">{rec.id}</span>
+                    <p className="text-slate-500 text-[11px] mt-0.5">
+                      Milestone: {rec.case_stage} | Days: {rec.days_since_incident} | Sentiment: {rec.sentiment_score}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span
+                      className={`px-2.5 py-1 rounded text-[10px] font-black ${
+                        rec.distress_level === 'SEVERE_DISTRESS'
+                          ? 'bg-rose-100 text-rose-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      Score: {rec.distress_score} ({rec.distress_level})
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -416,4 +605,3 @@ export default function NyayaSahayPage() {
     </div>
   );
 }
-

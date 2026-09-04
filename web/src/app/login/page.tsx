@@ -61,13 +61,28 @@ export default function LoginPage() {
     setError('');
 
     try {
-      await login(email, pass);
-      router.push('/chat');
+      const loggedUser = await login(email, pass);
+      const roles = loggedUser?.mapped_roles || [loggedUser?.primary_role];
+      const hasAdmin = loggedUser?.is_admin || roles.includes('SYSTEM_ADMIN');
+
+      if (hasAdmin) {
+        router.push('/dashboard');
+      } else if (roles.includes('PATIENT')) {
+        router.push('/arogya');
+      } else if (roles.includes('PHYSICIAN')) {
+        router.push('/medikiosk');
+      } else if (roles.includes('SOLDIER') || roles.includes('WELFARE_OFFICER')) {
+        router.push('/rakshak');
+      } else if (roles.includes('COUNSELOR') || roles.includes('VICTIM')) {
+        router.push('/nyaya');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        router.push('/chat');
+        setError('Login failed. Please verify credentials.');
       }
     } finally {
       setLoading(false);
