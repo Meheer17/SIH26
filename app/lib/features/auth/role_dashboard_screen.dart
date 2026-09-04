@@ -142,11 +142,69 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
 
               const SizedBox(height: 24),
 
+              const SizedBox(height: 24),
+
+              const Text(
+                'Breakthrough Scalable Innovations',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+              ),
+              const SizedBox(height: 12),
+
+              _buildAppCard(
+                psTag: 'KILLER FEATURE',
+                title: '🌐 Community Immunity Network',
+                subtitle: 'Offline BLE Mesh Health Swarm',
+                description: 'Offline peer-to-peer mesh sync for community symptom and outbreak detection.',
+                borderColor: const Color(0xFF10B981),
+                onTap: () {
+                  Navigator.of(context).pushNamed('/cin');
+                },
+              ),
+              const SizedBox(height: 12),
+
+              _buildAppCard(
+                psTag: 'NON-INVASIVE ML',
+                title: '🫁 Acoustic Cough & Anemia',
+                subtitle: 'Zero Crossing Rate Audio & Palmar RGB',
+                description: 'Non-invasive acoustic spectral cough screening & camera palmar Hb estimation.',
+                borderColor: const Color(0xFF2563EB),
+                onTap: () {
+                  Navigator.of(context).pushNamed('/cough-screening');
+                },
+              ),
+              const SizedBox(height: 12),
+
+              _buildAppCard(
+                psTag: 'STEALTH SOS',
+                title: '🆘 Panic Disguise SOS',
+                subtitle: 'Stealth Calculator & Dead Man Switch',
+                description: 'Covert calculator panic PIN, accelerometer shake, & 2hr inactivity dead man switch.',
+                borderColor: const Color(0xFFE11D48),
+                onTap: () {
+                  Navigator.of(context).pushNamed('/panic-disguise');
+                },
+              ),
+              const SizedBox(height: 12),
+
+              _buildAppCard(
+                psTag: 'GRAPH AI',
+                title: '🧬 Family Health Risk Graph',
+                subtitle: 'NetworkX Lineage & AI Counselor',
+                description: 'Traverses pedigree lineage for hereditary risk calculation & cultural counseling.',
+                borderColor: const Color(0xFF7C3AED),
+                onTap: () {
+                  Navigator.of(context).pushNamed('/family-graph');
+                },
+              ),
+
+              const SizedBox(height: 24),
+
               const Text(
                 'Problem Statement Switcher',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               ),
               const SizedBox(height: 12),
+
 
               // PS Card 1: ArogyaSathi (SIH26181)
               _buildAppCard(

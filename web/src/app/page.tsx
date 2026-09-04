@@ -184,6 +184,126 @@ export default function Home() {
           </div>
         </section>
 
+        {/* World-Changing Scalable Healthcare Innovations */}
+        <section className="space-y-4">
+          <div className="border-b border-slate-200 pb-3 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900 tracking-tight">World-Changing Scalable Innovations</h2>
+              <p className="text-xs text-slate-500">11 breakthrough features engineered for massive scale across India</p>
+            </div>
+            <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded border border-emerald-300 text-xs font-bold font-mono">
+              SIH2026 SPECIAL FEATURES
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <Link
+              href="/cin"
+              className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs hover:border-emerald-500 transition space-y-3 group block"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-2xl">🌐</span>
+                <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded text-[10px] font-bold border border-emerald-200">
+                  KILLER FEATURE
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-slate-900 group-hover:text-emerald-700 transition">
+                Community Immunity Network (CIN)
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Offline BLE peer-to-peer mesh health intelligence. Swarms anonymous zero-knowledge symptom hashes to predict local outbreaks without internet.
+              </p>
+              <div className="pt-2 text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                <span>Explore P2P Mesh Dashboard</span> <span>&rarr;</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/screening"
+              className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs hover:border-blue-500 transition space-y-3 group block"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-2xl">🫁</span>
+                <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px] font-bold border border-blue-200">
+                  NON-INVASIVE ML
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-slate-900 group-hover:text-blue-700 transition">
+                Acoustic Cough &amp; Palmar Anemia Diagnostic Suite
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Cough audio spectral centroid classifier + camera-based conjunctival/palmar R/G colorimetry for non-invasive Hb estimation.
+              </p>
+              <div className="pt-2 text-xs font-semibold text-blue-700 flex items-center gap-1">
+                <span>Launch Diagnostic Suite</span> <span>&rarr;</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/epidemic"
+              className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs hover:border-rose-500 transition space-y-3 group block"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-2xl">🌡️</span>
+                <span className="px-2 py-0.5 bg-rose-50 text-rose-700 rounded text-[10px] font-bold border border-rose-200">
+                  SPATIAL DBSCAN
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-slate-900 group-hover:text-rose-700 transition">
+                Epidemic Early Warning &amp; Geo-Heatmap
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                DBSCAN spatial clustering on geotagged symptom reports and heat-stress telemetry for automated epidemic outbreak detection.
+              </p>
+              <div className="pt-2 text-xs font-semibold text-rose-700 flex items-center gap-1">
+                <span>View Heatmap Clusters</span> <span>&rarr;</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/covert-sos"
+              className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs hover:border-purple-500 transition space-y-3 group block"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-2xl">🆘</span>
+                <span className="px-2 py-0.5 bg-purple-50 text-purple-700 rounded text-[10px] font-bold border border-purple-200">
+                  STEALTH SOS
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-slate-900 group-hover:text-purple-700 transition">
+                Panic Disguise SOS &amp; Dead Man&apos;s Switch
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Disguised calculator interface, accelerometer shake trigger, and passive inactivity dead man&apos;s switch for high-risk personnel &amp; victims.
+              </p>
+              <div className="pt-2 text-xs font-semibold text-purple-700 flex items-center gap-1">
+                <span>Test Covert Triggers</span> <span>&rarr;</span>
+              </div>
+            </Link>
+
+            <Link
+              href="/family-graph"
+              className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs hover:border-indigo-500 transition space-y-3 group block md:col-span-2"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-2xl">🧬</span>
+                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-200">
+                  GRAPH AI + COUNSELOR
+                </span>
+              </div>
+              <h3 className="font-bold text-base text-slate-900 group-hover:text-indigo-700 transition">
+                Family Health Risk Graph &amp; Cultural AI Counselor
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                NetworkX family lineage graph for hereditary risk calculation + empathetic AI mental health companion tailored for military, trauma, and patient care.
+              </p>
+              <div className="pt-2 text-xs font-semibold text-indigo-700 flex items-center gap-1">
+                <span>Launch Family Graph &amp; Counselor</span> <span>&rarr;</span>
+              </div>
+            </Link>
+          </div>
+        </section>
+
         {/* Groundbreaking SIH Innovations */}
         <section className="space-y-4">
           <div className="border-b border-slate-200 pb-3 flex items-center justify-between">
@@ -215,7 +335,7 @@ export default function Home() {
               </div>
               <h3 className="font-bold text-sm text-slate-900">Acoustic Micro-Tremor Voice Stress Profiler</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Analyzes pitch jitter & micro-shimmer in 5s voice clips to compute objective trauma & burnout stress scores in 10+ Indian languages via Bhashini.
+                Analyzes pitch jitter &amp; micro-shimmer in 5s voice clips to compute objective trauma &amp; burnout stress scores in 10+ Indian languages via Bhashini.
               </p>
             </div>
 
@@ -226,29 +346,7 @@ export default function Home() {
               </div>
               <h3 className="font-bold text-sm text-slate-900">Offline BLE Mesh Telemetry Relay</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Encrypts and relays peer-to-peer vital telemetry & SOS payloads across nearby Bluetooth nodes in zero-cellular disaster or border outposts.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-slate-200 p-5 space-y-2 hover:border-amber-400 transition">
-              <div className="flex items-center justify-between">
-                <span className="text-xl">☀️</span>
-                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 rounded text-[10px] font-bold border border-amber-200 font-mono">SIH26181</span>
-              </div>
-              <h3 className="font-bold text-sm text-slate-900">Predictive WBGT Heatstroke Warning</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Combines Wet Bulb Globe Temperature (WBGT) physics with live satellite telemetry to issue 2-hour early warning advisories before vital breakdown.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-lg border border-slate-200 p-5 space-y-2 hover:border-indigo-400 transition md:col-span-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xl">⚖️</span>
-                <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold border border-indigo-200 font-mono">SIH26094</span>
-              </div>
-              <h3 className="font-bold text-sm text-slate-900">PoA Legal Milestone & Direct Relief Payout Tracker</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Maps Prevention of Atrocities legal progress (FIR filing &rarr; Charge sheet &rarr; Trial) directly to psychological distress scores and automated Direct Benefit Transfer (DBT) relief tracking.
+                Encrypts and relays peer-to-peer vital telemetry &amp; SOS payloads across nearby Bluetooth nodes in zero-cellular disaster or border outposts.
               </p>
             </div>
           </div>
