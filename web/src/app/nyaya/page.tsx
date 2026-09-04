@@ -319,6 +319,54 @@ export default function NyayaSahayPage() {
                 </div>
               </div>
 
+              {/* Innovation Module: PoA Legal Milestone & Direct Relief Payout Tracker */}
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">⚖️</span>
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">PoA Legal Milestone &amp; Direct Relief Tracker</h3>
+                      <p className="text-[10px] text-slate-500">Prevention of Atrocities milestone &amp; DBT payout synchronization</p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 bg-indigo-50 text-indigo-800 rounded border border-indigo-200 text-[10px] font-bold font-mono">
+                    DBT INTEGRATED
+                  </span>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800">PoA Act Relief Milestone Tracker:</span>
+                    <span className="font-mono text-[11px] text-emerald-700 font-bold">Stage 3 / 4 Completed</span>
+                  </div>
+
+                  {/* 4-Step Legal Milestone Bar */}
+                  <div className="grid grid-cols-4 gap-1 text-[9px] font-bold text-center">
+                    <div className="p-2 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded">
+                      <div>1. FIR Registered</div>
+                      <div className="text-[8px] font-mono text-emerald-700">₹1,00,000 Paid</div>
+                    </div>
+                    <div className="p-2 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded">
+                      <div>2. Charge Sheet</div>
+                      <div className="text-[8px] font-mono text-emerald-700">₹2,50,000 Paid</div>
+                    </div>
+                    <div className="p-2 bg-indigo-100 border border-indigo-300 text-indigo-900 rounded">
+                      <div>3. Special Trial</div>
+                      <div className="text-[8px] font-mono text-indigo-700">In Progress</div>
+                    </div>
+                    <div className="p-2 bg-slate-100 border border-slate-200 text-slate-400 rounded">
+                      <div>4. Final Payout</div>
+                      <div className="text-[8px] font-mono text-slate-400">Pending Verdict</div>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-indigo-50/70 border border-indigo-200 rounded text-[11px] text-indigo-900 flex items-center justify-between">
+                    <span>Direct Benefit Transfer Payout Status:</span>
+                    <span className="font-mono font-bold text-emerald-700">₹3,50,000 Released to Aadhar-Linked Bank Account</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         ) : (

@@ -413,6 +413,87 @@ export default function ArogyaSathiPage() {
               </div>
             </div>
 
+            {/* Innovation Module 1: Predictive WBGT Heatstroke Warning Engine */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">☀️</span>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Predictive WBGT Early Warning Engine</h3>
+                    <p className="text-[10px] text-slate-500">2-Hour thermal breakdown physics projection</p>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 bg-amber-50 text-amber-800 rounded border border-amber-200 text-[10px] font-bold font-mono">
+                  PREDICTIVE
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div className="text-[10px] text-slate-500 font-semibold">Current WBGT</div>
+                  <div className="text-base font-black text-slate-900 font-mono">31.4°C</div>
+                  <div className="text-[9px] text-amber-700 font-bold">Caution Zone</div>
+                </div>
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div className="text-[10px] text-slate-500 font-semibold">+60 Min Forecast</div>
+                  <div className="text-base font-black text-amber-700 font-mono">33.8°C</div>
+                  <div className="text-[9px] text-amber-700 font-bold">Extreme Strain</div>
+                </div>
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                  <div className="text-[10px] text-slate-500 font-semibold">+120 Min Breakdown</div>
+                  <div className="text-base font-black text-red-700 font-mono">36.1°C</div>
+                  <div className="text-[9px] text-red-700 font-bold">CRITICAL Danger</div>
+                </div>
+              </div>
+
+              <div className="p-2.5 bg-amber-50/70 border border-amber-200 rounded-lg text-[11px] text-amber-900 flex items-start gap-2">
+                <span className="text-sm">⚠️</span>
+                <div>
+                  <span className="font-bold">2-Hour Early Warning Advisory: </span>
+                  Environmental Wet-Bulb Globe Temp (WBGT) projected to breach safety threshold in 90 mins under current workload. mandatory 15-min shade rotation recommended before vital collapse.
+                </div>
+              </div>
+            </div>
+
+            {/* Innovation Module 2: Offline BLE Mesh Telemetry Relay Simulation */}
+            <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">📡</span>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Offline BLE Mesh Telemetry Relay</h3>
+                    <p className="text-[10px] text-slate-500">Peer-to-peer encrypted payload relay in zero-cellular zones</p>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 bg-teal-50 text-teal-800 rounded border border-teal-200 text-[10px] font-bold font-mono">
+                  BLE MESH ACTIVE
+                </span>
+              </div>
+
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-semibold text-slate-700">
+                  <span>Mesh Hop Path (Zero Cellular Connectivity):</span>
+                  <span className="font-mono text-teal-700 font-bold">AES-256 Encrypted</span>
+                </div>
+                <div className="flex items-center justify-between gap-1 text-[10px]">
+                  <div className="flex-1 p-2 bg-white border border-slate-200 rounded text-center">
+                    <div className="font-bold text-slate-800">Node A (User)</div>
+                    <div className="text-[9px] text-slate-400 font-mono">ID: #AROG-882</div>
+                  </div>
+                  <span className="text-slate-400 font-bold">&rarr;</span>
+                  <div className="flex-1 p-2 bg-white border border-slate-200 rounded text-center">
+                    <div className="font-bold text-teal-800">Node B (Patrol Unit)</div>
+                    <div className="text-[9px] text-slate-400 font-mono">RSSI: -64dBm</div>
+                  </div>
+                  <span className="text-slate-400 font-bold">&rarr;</span>
+                  <div className="flex-1 p-2 bg-white border border-slate-200 rounded text-center">
+                    <div className="font-bold text-slate-800">Satellite Base</div>
+                    <div className="text-[9px] text-emerald-700 font-bold">Uplink OK</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>

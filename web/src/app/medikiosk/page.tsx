@@ -397,6 +397,50 @@ export default function MediKioskPage() {
                     <span className="text-[10px] uppercase font-bold text-blue-800 block">Structured AI Clinical Summary for Doctor</span>
                     <p className="text-slate-700 leading-relaxed font-sans">{selectedIntake.summary}</p>
                   </div>
+
+                  {/* Innovation Module: Dual AYUSH-Western Clinical Triangulation Engine */}
+                  <div className="p-4 bg-white border border-emerald-200 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between border-b border-emerald-100 pb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">🌿</span>
+                        <div>
+                          <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Dual AYUSH-Western Clinical Triangulation</h3>
+                          <p className="text-[10px] text-slate-500">Ministry of Ayush &amp; WHO ICD-11 Dual Perspective</p>
+                        </div>
+                      </div>
+                      <span className="px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded border border-emerald-200 text-[10px] font-bold font-mono">
+                        DUAL SYNERGY
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      {/* Western ICD-11 Column */}
+                      <div className="p-3 bg-blue-50/50 border border-blue-200 rounded-lg space-y-1.5">
+                        <div className="font-bold text-blue-900 flex items-center justify-between text-[11px]">
+                          <span>🏥 Western ICD-11 Triage</span>
+                          <span className="font-mono text-[9px]">ICD-11: R50.9</span>
+                        </div>
+                        <div className="text-[11px] text-slate-700 font-medium">• Primary: Acute Exertional Thermal Strain</div>
+                        <div className="text-[11px] text-slate-700 font-medium">• Secondary: Electrolyte Imbalance Risk</div>
+                        <div className="text-[10px] text-blue-800 font-semibold pt-1 border-t border-blue-200/60">
+                          Rec: ORS Hydration + Vital Monitoring Q2H
+                        </div>
+                      </div>
+
+                      {/* AYUSH Prakriti-Vikriti Column */}
+                      <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-lg space-y-1.5">
+                        <div className="font-bold text-emerald-900 flex items-center justify-between text-[11px]">
+                          <span>🌿 AYUSH Prakriti-Vikriti</span>
+                          <span className="font-mono text-[9px]">Pitta Aggravation</span>
+                        </div>
+                        <div className="text-[11px] text-slate-700 font-medium">• Dosha Status: {selectedIntake.prakriti_type || 'Vata-Pitta'} Heat Surge</div>
+                        <div className="text-[11px] text-slate-700 font-medium">• Agni Assessment: Vishama Agni Exertion</div>
+                        <div className="text-[10px] text-emerald-800 font-semibold pt-1 border-t border-emerald-200/60">
+                          Rec: Usheera &amp; Chandana Cooling Formulation
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </>
               ) : (
                 <div className="py-12 text-center text-xs text-slate-400 italic">Select a patient from the queue to inspect clinical report.</div>

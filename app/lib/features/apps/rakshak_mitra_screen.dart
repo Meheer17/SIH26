@@ -398,6 +398,46 @@ class _RakshakMitraScreenState extends State<RakshakMitraScreen> {
             ),
           );
         }),
+        const SizedBox(height: 12),
+        // Innovation Card: Bhashini Voice Stress Profiler
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '🎙️ Bhashini Voice Micro-Tremor',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'BHASHINI AI',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF334155)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Sub-audible pitch jitter (0.82%) & shimmer (2.1dB) analyzed across Hindi/Tamil/Telugu/English voice check-ins.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

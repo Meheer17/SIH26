@@ -449,10 +449,50 @@ class _NyayaSahayScreenState extends State<NyayaSahayScreen> {
             child: Center(
               child: Text(
                 'No escalated protection alerts found.',
-                style: TextStyle(color: Colors.white38, fontSize: 12, fontStyle: FontStyle.italic),
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontStyle: FontStyle.italic),
               ),
             ),
           ),
+        const SizedBox(height: 12),
+        // Innovation Card: PoA Legal Milestone & Relief Payout Tracker
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '⚖️ PoA Legal & Relief Tracker',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEEF2FF),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'DBT INTEGRATED',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF3730A3)),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Legal Stage 3/4 (Special Court Trial). Direct Benefit Transfer (DBT): ₹3,50,000 released to Aadhar bank account.',
+                style: TextStyle(fontSize: 12, color: Color(0xFF475569)),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

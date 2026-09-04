@@ -379,7 +379,31 @@ class _MediKioskScreenState extends State<MediKioskScreen> {
                         ),
                         child: Text(
                           _selectedIntake!["summary"],
-                          style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                          style: const TextStyle(color: Color(0xFF0F172A), fontSize: 13, height: 1.4),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Innovation Card: Dual AYUSH-Western Triangulation
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFECFDF5),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: const Color(0xFFA7F3D0)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '🌿 Dual AYUSH-Western Clinical Triangulation',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF065F46)),
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              '• ICD-11: R50.9 Exertional Thermal Strain (ORS Hydration)\n• AYUSH: Pitta-Vata Heat Surge (Usheera & Chandana Remedy)',
+                              style: TextStyle(fontSize: 11, color: Color(0xFF047857), height: 1.4),
+                            ),
+                          ],
                         ),
                       ),
                     ],

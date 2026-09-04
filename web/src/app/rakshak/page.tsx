@@ -339,6 +339,51 @@ export default function RakshakMitraPage() {
                 </div>
               </div>
 
+              {/* Innovation Module: Bhashini Acoustic Micro-Tremor Voice Stress Profiler */}
+              <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🎙️</span>
+                    <div>
+                      <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Bhashini Acoustic Voice Stress Profiler</h3>
+                      <p className="text-[10px] text-slate-500">Sub-audible pitch jitter &amp; micro-shimmer analysis</p>
+                    </div>
+                  </div>
+                  <span className="px-2 py-0.5 bg-slate-100 text-slate-800 rounded border border-slate-200 text-[10px] font-bold font-mono">
+                    BHASHINI AI
+                  </span>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-slate-800">Select Vernacular Language:</span>
+                    <select className="px-2 py-1 bg-white border border-slate-200 rounded text-[11px] font-medium">
+                      <option>Hindi (हिन्दी)</option>
+                      <option>Tamil (தமிழ்)</option>
+                      <option>Telugu (తెలుగు)</option>
+                      <option>Marathi (मराठी)</option>
+                      <option>English</option>
+                    </select>
+                  </div>
+
+                  <div className="p-2.5 bg-white border border-slate-200 rounded flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                      <span className="font-mono text-[11px] font-bold text-slate-700">Audio Micro-Tremor Metrics:</span>
+                    </div>
+                    <div className="font-mono text-[10px] text-slate-500 space-x-2">
+                      <span>Jitter: <strong className="text-slate-800">0.82%</strong></span>
+                      <span>Shimmer: <strong className="text-slate-800">2.1dB</strong></span>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-slate-900 text-white rounded-lg flex items-center justify-between">
+                    <span className="text-[11px] font-semibold">Objective Acoustic Trauma Score:</span>
+                    <span className="font-mono text-sm font-black text-amber-400">42 / 100 (Moderate Exertion)</span>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
         ) : (
