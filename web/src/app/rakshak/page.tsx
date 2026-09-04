@@ -212,7 +212,8 @@ export default function RakshakMitraPage() {
     const factors: string[] = [];
     const actions: string[] = [];
 
-    if (days > 60) factors.append ? factors.push('Extended continuous deployment (>60 days)') : factors.push('Extended deployment');
+    if (days > 60) factors.push('Extended continuous deployment (>60 days)');
+
     if (gap > 0.5) factors.push('Overdue leave gap ratio (>0.5)');
     if (hours > 56) factors.push('Excessive duty hours (>56 hrs/week)');
     if (score > 10) factors.push('Elevated PHQ-9 distress score (>10)');

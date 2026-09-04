@@ -8,7 +8,9 @@ import { checkBackendHealth } from '@/lib/api/apiClient';
 
 export default function Navbar() {
   const pathname = usePathname();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const isAuthenticated = !!user;
+
   const [isBackendOnline, setIsBackendOnline] = useState<boolean | null>(null);
 
   useEffect(() => {

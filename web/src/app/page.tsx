@@ -117,10 +117,6 @@ export default function Home() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    handleLogin(emailOrPhone, password);
-  };
 
   return (
     <div className="space-y-12 pb-16 font-sans">

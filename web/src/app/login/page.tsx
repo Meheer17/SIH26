@@ -61,9 +61,10 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const loggedUser = await login(email, pass);
+      const loggedUser: any = await login(email, pass);
       const roles = loggedUser?.mapped_roles || [loggedUser?.primary_role];
-      const hasAdmin = loggedUser?.is_admin || roles.includes('SYSTEM_ADMIN');
+      const hasAdmin = loggedUser?.is_admin || roles?.includes('SYSTEM_ADMIN');
+
 
       if (hasAdmin) {
         router.push('/dashboard');
