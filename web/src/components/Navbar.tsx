@@ -20,102 +20,91 @@ export default function Navbar() {
   }, []);
 
   const psModules = [
-    { id: 'SIH26181', name: 'ArogyaSathi', icon: '🫀', href: '/arogya', badge: 'Qualcomm' },
-    { id: 'SIH26047', name: 'MediKiosk', icon: '🏥', href: '/medikiosk', badge: 'Ayush' },
-    { id: 'SIH26186', name: 'RakshakMitra', icon: '🎖️', href: '/rakshak', badge: 'MHA' },
-    { id: 'SIH26094', name: 'NyayaSahay', icon: '⚖️', href: '/nyaya', badge: 'MoSJE' },
+    { id: 'SIH26181', name: 'ArogyaSathi', desc: 'Disaster Health', href: '/arogya' },
+    { id: 'SIH26047', name: 'MediKiosk', desc: 'Clinical OPD', href: '/medikiosk' },
+    { id: 'SIH26186', name: 'RakshakMitra', desc: 'Defense Welfare', href: '/rakshak' },
+    { id: 'SIH26094', name: 'NyayaSahay', desc: 'Legal Support', href: '/nyaya' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-slate-200 font-sans shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-50 bg-stone-50/90 backdrop-blur-md border-b border-stone-200/80 font-sans">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-15 flex items-center justify-between gap-4">
         
-        {/* Brand Logo */}
+        {/* Brand Identity */}
         <div className="flex items-center gap-3 shrink-0">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white font-black text-base shadow-xs group-hover:bg-teal-700 transition">
+            <span className="w-7 h-7 rounded-md bg-stone-900 flex items-center justify-center text-stone-100 font-bold text-xs tracking-tight shadow-xs group-hover:bg-stone-800 transition">
               SS
-            </div>
+            </span>
             <div className="flex flex-col">
-              <span className="font-bold text-sm tracking-tight text-slate-900 flex items-center gap-1.5">
+              <span className="font-semibold text-sm tracking-tight text-stone-900 group-hover:text-stone-700 transition">
                 SvasthyaSetu
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                  SIH 2026
-                </span>
               </span>
-              <span className="text-[10px] font-medium text-slate-500">Bridge to Health &amp; Defense Platform</span>
+              <span className="text-[10px] text-stone-500 font-normal">Health &amp; Defense Platform</span>
             </div>
           </Link>
 
-          {/* Backend Status Indicator */}
-          <div className="hidden lg:flex items-center gap-1.5 pl-3 border-l border-slate-200 text-[11px] font-medium text-slate-600">
+          {/* Discreet Health Status */}
+          <div className="hidden lg:flex items-center gap-1.5 pl-3 border-l border-stone-200 text-[11px] text-stone-500 font-normal">
             <span
-              className={`w-2 h-2 rounded-full ${
+              className={`w-1.5 h-1.5 rounded-full ${
                 isBackendOnline === true
-                  ? 'bg-emerald-500 animate-pulse'
+                  ? 'bg-emerald-600'
                   : isBackendOnline === false
                   ? 'bg-amber-500'
-                  : 'bg-slate-300'
+                  : 'bg-stone-300'
               }`}
             />
-            <span>{isBackendOnline ? 'API Connected' : isBackendOnline === false ? 'Live Simulation' : 'Connecting...'}</span>
+            <span>{isBackendOnline ? 'Operational' : isBackendOnline === false ? 'Simulation' : 'Connecting'}</span>
           </div>
         </div>
 
-        {/* Problem Statement Switcher Buttons */}
-        <div className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none">
+        {/* Minimal Core Application Switcher */}
+        <nav className="flex items-center gap-1 bg-stone-200/60 p-1 rounded-lg">
           {psModules.map((ps) => {
             const isActive = pathname === ps.href;
             return (
               <Link
                 key={ps.id}
                 href={ps.href}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition whitespace-nowrap ${
                   isActive
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-white text-stone-900 shadow-xs'
+                    : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/40'
                 }`}
               >
-                <span>{ps.icon}</span>
                 <span>{ps.name}</span>
-                <span
-                  className={`text-[9px] px-1 py-0.2 rounded font-mono ${
-                    isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-200 text-slate-600'
-                  }`}
-                >
-                  {ps.id}
-                </span>
               </Link>
             );
           })}
-        </div>
+        </nav>
 
-        {/* Auth Actions & User Info */}
+        {/* User Account Controls */}
         <div className="flex items-center gap-3">
           {isAuthenticated && user ? (
             <div className="flex items-center gap-3">
               <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-bold text-slate-900">{user.full_name}</span>
-                <span className="text-[10px] font-semibold text-teal-600 uppercase tracking-wider">{user.primary_role}</span>
+                <span className="text-xs font-semibold text-stone-900">{user.full_name}</span>
+                <span className="text-[10px] text-stone-500">{user.primary_role}</span>
               </div>
               <button
                 onClick={logout}
-                className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-semibold text-xs transition border border-slate-200"
+                className="px-3 py-1.5 rounded-md text-xs font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-200/50 border border-stone-300/70 transition"
               >
-                Sign Out
+                Sign out
               </button>
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="px-3.5 py-2 rounded-lg text-slate-700 hover:text-slate-900 font-bold text-xs hover:bg-slate-100 transition"
+                className="px-3 py-1.5 rounded-md text-stone-700 hover:text-stone-900 font-medium text-xs hover:bg-stone-200/50 transition"
               >
-                Sign In
+                Sign in
               </Link>
               <Link
                 href="/register"
-                className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition"
+                className="px-3.5 py-1.5 rounded-md bg-stone-900 hover:bg-stone-800 text-stone-50 font-medium text-xs shadow-xs transition"
               >
                 Register
               </Link>

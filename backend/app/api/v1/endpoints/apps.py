@@ -27,10 +27,14 @@ class VitalRecordRequest(BaseModel):
     heart_rate: float = Field(..., description="Heart rate in bpm")
     spo2: float = Field(..., description="Blood oxygen saturation percentage")
     body_temp_c: float = Field(..., description="Body temperature in Celsius")
-    env_temp_c: float = Field(..., description="Environmental temperature in Celsius")
-    humidity_percent: float = Field(..., description="Environmental relative humidity percentage")
-    activity_level: str = Field(..., description="Activity level ('resting', 'moderate', 'strenuous')")
-    time_since_water_mins: int = Field(..., description="Time since last hydration in minutes")
+    env_temp_c: Optional[float] = Field(default=None, description="Environmental temperature in Celsius")
+    humidity_percent: Optional[float] = Field(default=None, description="Environmental relative humidity percentage")
+    activity_level: str = Field(default="moderate", description="Activity level ('resting', 'moderate', 'strenuous')")
+    time_since_water_mins: int = Field(default=30, description="Time since last hydration in minutes")
+    latitude: Optional[float] = Field(default=None, description="Optional latitude for live weather/AQI")
+    longitude: Optional[float] = Field(default=None, description="Optional longitude for live weather/AQI")
+    has_respiratory_condition: Optional[bool] = Field(default=False, description="Whether user has Asthma, COPD, or breathing sensitivities")
+    chronic_conditions: Optional[List[str]] = Field(default_factory=list, description="Optional list of diagnosed conditions")
 
 # --- MediKiosk Pydantic Models & Schemas ---
 
@@ -65,9 +69,13 @@ class DistressCheckinRequest(BaseModel):
 
 
 class VoiceStressRequest(BaseModel):
-    transcript_text: str = Field(..., description="Text transcription of victim audio response")
+    transcript_text: str = Field(..., description="Text transcription of audio response or journal")
     pitch_variance: Optional[float] = Field(default=None, description="Optional pitch variance in Hz")
     pause_ratio: Optional[float] = Field(default=None, description="Optional vocal pause ratio")
+    speech_rate_wpm: Optional[float] = Field(default=None, description="Optional speech rate in words per minute")
+    vocal_tremor_score: Optional[float] = Field(default=None, description="Acoustic vocal micro-tremor indicator (0.0 to 1.0)")
+    audio_duration_sec: Optional[float] = Field(default=None, description="Duration of recorded audio in seconds")
+
 
 
 # =========================================================================
@@ -92,19 +100,29 @@ async def record_vitals(req: VitalRecordRequest, current_user: dict = Depends(ge
     humidity = req.humidity_percent
     live_aqi = None
 
-    if env_temp is None or humidity is None:
-        live_env = await fetch_live_weather_and_aqi(latitude=req.latitude, longitude=req.longitude)
-        env_temp = live_env["temperature_c"]
-        humidity = live_env["humidity_percent"]
-        live_aqi = live_env["us_aqi"]
+    if env_temp is None or humidity is None or req.has_respiratory_condition:
+        try:
+            live_env = await fetch_live_weather_and_aqi(latitude=req.latitude, longitude=req.longitude)
+            if env_temp is None:
+                env_temp = live_env["temperature_c"]
+            if humidity is None:
+                humidity = live_env["humidity_percent"]
+            live_aqi = live_env.get("us_aqi")
+        except Exception:
+            if env_temp is None:
+                env_temp = 32.0
+            if humidity is None:
+                humidity = 60.0
 
-    # Calculate Heat Stress using base domain tool
+    # Calculate Heat Stress and Respiratory Advisory using domain tool
     stress_calc = calculate_heat_stress_tool(
         body_temp_c=req.body_temp_c,
         env_temp_c=env_temp,
         humidity_percent=humidity,
         activity_level=req.activity_level,
-        time_since_water_mins=req.time_since_water_mins
+        time_since_water_mins=req.time_since_water_mins,
+        has_respiratory_condition=req.has_respiratory_condition or False,
+        us_aqi=live_aqi
     )
     
     record = {
@@ -118,9 +136,12 @@ async def record_vitals(req: VitalRecordRequest, current_user: dict = Depends(ge
         "us_aqi": live_aqi,
         "activity_level": req.activity_level,
         "time_since_water_mins": req.time_since_water_mins,
+        "has_respiratory_condition": req.has_respiratory_condition or False,
+        "chronic_conditions": req.chronic_conditions or [],
         "heat_stress_score": stress_calc["heat_index"],
         "dehydration_risk_percent": stress_calc["dehydration_risk_percent"],
         "severity": stress_calc["severity"],
+        "respiratory_advisory": stress_calc.get("respiratory_advisory"),
         "recommendations": stress_calc["recommendation"],
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -390,16 +411,23 @@ async def get_commander_heatmap(current_user: dict = Depends(get_current_user)):
 # 4. NYAYASAHAY ENDPOINTS (Outreach check-ins & Counselor Alerts Escalations)
 # =========================================================================
 
+@router.post("/voice-stress", summary="Analyze voice audio transcript for physiological stress, fatigue & sentiment")
+@router.post("/rakshak/voice-stress", summary="Analyze soldier voice journal for duty fatigue and psychological stress")
 @router.post("/nyaya/voice-stress", summary="Analyze victim voice transcript for physiological stress & sentiment")
-async def analyze_victim_voice_stress(req: VoiceStressRequest, current_user: dict = Depends(get_current_user)):
+async def analyze_voice_stress_endpoint(req: VoiceStressRequest):
     """
-    Analyzes voice markers (tremor, pitch, pauses) and text sentiment for victim protection.
+    Analyzes voice markers (tremor, pitch variance, pauses, cadence) and text sentiment
+    for fatigue detection, stress index calculation, and welfare triage recommendations.
     """
     return analyze_voice_stress_and_sentiment(
         text=req.transcript_text,
         pitch_variance=req.pitch_variance,
-        pause_ratio=req.pause_ratio
+        pause_ratio=req.pause_ratio,
+        speech_rate_wpm=req.speech_rate_wpm,
+        vocal_tremor_score=req.vocal_tremor_score,
+        audio_duration_sec=req.audio_duration_sec
     )
+
 
 
 @router.post("/nyaya/distress", summary="Submit wellbeing check-in and compute distress score")

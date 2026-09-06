@@ -1,21 +1,13 @@
-"""
-Family Health & Hereditary Trauma Risk Graph Engine
-Uses NetworkX graph algorithm to traverse family lineage nodes, compute genetic vulnerability indices,
-and assess inter-generational trauma or chronic condition exposure.
-"""
-import networkx as nx
+try:
+    import networkx as nx
+    NETWORKX_AVAILABLE = True
+except ImportError:
+    NETWORKX_AVAILABLE = False
 from typing import Dict, Any, List
 
 def compute_family_hereditary_risk(family_members: List[Dict[str, Any]]) -> Dict[str, Any]:
     """
     Constructs a directed pedigree graph of family members and calculates genetic risk score.
-    Input structure:
-    [
-      {"id": "p1", "name": "Patient (Self)", "relation": "self", "conditions": ["hypertension"], "parents": ["f1", "m1"]},
-      {"id": "f1", "name": "Father", "relation": "father", "conditions": ["diabetes", "hypertension"], "parents": ["gf1", "gm1"]},
-      {"id": "m1", "name": "Mother", "relation": "mother", "conditions": ["anemia"], "parents": []},
-      {"id": "gf1", "name": "Grandfather (Paternal)", "relation": "grandfather", "conditions": ["cardiovascular"], "parents": []}
-    ]
     """
     if not family_members:
         # Default sample family tree
@@ -26,7 +18,8 @@ def compute_family_hereditary_risk(family_members: List[Dict[str, Any]]) -> Dict
             {"id": "g_father_p", "name": "Paternal Grandfather", "relation": "grandfather", "conditions": ["coronary_artery_disease", "hypertension"], "parents": []}
         ]
 
-    G = nx.DiGraph()
+    nodes_dict = {}
+    edges_list = []
 
     # Weight of inheritance by kinship degree
     KINSHIP_WEIGHTS = {
@@ -44,16 +37,14 @@ def compute_family_hereditary_risk(family_members: List[Dict[str, Any]]) -> Dict
     condition_risk_accumulators = {}
 
     for member in family_members:
-        m_id = member["id"]
-        rel = member.get("relation", "self").lower()
-        weight = KINSHIP_WEIGHTS.get(rel, 0.2)
-        conditions = member.get("conditions", [])
-
-        G.add_node(m_id, name=member.get("name"), relation=rel, conditions=conditions)
-        
-        # Add parent edges
+        nodes_dict[m_id] = {
+            "id": m_id,
+            "name": member.get("name"),
+            "relation": rel,
+            "conditions": conditions
+        }
         for p in member.get("parents", []):
-            G.add_edge(p, m_id)
+            edges_list.append({"source": p, "target": m_id})
 
         # Accumulate condition weights
         for cond in conditions:
@@ -85,11 +76,11 @@ def compute_family_hereditary_risk(family_members: List[Dict[str, Any]]) -> Dict
 
     return {
         "status": "SUCCESS",
-        "total_family_nodes": G.number_of_nodes(),
-        "total_lineage_edges": G.number_of_edges(),
+        "total_family_nodes": len(nodes_dict),
+        "total_lineage_edges": len(edges_list),
         "hereditary_risks": risk_summary,
         "genogram_graph_topology": {
-            "nodes": [{"id": n, "label": G.nodes[n]["name"], "relation": G.nodes[n]["relation"]} for n in G.nodes()],
-            "links": [{"source": u, "target": v} for u, v in G.edges()]
+            "nodes": [{"id": n_id, "label": data["name"], "relation": data["relation"]} for n_id, data in nodes_dict.items()],
+            "links": edges_list
         }
     }

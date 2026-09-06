@@ -203,21 +203,17 @@ function ChatContent() {
                     >
                       <p className="whitespace-pre-wrap">{msg.text}</p>
 
-                      {/* Tool Execution Cards */}
+                      {/* Clinical & Environmental Insight Badges */}
                       {msg.toolResults && msg.toolResults.length > 0 && (
-                        <div className="mt-3 pt-3 border-t border-slate-100 space-y-2 text-left">
+                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-1.5 text-left">
                           {msg.toolResults.map((tool, idx) => (
-                            <div
+                            <span
                               key={idx}
-                              className="p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 font-mono text-xs text-indigo-900"
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-800 text-[11px] font-semibold"
                             >
-                              <div className="font-bold flex items-center gap-1 text-[11px] text-indigo-700 uppercase">
-                                Executed: {tool.tool_name}
-                              </div>
-                              <pre className="mt-1 text-[11px] whitespace-pre-wrap text-slate-700">
-                                {JSON.stringify(tool.result, null, 2)}
-                              </pre>
-                            </div>
+                              <span>✨</span>
+                              <span>Analyzed via {tool.tool_name.replace(/_/g, ' ').replace('tool', '')}</span>
+                            </span>
                           ))}
                         </div>
                       )}
