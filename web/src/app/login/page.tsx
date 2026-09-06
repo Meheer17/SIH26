@@ -5,46 +5,36 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 
-const DEMO_TEST_ACCOUNTS = [
+const DEMO_PERSONAS = [
   {
     name: 'Rahul Sharma',
-    role: 'PATIENT',
+    role: 'Patient (ArogyaSathi)',
     email: 'arogya_user@example.com',
-    app: 'ArogyaSathi',
-    color: 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:border-emerald-400',
-    badge: 'bg-emerald-100 text-emerald-700',
+    target: '/arogya',
   },
   {
     name: 'Dr. Ananya Sharma',
-    role: 'PHYSICIAN',
+    role: 'Physician (MediKiosk)',
     email: 'dr_sharma@hospital.org',
-    app: 'MediKiosk',
-    color: 'bg-sky-50 text-sky-800 border-sky-200 hover:border-sky-400',
-    badge: 'bg-sky-100 text-sky-700',
+    target: '/medikiosk',
   },
   {
     name: 'Capt. Vikram Verma',
-    role: 'SOLDIER',
+    role: 'Defense Officer (RakshakMitra)',
     email: 'capt_verma@forces.gov.in',
-    app: 'RakshakMitra',
-    color: 'bg-amber-50 text-amber-800 border-amber-200 hover:border-amber-400',
-    badge: 'bg-amber-100 text-amber-700',
+    target: '/rakshak',
   },
   {
     name: 'Rajesh Kumar',
-    role: 'COUNSELOR',
+    role: 'Legal Counselor (NyayaSahay)',
     email: 'legal_officer@district.gov.in',
-    app: 'NyayaSahay',
-    color: 'bg-purple-50 text-purple-800 border-purple-200 hover:border-purple-400',
-    badge: 'bg-purple-100 text-purple-700',
+    target: '/nyaya',
   },
   {
-    name: 'Admin Director',
-    role: 'SYSTEM_ADMIN',
+    name: 'Director Admin',
+    role: 'System Administrator',
     email: 'admin@svasthya.gov.in',
-    app: 'System Admin',
-    color: 'bg-rose-50 text-rose-800 border-rose-200 hover:border-rose-400',
-    badge: 'bg-rose-100 text-rose-700',
+    target: '/dashboard',
   },
 ];
 
@@ -55,6 +45,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showDemoAccess, setShowDemoAccess] = useState(false);
 
   const handleLogin = async (email: string, pass: string) => {
     setLoading(true);
@@ -64,7 +55,6 @@ export default function LoginPage() {
       const loggedUser: any = await login(email, pass);
       const roles = loggedUser?.mapped_roles || [loggedUser?.primary_role];
       const hasAdmin = loggedUser?.is_admin || roles?.includes('SYSTEM_ADMIN');
-
 
       if (hasAdmin) {
         router.push('/dashboard');
@@ -102,112 +92,116 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center p-6 bg-slate-50 font-sans">
-      <div className="max-w-4xl w-full space-y-6">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center p-4 sm:p-6 font-sans text-stone-900">
+      <div className="max-w-md w-full space-y-6">
         
-        {/* Header Breadcrumb */}
-        <div className="flex items-center justify-between">
-          <Link href="/" className="text-xs font-bold text-slate-500 hover:text-indigo-600 transition flex items-center gap-1">
-            &larr; Back to Homepage
+        {/* Back Link */}
+        <div>
+          <Link href="/" className="text-xs text-stone-500 hover:text-stone-900 font-medium transition flex items-center gap-1">
+            &larr; Back to overview
           </Link>
-          <div className="text-xs text-slate-500 font-mono">
-            Demo DB Password: <code className="text-emerald-700 font-bold">demo123456</code>
-          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          
-          {/* Left Column: Pre-seeded Test Accounts Display */}
-          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
-            <div>
-              <span className="inline-block px-3 py-1 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
-                Pre-seeded DB Test Accounts
-              </span>
-              <h2 className="text-xl font-black text-slate-900 mt-2">One-Tap Sign In Cards</h2>
-              <p className="text-xs text-slate-500">Click any account to auto-authenticate with JWT tokens</p>
-            </div>
-
-            <div className="space-y-2.5">
-              {DEMO_TEST_ACCOUNTS.map((acc) => (
-                <button
-                  key={acc.email}
-                  type="button"
-                  onClick={() => handleQuickDemoSelect(acc.email)}
-                  className={`w-full p-3.5 rounded-xl text-left border transition duration-200 shadow-sm hover:shadow group ${acc.color}`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900 group-hover:text-indigo-700 transition">{acc.name}</span>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border border-slate-200 ${acc.badge}`}>
-                      {acc.app}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between mt-1 text-[11px]">
-                    <span className="font-mono text-slate-600">{acc.email}</span>
-                    <span className="text-indigo-600 font-bold text-[10px]">One-Tap Login &rarr;</span>
-                  </div>
-                </button>
-              ))}
-            </div>
+        {/* Primary Clean Sign In Card */}
+        <div className="bg-white border border-stone-200/90 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold tracking-tight text-stone-900">Sign in to SvasthyaSetu</h1>
+            <p className="text-xs text-stone-500">Access your health, clinical, defense, or legal dashboard</p>
           </div>
 
-          {/* Right Column: Manual Sign In Form */}
-          <div className="lg:col-span-6 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-5 flex flex-col justify-between">
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Manual Sign In</h2>
-                <p className="text-xs text-slate-500">Or enter custom registered credentials below</p>
+          {error && (
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1">
+              <label className="block text-xs font-medium text-stone-700">Email address or mobile</label>
+              <input
+                type="text"
+                required
+                value={emailOrPhone}
+                onChange={(e) => setEmailOrPhone(e.target.value)}
+                placeholder="name@organization.gov.in"
+                className="w-full px-3.5 py-2.5 rounded-lg bg-stone-50 border border-stone-200 text-stone-900 placeholder-stone-400 text-xs focus:outline-none focus:border-stone-500 focus:bg-white transition"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-medium text-stone-700">Password</label>
               </div>
-
-              {error && (
-                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-medium">
-                  {error}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Email or Phone</label>
-                  <input
-                    type="text"
-                    required
-                    value={emailOrPhone}
-                    onChange={(e) => setEmailOrPhone(e.target.value)}
-                    placeholder="e.g. dr_sharma@hospital.org"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-indigo-500 focus:bg-white transition"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md shadow-indigo-600/20 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? <span>Authenticating...</span> : <span>Sign In to AI Portal</span>}
-                </button>
-              </form>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-3.5 py-2.5 rounded-lg bg-stone-50 border border-stone-200 text-stone-900 placeholder-stone-400 text-xs focus:outline-none focus:border-stone-500 focus:bg-white transition"
+              />
             </div>
 
-            <div className="pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
-              Need a new account?{' '}
-              <Link href="/register" className="text-indigo-600 font-bold hover:underline">
-                Register now
-              </Link>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-2.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-50 font-medium text-xs shadow-xs transition disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {loading ? 'Authenticating...' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs text-stone-500">
+            <span>New user?</span>
+            <Link href="/register" className="text-stone-900 font-medium hover:underline">
+              Create an account
+            </Link>
           </div>
-
         </div>
+
+        {/* Unobtrusive Evaluator Demo Access Accordion */}
+        <div className="bg-stone-50/80 border border-stone-200/80 rounded-xl overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowDemoAccess(!showDemoAccess)}
+            className="w-full px-4 py-3 text-left flex items-center justify-between text-xs font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-100/60 transition"
+          >
+            <span className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-stone-400"></span>
+              Prototype Evaluator Demo Personas
+            </span>
+            <span className="text-[11px] text-stone-400 font-mono">
+              {showDemoAccess ? 'Hide &minus;' : 'View 1-tap accounts &plus;'}
+            </span>
+          </button>
+
+          {showDemoAccess && (
+            <div className="px-4 pb-4 pt-1 border-t border-stone-200/60 space-y-2">
+              <p className="text-[11px] text-stone-500 leading-relaxed">
+                Click any persona below to authenticate with pre-seeded demonstration records (Password: <code className="font-mono text-stone-700">demo123456</code>):
+              </p>
+              <div className="grid grid-cols-1 gap-1.5 pt-1">
+                {DEMO_PERSONAS.map((p) => (
+                  <button
+                    key={p.email}
+                    type="button"
+                    onClick={() => handleQuickDemoSelect(p.email)}
+                    className="w-full px-3 py-2 rounded-lg bg-white border border-stone-200/80 hover:border-stone-400 text-left flex items-center justify-between transition shadow-2xs group"
+                  >
+                    <div>
+                      <span className="text-xs font-medium text-stone-900 block group-hover:text-stone-700">{p.name}</span>
+                      <span className="text-[10px] text-stone-500">{p.role}</span>
+                    </div>
+                    <span className="text-[11px] text-stone-500 font-medium group-hover:text-stone-900">
+                      Sign In &rarr;
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
     </div>
   );

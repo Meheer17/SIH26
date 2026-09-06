@@ -1,97 +1,89 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/lib/auth/AuthContext';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { checkBackendHealth, HealthResponse } from '@/lib/api/apiClient';
 import { API_BASE_URL } from '@/lib/api/endpoints';
 
-const APPLICATION_CARDS = [
+const CORE_APPLICATIONS = [
   {
-    id: 'arogya_sathi',
-    title: 'ArogyaSathi',
-    subtitle: 'Disaster Health & Vitals Monitoring',
-    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    cardBorder: 'hover:border-emerald-400',
-    btnBg: 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20',
-    description: 'Continuous health monitoring for rural & disaster-prone areas. Detects heat stress, dehydration risk, AQI respiratory hazards, and NDMA advisories.',
-    targetAgent: 'arogya_sathi_agent',
+    id: 'arogya',
+    href: '/arogya',
+    problemCode: 'SIH26181',
+    category: 'Rural & Disaster Health',
+    name: 'ArogyaSathi',
+    question: 'How am I doing right now?',
+    summary:
+      'Continuous physiological and environmental telemetry for field and rural settings. Monitors real-time vital equilibrium, thermal stress, hydration loss, and air-quality respiratory hazards with automated SOS dispatch.',
+    accent: 'border-emerald-800/20 text-emerald-900',
+    tagBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+    btnText: 'Open ArogyaSathi',
   },
   {
     id: 'medikiosk',
-    title: 'MediKiosk',
-    subtitle: 'OPD Clinical History & Triage',
-    badgeColor: 'bg-sky-50 text-sky-700 border-sky-200',
-    cardBorder: 'hover:border-sky-400',
-    btnBg: 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/20',
-    description: 'Captures structured clinical history (SOCRATES/AYUSH Prakriti) before patient enters OPD. Digitizes prescriptions via ML Kit OCR and flags clinical red flags.',
-    targetAgent: 'medikiosk_agent',
+    href: '/medikiosk',
+    problemCode: 'SIH26047',
+    category: 'Clinical OPD Intake',
+    name: 'MediKiosk',
+    question: 'What does the doctor need to know?',
+    summary:
+      'Structured pre-consultation clinical intake and history capture. Translates patient symptoms into doctor-ready SOCRATES summaries, integrates AYUSH Prakriti profiling, and digitizes prescriptions with anomaly detection.',
+    accent: 'border-sky-800/20 text-sky-900',
+    tagBg: 'bg-sky-50 text-sky-800 border-sky-200',
+    btnText: 'Open MediKiosk',
   },
   {
-    id: 'rakshak_mitra',
-    title: 'RakshakMitra',
-    subtitle: 'Armed Forces Stress & Burnout',
-    badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-    cardBorder: 'hover:border-amber-400',
-    btnBg: 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/20',
-    description: 'Proactive early-warning burnout predictor for defense & police personnel. Analyzes duty hours, deployment duration, leave gap ratio, and recommends welfare actions.',
-    targetAgent: 'rakshak_mitra_agent',
+    id: 'rakshak',
+    href: '/rakshak',
+    problemCode: 'SIH26186',
+    category: 'Defense & Police Welfare',
+    name: 'RakshakMitra',
+    question: 'Does my unit need attention?',
+    summary:
+      'Early-stage burnout and psychological fatigue assessment for armed forces and police units. Correlates continuous deployment days, leave gaps, and acoustic voice tremor analysis into actionable operational rosters.',
+    accent: 'border-amber-800/20 text-amber-900',
+    tagBg: 'bg-amber-50 text-amber-800 border-amber-200',
+    btnText: 'Open RakshakMitra',
   },
   {
-    id: 'nyaya_sahay',
-    title: 'NyayaSahay',
-    subtitle: 'Atrocity Victim Legal Rehabilitation',
-    badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
-    cardBorder: 'hover:border-purple-400',
-    btnBg: 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20',
-    description: 'Continuous psychological & legal support for SC/ST atrocity victims. Correlates distress scores with legal case stage milestones (FIR, trial) and triggers multi-tier escalation.',
-    targetAgent: 'nyaya_sahay_agent',
+    id: 'nyaya',
+    href: '/nyaya',
+    problemCode: 'SIH26094',
+    category: 'Legal Rehabilitation',
+    name: 'NyayaSahay',
+    question: 'What support do I need?',
+    summary:
+      'Safe, confidential legal-medical assistance for atrocity victims. Maps psychological distress scores against formal legal case milestones (FIR, trial, compensation) with multi-tier district protection escalation.',
+    accent: 'border-purple-800/20 text-purple-900',
+    tagBg: 'bg-purple-50 text-purple-800 border-purple-200',
+    btnText: 'Open NyayaSahay',
   },
 ];
 
-const PLATFORM_MODULES = [
+const PLATFORM_CAPABILITIES = [
   {
-    title: 'AI Agent Hub',
-    subtitle: 'Strands & Bedrock Mantle',
+    title: 'Multi-Agent AI Hub',
+    subtitle: 'Clinical Reasoning',
     path: '/chat',
-    description: 'Multi-agent reasoning engine with specialized domain tools for clinical & crisis assessment.',
-    badge: 'Core Engine',
+    description: 'Autonomous reasoning agents equipped with clinical, legal, and operational assessment tools.',
   },
   {
-    title: 'Encrypted Storage SDK',
-    subtitle: 'Offline-First Local DB',
+    title: 'Offline-First Storage',
+    subtitle: 'Encrypted Local SDK',
     path: '/storage-demo',
-    description: 'Single-invoke AES-256 encrypted local storage with background offline sync queue.',
-    badge: 'Offline SDK',
+    description: 'Hardware-backed AES-256 local encrypted database with seamless background synchronization.',
   },
   {
-    title: 'One-Tap SOS & Alerts',
-    subtitle: 'Emergency Routing',
+    title: 'Emergency SOS Hub',
+    subtitle: 'Multi-Channel Alert',
     path: '/sos-demo',
-    description: 'GPS + vitals snapshot emergency trigger with 5s cancel countdown and multi-tier routing.',
-    badge: 'Emergency',
+    description: 'High-accuracy live GPS pinning, OpenStreetMap reverse geocoding, and WhatsApp emergency dispatch.',
   },
   {
-    title: 'Role Dashboard',
-    subtitle: 'Multi-Role Access',
-    path: '/dashboard',
-    description: 'Personalized views for Patients, Doctors, Officers, Counselors, and Administrators.',
-    badge: 'Dashboard',
-  },
-  {
-    title: 'Role Management',
-    subtitle: 'Granular RBAC Control',
-    path: '/admin/roles',
-    description: 'Manage mapped roles, admin privileges, and user access permissions.',
-    badge: 'RBAC',
-  },
-  {
-    title: 'Consent Engine',
-    subtitle: 'DPDP Act Compliance',
+    title: 'Consent & Privacy',
+    subtitle: 'DPDP Act Engine',
     path: '/consent',
-    description: 'Granular, purpose-bound consent management with audio explanations for literacy.',
-    badge: 'Privacy',
+    description: 'Granular, purpose-bound patient consent with audio explanations for varying literacy levels.',
   },
 ];
 
@@ -112,85 +104,91 @@ export default function Home() {
       if (err instanceof Error) {
         setErrorMsg(err.message);
       } else {
-        setErrorMsg('Failed to connect to FastAPI backend.');
+        setErrorMsg('Unable to connect to the backend service.');
       }
     }
   };
 
-
   return (
-    <div className="space-y-12 pb-16 font-sans">
-      {/* Hero Banner */}
-      <section className="bg-gradient-to-b from-indigo-50/70 via-white to-slate-50 border-b border-slate-200 py-16 px-6 sm:px-12 text-center">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-indigo-100/80 text-indigo-700 border border-indigo-200 uppercase tracking-wider">
-            <span>SIH 2026 Unified Architecture</span>
+    <div className="space-y-16 pb-20 font-sans text-stone-900">
+      {/* Editorial Hero Banner */}
+      <section className="border-b border-stone-200/80 bg-stone-100/40 py-16 sm:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto space-y-6 text-center sm:text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-stone-200/80 text-stone-800 border border-stone-300/60">
+            <span>Unified Healthcare &amp; Defense Intelligence Platform</span>
           </div>
 
-          <h1 className="text-4xl sm:text-6xl font-black text-slate-900 tracking-tight leading-tight">
-            SvasthyaSetu — <span className="text-indigo-600">Bridge to Health</span>
+          <h1 className="text-3xl sm:text-5xl font-semibold tracking-tight text-stone-900 leading-tight">
+            Technology designed for human resilience, clinical clarity, and timely care.
           </h1>
 
-          <p className="text-slate-600 max-w-2xl mx-auto text-base sm:text-lg leading-relaxed font-normal">
-            Enterprise healthcare intelligence platform serving rural communities, hospital OPDs, armed forces personnel, and atrocity victims.
+          <p className="text-stone-600 text-base sm:text-lg leading-relaxed max-w-2xl">
+            SvasthyaSetu bridges continuous personal health monitoring, clinical OPD triage, armed forces welfare, and confidential legal-medical rehabilitation into one cohesive, high-trust system.
           </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+          <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link
-              href="/chat"
-              className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 transition hover:scale-[1.02]"
+              href="/arogya"
+              className="px-5 py-2.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-50 text-xs font-medium shadow-xs transition"
             >
-              Launch AI Agent Hub
+              Explore ArogyaSathi &rarr;
             </Link>
             <Link
               href="/login"
-              className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-300 shadow-sm transition hover:scale-[1.02]"
+              className="px-5 py-2.5 rounded-lg bg-white hover:bg-stone-100 text-stone-800 text-xs font-medium border border-stone-300/80 shadow-2xs transition"
             >
-              Demo Test Logins
+              Sign In Portal
             </Link>
           </div>
         </div>
       </section>
 
-      {/* Main Content Area */}
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 space-y-12">
-        {/* 4 Life-Saving Applications Section */}
-        <section id="apps" className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between border-b border-slate-200 pb-4 gap-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16">
+        {/* Core Four Applications Section */}
+        <section className="space-y-8">
+          <div className="border-b border-stone-200 pb-3 flex flex-col sm:flex-row sm:items-baseline justify-between gap-2">
             <div>
-              <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">The Four Platform Applications</h2>
-              <p className="text-xs text-slate-500">Tailored AI reasoning agents built on a single unified architecture</p>
+              <h2 className="text-xl font-semibold tracking-tight text-stone-900">Four Dedicated Mission Applications</h2>
+              <p className="text-xs text-stone-500 mt-0.5">Each crafted for a specific human-centered purpose and operational environment</p>
             </div>
-            <Link href="/chat" className="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition">
-              Explore All AI Agents &rarr;
+            <Link href="/chat" className="text-xs font-medium text-stone-600 hover:text-stone-900">
+              Open Unified AI Assistant &rarr;
             </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {APPLICATION_CARDS.map((app) => (
+            {CORE_APPLICATIONS.map((app) => (
               <div
                 key={app.id}
-                className={`bg-white rounded-2xl border border-slate-200 p-6 shadow-sm hover:shadow-md transition duration-200 space-y-4 flex flex-col justify-between ${app.cardBorder}`}
+                className="bg-white border border-stone-200/90 rounded-xl p-6 shadow-2xs flex flex-col justify-between hover:border-stone-400/80 transition duration-200 space-y-6"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-base font-extrabold text-slate-900">{app.title}</span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${app.badgeColor}`}>
-                      {app.subtitle}
+                    <span className="text-xs font-semibold uppercase tracking-wider text-stone-500">
+                      {app.category}
+                    </span>
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${app.tagBg}`}>
+                      {app.problemCode}
                     </span>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">{app.description}</p>
+
+                  <div>
+                    <h3 className="text-lg font-semibold text-stone-900">{app.name}</h3>
+                    <p className="text-xs text-stone-500 italic mt-0.5">&ldquo;{app.question}&rdquo;</p>
+                  </div>
+
+                  <p className="text-xs text-stone-600 leading-relaxed">{app.summary}</p>
                 </div>
 
-                <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+                <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
                   <Link
-                    href={`/chat?agent=${app.targetAgent}`}
-                    className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-md ${app.btnBg} transition`}
+                    href={app.href}
+                    className="px-4 py-2 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-50 text-xs font-medium transition shadow-2xs"
                   >
-                    Open {app.title} AI
+                    {app.btnText}
                   </Link>
-                  <Link href="/login" className="text-xs font-bold text-slate-500 hover:text-slate-900">
-                    Sign In as Role &rarr;
+                  <Link href="/login" className="text-xs text-stone-500 hover:text-stone-900 font-medium">
+                    Account Access &rarr;
                   </Link>
                 </div>
               </div>
@@ -198,76 +196,72 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Platform Shared Modules Grid */}
-        <section id="features" className="space-y-6">
-          <div className="border-b border-slate-200 pb-4">
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">Shared Platform Modules</h2>
-            <p className="text-xs text-slate-500">Core system services integrated across all 4 applications</p>
+        {/* Shared Architecture Capabilities */}
+        <section className="space-y-6">
+          <div className="border-b border-stone-200 pb-3">
+            <h2 className="text-xl font-semibold tracking-tight text-stone-900">Platform Infrastructure</h2>
+            <p className="text-xs text-stone-500 mt-0.5">Underlying privacy, offline synchronization, and emergency routing protocols</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {PLATFORM_MODULES.map((item, idx) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {PLATFORM_CAPABILITIES.map((cap, idx) => (
               <Link
                 key={idx}
-                href={item.path}
-                className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-indigo-300 transition duration-200 space-y-2 group"
+                href={cap.path}
+                className="bg-white border border-stone-200/80 rounded-xl p-4 shadow-2xs hover:border-stone-400/80 transition duration-200 space-y-2 group block"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">{item.subtitle}</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-100 border border-slate-200 text-slate-600 font-semibold">
-                    {item.badge}
-                  </span>
-                </div>
-                <h3 className="font-bold text-slate-900 text-base group-hover:text-indigo-600 transition">{item.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{item.description}</p>
-                <div className="pt-1 text-[11px] font-bold text-indigo-600 flex items-center gap-1 group-hover:translate-x-1 transition">
-                  Launch Module &rarr;
-                </div>
+                <span className="text-[10px] font-semibold text-stone-500 uppercase tracking-wider block">
+                  {cap.subtitle}
+                </span>
+                <h4 className="text-sm font-semibold text-stone-900 group-hover:text-stone-700 transition">
+                  {cap.title}
+                </h4>
+                <p className="text-xs text-stone-500 leading-relaxed">{cap.description}</p>
               </Link>
             ))}
           </div>
         </section>
 
-        {/* Live Backend Connection Tester Card */}
-        <section className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        {/* Service Connectivity Verification */}
+        <section className="bg-stone-50 border border-stone-200 rounded-xl p-5 sm:p-6 shadow-2xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                FastAPI Backend Connection Status
+              <h3 className="text-sm font-semibold text-stone-900 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                Backend Health Verification
               </h3>
-              <p className="text-xs text-slate-500 font-mono">
-                Target Endpoint: <code className="text-indigo-600">{API_BASE_URL}/health</code>
+              <p className="text-xs text-stone-500 mt-0.5">
+                Target Service: <code className="text-stone-700 font-mono text-[11px]">{API_BASE_URL}/health</code>
               </p>
             </div>
             <button
+              type="button"
               onClick={testConnection}
               disabled={status === 'loading'}
-              className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition shadow-sm disabled:opacity-50"
+              className="px-3.5 py-1.5 rounded-lg bg-stone-900 hover:bg-stone-800 text-stone-50 text-xs font-medium transition disabled:opacity-50"
             >
-              {status === 'loading' ? <span>Pinging API...</span> : <span>Test API Connection</span>}
+              {status === 'loading' ? 'Checking...' : 'Verify Connectivity'}
             </button>
           </div>
 
           {status === 'success' && healthData && (
-            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-mono">
-              <div className="font-bold text-emerald-900 mb-1">FastAPI Backend Online &amp; Resilient</div>
-              <div>Service: {healthData.service} | Uptime: {healthData.uptime_seconds}s | Version: {healthData.version}</div>
+            <div className="mt-4 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-mono">
+              <span className="font-semibold">Service Online:</span> {healthData.service} &bull; Uptime: {healthData.uptime_seconds}s &bull; v{healthData.version}
             </div>
           )}
 
           {status === 'error' && (
-            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-mono">
+            <div className="mt-4 p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs font-mono">
               {errorMsg}
             </div>
           )}
         </section>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-8 px-6 text-center text-xs text-slate-500 space-y-1">
-        <p className="font-semibold text-slate-700">SvasthyaSetu — Bridge to Health Unified Platform</p>
-        <p className="text-[11px] text-slate-400">Next.js 16, Flutter 3, FastAPI, Strands Agents, &amp; AWS Bedrock Mantle</p>
+      {/* Editorial Clean Footer */}
+      <footer className="border-t border-stone-200 bg-stone-50 py-8 px-4 text-center text-xs text-stone-500 space-y-1 mt-12">
+        <p className="font-medium text-stone-700">SvasthyaSetu &mdash; Unified Healthcare &amp; Defense Platform</p>
+        <p className="text-[11px] text-stone-400">Developed for Smart India Hackathon 2026</p>
       </footer>
     </div>
   );

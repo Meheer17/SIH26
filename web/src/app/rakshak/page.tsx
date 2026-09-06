@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { apiClient } from '@/lib/api/apiClient';
+import VoiceStressRecorder, { VoiceStressResult } from '@/components/VoiceStressRecorder';
 
 interface MoodTrajectory {
   sentiment_polarity: number;
@@ -54,7 +55,7 @@ const DEFAULT_HEATMAP_DATA: HeatmapItem[] = [
     suggested_action: 'Rebalance night patrol roster and schedule 3-day wellness break.',
   },
   {
-    unit: 'Border Outpost G1',
+    unit: 'Border Outpost G1 (Forward Line)',
     personnel_count: 14,
     average_burnout_index: 78.4,
     critical_risk_count: 5,
@@ -65,7 +66,7 @@ const DEFAULT_HEATMAP_DATA: HeatmapItem[] = [
     suggested_action: 'Mandatory 7-day R&R rotation and immediate unit counselor visit.',
   },
   {
-    unit: 'Base Depot Camp',
+    unit: 'Base Depot Camp & Logistical Hub',
     personnel_count: 82,
     average_burnout_index: 22.8,
     critical_risk_count: 0,
@@ -73,10 +74,10 @@ const DEFAULT_HEATMAP_DATA: HeatmapItem[] = [
     status: 'GREEN',
     avg_duty_hours: 42,
     avg_leave_gap: 0.25,
-    suggested_action: 'Optimal operational readiness. Routine weekly welfare check-in.',
+    suggested_action: 'Optimal operational readiness. Maintain routine weekly welfare check-in.',
   },
   {
-    unit: '7th Mountain Brigade',
+    unit: '7th Mountain Brigade (High Altitude)',
     personnel_count: 32,
     average_burnout_index: 72.1,
     critical_risk_count: 6,
@@ -89,14 +90,14 @@ const DEFAULT_HEATMAP_DATA: HeatmapItem[] = [
 ];
 
 const PHQ9_QUESTIONS = [
-  '1. Little interest or pleasure in doing activities or daily tasks',
+  '1. Little interest or pleasure in doing daily tasks or briefings',
   '2. Feeling down, depressed, or hopeless during deployment',
-  '3. Trouble falling or staying asleep, or sleeping too much',
+  '3. Trouble falling or staying asleep, or irregular sleep cycles',
   '4. Feeling fatigued, exhausted, or having little energy on watch',
-  '5. Poor appetite or overeating during field operations',
+  '5. Poor appetite or skipping meals during field operations',
   '6. Feeling that you are letting yourself or your unit down',
   '7. Trouble concentrating on military briefings or duties',
-  '8. Moving or speaking noticeably slowly, or restlessness',
+  '8. Noticeably slow speech/movements or severe restlessness',
   '9. Persistent stress thoughts or feeling overwhelmed',
 ];
 
@@ -108,8 +109,8 @@ const PHQ9_OPTIONS = [
 ];
 
 export default function RakshakMitraPage() {
-  const { user, logout } = useAuth();
-  const [activeTab, setActiveTab] = useState<'CHECKIN' | 'HEATMAP' | 'CHAT' | 'HISTORY'>('CHECKIN');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'CHECKIN' | 'VOICE_STRESS' | 'HEATMAP' | 'CHAT' | 'HISTORY'>('CHECKIN');
 
   // Soldier checkin state
   const [deploymentDays, setDeploymentDays] = useState(75);
@@ -118,17 +119,15 @@ export default function RakshakMitraPage() {
   const [phqAnswers, setPhqAnswers] = useState<number[]>([1, 1, 2, 2, 1, 1, 1, 1, 1]);
   const [showPhqModal, setShowPhqModal] = useState(false);
 
-  // Voice Recording state
+  // Voice Recording & Stress/Fatigue state
   const [voiceText, setVoiceText] = useState('Feeling fatigued after successive long night watches. Sleep is irregular.');
-  const [isRecording, setIsRecording] = useState(false);
-  const [speechSupported, setSpeechSupported] = useState(false);
-  const recognitionRef = useRef<any>(null);
+  const [voiceStressResult, setVoiceStressResult] = useState<VoiceStressResult | null>(null);
+  const [showVoiceRecorderModal, setShowVoiceRecorderModal] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<BurnoutRecord[]>([]);
-  const [heatmap, setHeatmap] = useState<HeatmapItem[]>(DEFAULT_HEATMAP_DATA);
+  const [heatmap] = useState<HeatmapItem[]>(DEFAULT_HEATMAP_DATA);
   const [latestResult, setLatestResult] = useState<BurnoutRecord | null>(null);
-  const [selectedUnit, setSelectedUnit] = useState<HeatmapItem | null>(null);
   const [heatmapFilter, setHeatmapFilter] = useState<'ALL' | 'RED' | 'ORANGE' | 'GREEN'>('ALL');
 
   // AI Chat State
@@ -136,68 +135,13 @@ export default function RakshakMitraPage() {
     {
       role: 'assistant',
       content:
-        'Jai Hind! I am your RakshakMitra AI Welfare Companion. I am here to support you with stress mitigation, duty fatigue management, voice mood analysis, and confidential welfare counseling. How are you feeling today?',
+        'Jai Hind! I am your RakshakMitra AI Welfare Companion. I am here to support you with operational fatigue management, stress mitigation, acoustic voice mood profiling, and confidential welfare counseling. How are you feeling today?',
     },
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
 
   const cumulativePhqScore = phqAnswers.reduce((acc, curr) => acc + curr, 0);
-
-  // Initialize Web Speech API for voice mood journaling
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        setSpeechSupported(true);
-        const recog = new SpeechRecognition();
-        recog.continuous = true;
-        recog.interimResults = true;
-        recog.lang = 'en-IN';
-
-        recog.onresult = (event: any) => {
-          let currentTranscript = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            currentTranscript += event.results[i][0].transcript;
-          }
-          if (currentTranscript.trim()) {
-            setVoiceText((prev) => (prev ? `${prev} ${currentTranscript}` : currentTranscript));
-          }
-        };
-
-        recog.onerror = (e: any) => {
-          console.warn('Speech recognition notification:', e.error);
-          setIsRecording(false);
-        };
-
-        recog.onend = () => {
-          setIsRecording(false);
-        };
-
-        recognitionRef.current = recog;
-      }
-    }
-  }, []);
-
-  const toggleRecording = () => {
-    if (!speechSupported || !recognitionRef.current) {
-      alert('Speech recognition is not supported in this browser. You can type your voice journal manually.');
-      return;
-    }
-
-    if (isRecording) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    } else {
-      try {
-        recognitionRef.current.start();
-        setIsRecording(true);
-      } catch (e) {
-        console.error('Error starting speech recognition', e);
-      }
-    }
-  };
 
   const calculateBurnout = (days: number, gap: number, hours: number, score: number): BurnoutRecord => {
     let bScore = Math.round(
@@ -213,7 +157,6 @@ export default function RakshakMitraPage() {
     const actions: string[] = [];
 
     if (days > 60) factors.push('Extended continuous deployment (>60 days)');
-
     if (gap > 0.5) factors.push('Overdue leave gap ratio (>0.5)');
     if (hours > 56) factors.push('Excessive duty hours (>56 hrs/week)');
     if (score > 10) factors.push('Elevated PHQ-9 distress score (>10)');
@@ -222,7 +165,7 @@ export default function RakshakMitraPage() {
       tier = 'CRITICAL';
       actions.push('🚨 Immediate 7-day R&R Leave Authorization recommended');
       actions.push('Mandatory 1-on-1 confidential counseling session');
-      actions.push('Temporary removal from high-stress patrol duty');
+      actions.push('Temporary rotation from high-stress watch & night patrol');
     } else if (bScore >= 50) {
       tier = 'HIGH';
       actions.push('⚠️ Schedule 3-day wellness break within 10 days');
@@ -231,11 +174,11 @@ export default function RakshakMitraPage() {
     } else {
       tier = 'MODERATE';
       actions.push('Maintain routine duty rotation');
-      actions.push('Weekly mindfulness & relaxation sessions');
+      actions.push('Weekly mindfulness & recovery sessions');
     }
 
     return {
-      id: 'brn_' + Date.now(),
+      id: 'BRN-' + Date.now().toString().slice(-6),
       deployment_days: days,
       leave_gap_ratio: gap,
       duty_hours_per_week: hours,
@@ -243,7 +186,7 @@ export default function RakshakMitraPage() {
       phq9_answers: phqAnswers,
       burnout_score: bScore,
       risk_tier: tier,
-      contributing_factors: factors.length > 0 ? factors : ['Routine operational strain'],
+      contributing_factors: factors.length > 0 ? factors : ['Routine operational deployment strain'],
       recommended_actions: actions,
       voice_journal_text: voiceText,
       mood_trajectory: {
@@ -265,7 +208,7 @@ export default function RakshakMitraPage() {
         return;
       }
     } catch (e) {
-      console.error('Maintaining pre-seeded burnout history', e);
+      console.warn('Maintaining pre-seeded burnout history', e);
     }
 
     const initRec = calculateBurnout(deploymentDays, leaveGapRatio, dutyHours, cumulativePhqScore);
@@ -322,7 +265,7 @@ export default function RakshakMitraPage() {
         {
           role: 'assistant',
           content:
-            'Jai Hind, Comrade! Remember that seeking help is a mark of true strength. Try 4-7-8 deep breathing during breaks, and know that your welfare officers stand ready to support your deployment needs.',
+            'Jai Hind, Comrade! Remember that seeking help is a mark of true strength. Try 4-7-8 deep breathing during rest breaks, and know that your welfare officers stand ready to support your deployment needs.',
         },
       ]);
     } finally {
@@ -334,47 +277,67 @@ export default function RakshakMitraPage() {
     heatmapFilter === 'ALL' ? heatmap : heatmap.filter((h) => h.status === heatmapFilter);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 sm:p-6 space-y-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        
-        {/* Header Banner */}
-        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-2xl shadow-sm text-white">
-              🎖️
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-slate-900">RakshakMitra Forces Stress System</h1>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-800 border border-slate-300 uppercase">
-                  SIH26186 • MHA Track
-                </span>
-              </div>
-              <p className="text-xs text-slate-500">Burnout Predictor, Leave Gap Matrix, Commander Unit Heatmap &amp; Voice Mood Profiler</p>
-            </div>
-          </div>
+    <div className="min-h-screen bg-[#fafaf9] text-stone-900 font-sans pb-16">
+      {/* Top Breadcrumb & Status */}
+      <div className="border-b border-stone-200 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between text-xs text-stone-500">
           <div className="flex items-center gap-2">
+            <Link href="/" className="hover:text-stone-900 transition font-medium">SvasthyaSetu</Link>
+            <span>/</span>
+            <span className="font-semibold text-stone-900">RakshakMitra Forces Wellness</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-stone-600 font-medium">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+              Encrypted Operational Channel
+            </span>
+            <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-50 text-amber-900 border border-amber-200">
+              SIH26186 • MHA Track
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 space-y-8">
+        
+        {/* Module Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-stone-200 pb-6">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-stone-100 border border-stone-200 text-stone-700 text-xs font-medium">
+              <span>🎖️</span>
+              <span>Armed Forces Psychological Wellness &amp; Burnout Early-Warning</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-stone-900">
+              RakshakMitra Operational System
+            </h1>
+            <p className="text-stone-600 text-sm max-w-2xl leading-relaxed">
+              Longitudinal duty fatigue tracking, leave gap matrix, unit-level burnout heatmaps, and acoustic voice stress profiling for commanders and personnel.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
             {user ? (
-              <div className="px-3 py-1.5 bg-slate-100 border rounded-xl text-xs font-bold text-slate-700 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                <span>{user.full_name} ({user.primary_role})</span>
+              <div className="px-3.5 py-2 bg-white border border-stone-200 rounded-lg text-xs shadow-xs">
+                <span className="text-stone-400 block text-[10px] font-medium uppercase tracking-wider">Logged In</span>
+                <span className="font-semibold text-stone-900">{user.full_name}</span>
+                <span className="text-stone-500 ml-1">({user.primary_role})</span>
               </div>
             ) : (
-              <span className="px-2.5 py-1 bg-slate-100 border text-slate-600 rounded-lg text-xs font-semibold">
-                Evaluation Mode Active
-              </span>
+              <div className="px-3.5 py-2 bg-stone-100 border border-stone-200 rounded-lg text-xs text-stone-600">
+                Evaluation Demo Profile Active
+              </div>
             )}
           </div>
-        </header>
+        </div>
 
-        {/* Feature Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-2 border-b border-stone-200 pb-px overflow-x-auto">
           <button
             onClick={() => setActiveTab('CHECKIN')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'CHECKIN'
-                ? 'bg-slate-900 text-white shadow-md'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                ? 'border-stone-900 text-stone-900 bg-white'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
             }`}
           >
             <span>📊</span>
@@ -382,23 +345,38 @@ export default function RakshakMitraPage() {
           </button>
 
           <button
+            onClick={() => setActiveTab('VOICE_STRESS')}
+            className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap ${
+              activeTab === 'VOICE_STRESS'
+                ? 'border-stone-900 text-stone-900 bg-white'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
+            }`}
+          >
+            <span>🎙️</span>
+            <span>Voice Stress &amp; Fatigue Scanner</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('HEATMAP')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'HEATMAP'
-                ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                ? 'border-stone-900 text-stone-900 bg-white'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
             }`}
           >
             <span>🗺️</span>
-            <span>Commander Unit Heatmap ({heatmap.length})</span>
+            <span>Commander Unit Heatmap</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-stone-100 text-stone-700">
+              {heatmap.length}
+            </span>
           </button>
 
           <button
             onClick={() => setActiveTab('CHAT')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'CHAT'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/20'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                ? 'border-stone-900 text-stone-900 bg-white'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
             }`}
           >
             <span>💬</span>
@@ -407,48 +385,56 @@ export default function RakshakMitraPage() {
 
           <button
             onClick={() => setActiveTab('HISTORY')}
-            className={`px-4 py-2.5 rounded-xl font-bold text-xs transition flex items-center gap-2 ${
+            className={`px-4 py-2.5 text-xs font-semibold rounded-t-lg transition border-b-2 -mb-px flex items-center gap-2 whitespace-nowrap ${
               activeTab === 'HISTORY'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
+                ? 'border-stone-900 text-stone-900 bg-white'
+                : 'border-transparent text-stone-500 hover:text-stone-900'
             }`}
           >
             <span>📜</span>
-            <span>Check-in History ({history.length})</span>
+            <span>Check-in History</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-stone-100 text-stone-700">
+              {history.length}
+            </span>
           </button>
         </div>
 
-        {/* TAB 1: SOLDIER CHECKIN */}
+        {/* ========================================================================= */}
+        {/* TAB 1: SOLDIER STRESS CHECK-IN */}
+        {/* ========================================================================= */}
         {activeTab === 'CHECKIN' && (
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            {/* Input Form */}
-            <div className="md:col-span-6">
-              <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 text-xs">
-                <div className="border-b pb-2 flex items-center justify-between">
-                  <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Duty &amp; Burnout Parameters</h2>
+            {/* Input Form (Left) */}
+            <div className="lg:col-span-6 space-y-6">
+              <form onSubmit={handleSubmit} className="bg-white border border-stone-200 rounded-xl p-6 sm:p-7 shadow-xs space-y-6 text-xs">
+                <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-sm font-semibold text-stone-900">Duty &amp; Deployment Parameters</h2>
+                    <p className="text-[11px] text-stone-500">Confidential self-assessment for duty rotation balance</p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setShowPhqModal(true)}
-                    className="px-3 py-1 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold rounded-lg hover:bg-indigo-100 transition"
+                    className="px-3 py-1.5 bg-stone-100 hover:bg-stone-200 border border-stone-300 text-stone-800 font-semibold rounded-lg transition"
                   >
-                    📝 PHQ-9 / GAD-7 Test ({cumulativePhqScore}/27)
+                    📝 PHQ-9 Test ({cumulativePhqScore}/27)
                   </button>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Continuous Deployment (Days)</label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-stone-700">Continuous Deployment (Days)</label>
                     <input
                       type="number"
                       value={deploymentDays}
                       onChange={(e) => setDeploymentDays(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-slate-50 border rounded-xl"
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-900 font-medium"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Leave Gap Ratio (0.0 - 1.0)</label>
+                  <div className="space-y-1.5">
+                    <label className="font-semibold text-stone-700">Leave Gap Ratio (0.0 to 1.0)</label>
                     <input
                       type="number"
                       step="0.05"
@@ -456,104 +442,139 @@ export default function RakshakMitraPage() {
                       max="1"
                       value={leaveGapRatio}
                       onChange={(e) => setLeaveGapRatio(Number(e.target.value))}
-                      className="w-full px-3 py-2 bg-slate-50 border rounded-xl"
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-900 font-medium"
                       required
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Duty Hours Per Week</label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-stone-700">Weekly Duty Hours</label>
+                    <span className="font-mono font-bold text-stone-900">{dutyHours} hrs/week</span>
+                  </div>
                   <input
-                    type="number"
+                    type="range"
+                    min="30"
+                    max="90"
                     value={dutyHours}
                     onChange={(e) => setDutyHours(Number(e.target.value))}
-                    className="w-full px-3 py-2 bg-slate-50 border rounded-xl"
-                    required
+                    className="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-stone-900"
                   />
                 </div>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="font-bold text-slate-700">Voice Mood Journaling</label>
+                <div className="space-y-2 pt-2 border-t border-stone-100">
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-stone-700">Voice Mood &amp; Fatigue Journal</label>
                     <button
                       type="button"
-                      onClick={toggleRecording}
-                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
-                        isRecording ? 'bg-rose-100 text-rose-800 border-rose-300 animate-pulse' : 'bg-slate-100 text-slate-700 border-slate-200'
-                      }`}
+                      onClick={() => setShowVoiceRecorderModal(true)}
+                      className="px-2.5 py-1 rounded-md text-[11px] font-semibold bg-stone-900 text-white hover:bg-stone-800 transition flex items-center gap-1 shadow-xs"
                     >
-                      {isRecording ? '🔴 Recording...' : '🎙️ Record Voice'}
+                      <span>🎙️ Live Acoustic Scan</span>
                     </button>
                   </div>
                   <textarea
                     value={voiceText}
                     onChange={(e) => setVoiceText(e.target.value)}
-                    placeholder="Speak or type your daily operational feelings..."
-                    className="w-full px-3 py-2 bg-slate-50 border rounded-xl h-20"
+                    placeholder="Speak using the acoustic recorder or type your daily operational feelings..."
+                    rows={3}
+                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-lg focus:outline-none focus:border-stone-900 font-medium leading-relaxed"
                   />
+
+                  {voiceStressResult && (
+                    <div className="p-3 bg-stone-900 text-stone-100 rounded-lg text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-stone-300 font-medium">Acoustic Biomarkers Recorded:</span>
+                        <span className="text-[10px] font-mono text-amber-400 font-semibold">{voiceStressResult.fatigue_tier}</span>
+                      </div>
+                      <div className="flex gap-4 text-[11px] text-stone-300">
+                        <span>Fatigue: <strong className="text-amber-400">{voiceStressResult.voice_fatigue_score}/100</strong></span>
+                        <span>Stress: <strong className="text-rose-400">{voiceStressResult.voice_stress_score}/100</strong></span>
+                        <span>Cadence: <strong>{voiceStressResult.acoustic_markers.speech_cadence}</strong></span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-md transition disabled:opacity-50"
+                  className="w-full py-3.5 bg-stone-900 hover:bg-stone-800 text-white font-semibold text-xs rounded-xl shadow-xs transition disabled:opacity-50"
                 >
-                  {loading ? 'Calculating Burnout Index...' : 'Calculate Burnout Index & Mitigation Plan'}
+                  {loading ? 'Evaluating Burnout Risk...' : 'Calculate Burnout Index & Mitigation Protocol'}
                 </button>
               </form>
             </div>
 
-            {/* Scorecard View */}
-            <div className="md:col-span-6 space-y-4">
+            {/* Scorecard View (Right) */}
+            <div className="lg:col-span-6 space-y-6">
               {latestResult ? (
-                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 text-xs">
-                  <div className="border-b pb-2 flex items-center justify-between">
-                    <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Burnout Index Scorecard</h2>
-                    <span className="text-xs font-mono text-slate-400">{latestResult.id}</span>
-                  </div>
-
-                  <div className="p-4 rounded-xl bg-slate-50 border text-center space-y-1">
-                    <span className="text-[10px] uppercase font-bold text-slate-400">Predicted Burnout Index Score</span>
-                    <div className="text-4xl font-black text-slate-900">{latestResult.burnout_score} <span className="text-xs font-normal text-slate-500">/ 100</span></div>
-                  </div>
-
-                  <div className="p-3 bg-slate-50 border rounded-xl flex items-center justify-between">
-                    <span className="font-bold text-slate-600">Assigned Risk Tier:</span>
+                <div className="bg-white border border-stone-200 rounded-xl p-6 sm:p-7 shadow-xs space-y-6 text-xs">
+                  <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+                    <div>
+                      <h2 className="text-sm font-semibold text-stone-900">Burnout Index Scorecard</h2>
+                      <span className="text-[11px] text-stone-400 font-mono">Reference: {latestResult.id}</span>
+                    </div>
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-black ${
+                      className={`px-3 py-1 rounded-md text-xs font-semibold ${
                         latestResult.risk_tier === 'CRITICAL'
-                          ? 'bg-rose-100 text-rose-800'
+                          ? 'bg-rose-50 text-rose-800 border border-rose-200'
                           : latestResult.risk_tier === 'HIGH'
-                          ? 'bg-amber-100 text-amber-800'
-                          : 'bg-emerald-100 text-emerald-800'
+                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                          : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                       }`}
                     >
-                      {latestResult.risk_tier} RISK
+                      {latestResult.risk_tier} RISK TIER
                     </span>
                   </div>
 
-                  <div className="p-3.5 bg-slate-50 border rounded-xl space-y-1">
-                    <span className="font-bold text-slate-700 uppercase text-[10px]">Contributing Operational Factors</span>
-                    <ul className="list-disc pl-4 space-y-0.5 text-slate-600">
+                  {/* Primary Score Tile */}
+                  <div className="p-6 rounded-xl bg-stone-50 border border-stone-200 text-center space-y-1">
+                    <span className="text-[10px] uppercase font-semibold text-stone-500 tracking-wider">
+                      Composite Predicted Burnout Index
+                    </span>
+                    <div className="text-4xl font-semibold tracking-tight text-stone-900">
+                      {latestResult.burnout_score} <span className="text-base font-normal text-stone-500">/ 100</span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 pt-1">
+                      Computed from deployment timeline, leave deficit, watch duration, and PHQ assessment.
+                    </p>
+                  </div>
+
+                  {/* Factors Breakdown */}
+                  <div className="p-4 bg-white border border-stone-200 rounded-xl space-y-2">
+                    <span className="text-[10px] uppercase font-semibold text-stone-400 block tracking-wider">
+                      Contributing Operational Stressors
+                    </span>
+                    <ul className="space-y-1.5 text-stone-700 font-medium">
                       {latestResult.contributing_factors.map((f, i) => (
-                        <li key={i}>{f}</li>
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-amber-600 font-bold">&bull;</span>
+                          <span>{f}</span>
+                        </li>
                       ))}
                     </ul>
                   </div>
 
-                  <div className="p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-1">
-                    <span className="font-bold text-emerald-950 uppercase text-[10px]">Recommended Welfare Actions</span>
-                    <ul className="list-disc pl-4 space-y-0.5 text-emerald-900 font-medium">
+                  {/* Recommended Welfare Protocol */}
+                  <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2">
+                    <span className="text-[10px] uppercase font-semibold text-emerald-900 block tracking-wider">
+                      Recommended Duty &amp; Welfare Mitigations
+                    </span>
+                    <ul className="space-y-1.5 text-emerald-950 font-medium">
                       {latestResult.recommended_actions.map((act, i) => (
-                        <li key={i}>{act}</li>
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-emerald-700 font-bold">✓</span>
+                          <span>{act}</span>
+                        </li>
                       ))}
                     </ul>
                   </div>
                 </div>
               ) : (
-                <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm text-center text-slate-400 text-xs italic">
-                  Submit deployment parameters to calculate burnout score.
+                <div className="bg-white border border-stone-200 rounded-xl p-12 text-center text-stone-400 text-xs italic shadow-xs">
+                  Submit deployment parameters to compute unit burnout scorecard.
                 </div>
               )}
             </div>
@@ -561,165 +582,238 @@ export default function RakshakMitraPage() {
           </div>
         )}
 
-        {/* TAB 2: COMMANDER HEATMAP */}
+        {/* ========================================================================= */}
+        {/* TAB 2: VOICE STRESS SCANNER */}
+        {/* ========================================================================= */}
+        {activeTab === 'VOICE_STRESS' && (
+          <div className="max-w-4xl mx-auto space-y-4">
+            <VoiceStressRecorder
+              onAnalysisComplete={(res) => {
+                setVoiceStressResult(res);
+                setVoiceText(res.text);
+              }}
+              onTranscriptChange={(t) => setVoiceText(t)}
+              title="Soldier Voice Stress &amp; Fatigue Analyzer"
+              description="Record spoken mission debriefs to evaluate vocal micro-tremors, pause ratios, operational fatigue, and emotional burnout."
+            />
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* TAB 3: COMMANDER HEATMAP */}
+        {/* ========================================================================= */}
         {activeTab === 'HEATMAP' && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6 max-w-4xl mx-auto">
-            <div className="border-b pb-3 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900">Commander Anonymized Unit Heatmap</h2>
-                <p className="text-xs text-slate-500">Aggregated unit burnout indices for commanding officers</p>
+          <div className="max-w-5xl mx-auto space-y-6">
+            <div className="bg-white border border-stone-200 rounded-xl p-6 sm:p-8 shadow-xs space-y-6">
+              <div className="border-b border-stone-200 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900">Commander Anonymized Unit Heatmap</h2>
+                  <p className="text-xs text-stone-500">Aggregated brigade &amp; outpost burnout indices for commanding officers</p>
+                </div>
+                
+                {/* Filter Pills */}
+                <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-lg">
+                  {(['ALL', 'RED', 'ORANGE', 'GREEN'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setHeatmapFilter(filter)}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition ${
+                        heatmapFilter === filter
+                          ? 'bg-white text-stone-900 shadow-xs'
+                          : 'text-stone-500 hover:text-stone-900'
+                      }`}
+                    >
+                      {filter}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex gap-1.5">
-                {(['ALL', 'RED', 'ORANGE', 'GREEN'] as const).map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setHeatmapFilter(filter)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                      heatmapFilter === filter
-                        ? 'bg-slate-900 text-white'
-                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+
+              {/* Heatmap Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {filteredHeatmap.map((unit, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-5 rounded-xl border space-y-3 transition ${
+                      unit.status === 'RED'
+                        ? 'bg-rose-50/40 border-rose-200'
+                        : unit.status === 'ORANGE'
+                        ? 'bg-amber-50/40 border-amber-200'
+                        : 'bg-emerald-50/40 border-emerald-200'
                     }`}
                   >
-                    {filter}
-                  </button>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-sm text-stone-900">{unit.unit}</h3>
+                      <span
+                        className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase ${
+                          unit.status === 'RED'
+                            ? 'bg-rose-100 text-rose-800'
+                            : unit.status === 'ORANGE'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-emerald-100 text-emerald-800'
+                        }`}
+                      >
+                        {unit.status} Status
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs pt-1">
+                      <div className="bg-white/80 p-2 rounded-lg border border-stone-200">
+                        <span className="text-[10px] text-stone-400 uppercase block">Personnel</span>
+                        <span className="font-semibold text-stone-900">{unit.personnel_count}</span>
+                      </div>
+                      <div className="bg-white/80 p-2 rounded-lg border border-stone-200">
+                        <span className="text-[10px] text-stone-400 uppercase block">Avg Burnout</span>
+                        <span className="font-semibold text-stone-900">{unit.average_burnout_index}</span>
+                      </div>
+                      <div className="bg-white/80 p-2 rounded-lg border border-stone-200">
+                        <span className="text-[10px] text-stone-400 uppercase block">Critical</span>
+                        <span className="font-semibold text-rose-700">{unit.critical_risk_count}</span>
+                      </div>
+                    </div>
+
+                    <div className="text-xs space-y-1 pt-1 text-stone-600">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span>Average Duty: <strong>{unit.avg_duty_hours} hrs/wk</strong></span>
+                        <span>Leave Gap Ratio: <strong>{unit.avg_leave_gap}</strong></span>
+                      </div>
+                      <p className="text-[11px] text-stone-800 font-medium bg-white/60 p-2.5 rounded-lg border border-stone-200">
+                        Recommendation: {unit.suggested_action}
+                      </p>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
+          </div>
+        )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {filteredHeatmap.map((unit, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => setSelectedUnit(unit)}
-                  className={`p-4 rounded-2xl border cursor-pointer transition space-y-2 ${
-                    unit.status === 'RED'
-                      ? 'bg-rose-50/50 border-rose-200 hover:border-rose-400'
-                      : unit.status === 'ORANGE'
-                      ? 'bg-amber-50/50 border-amber-200 hover:border-amber-400'
-                      : 'bg-emerald-50/50 border-emerald-200 hover:border-emerald-400'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-sm text-slate-900">{unit.unit}</h3>
-                    <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-black ${
-                        unit.status === 'RED'
-                          ? 'bg-rose-200 text-rose-900'
-                          : unit.status === 'ORANGE'
-                          ? 'bg-amber-200 text-amber-900'
-                          : 'bg-emerald-200 text-emerald-900'
+        {/* ========================================================================= */}
+        {/* TAB 4: AI WELFARE COMPANION */}
+        {/* ========================================================================= */}
+        {activeTab === 'CHAT' && (
+          <div className="max-w-4xl mx-auto space-y-4">
+            <div className="bg-white border border-stone-200 rounded-xl p-6 shadow-xs space-y-4">
+              <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900">RakshakMitra AI Welfare Companion</h2>
+                  <p className="text-xs text-stone-500">Confidential welfare counseling and operational stress decompression</p>
+                </div>
+                <span className="px-2.5 py-1 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  Confidential Counseling
+                </span>
+              </div>
+
+              {/* Chat Thread */}
+              <div className="h-80 overflow-y-auto space-y-3 p-4 bg-stone-50 rounded-xl border border-stone-200 text-xs">
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div
+                      className={`max-w-[80%] p-3.5 rounded-xl font-medium leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'bg-stone-900 text-white rounded-br-xs'
+                          : 'bg-white text-stone-800 border border-stone-200 rounded-bl-xs shadow-xs'
                       }`}
                     >
-                      {unit.status}
-                    </span>
+                      {msg.content}
+                    </div>
                   </div>
+                ))}
+                {chatLoading && (
+                  <div className="text-stone-400 text-xs italic flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-stone-400 animate-pulse"></span>
+                    RakshakMitra AI is preparing counsel...
+                  </div>
+                )}
+              </div>
 
-                  <div className="text-xs space-y-1 text-slate-600">
-                    <div>Personnel Count: <strong>{unit.personnel_count}</strong></div>
-                    <div>Avg Burnout Index: <strong>{unit.average_burnout_index} / 100</strong></div>
-                    <div>Critical Risk Cases: <strong className="text-rose-700">{unit.critical_risk_count}</strong></div>
-                  </div>
-                </div>
-              ))}
+              {/* Chat Input */}
+              <form onSubmit={handleSendChat} className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Share your thoughts or ask for stress mitigation counsel..."
+                  className="flex-1 px-4 py-2.5 bg-stone-50 border border-stone-200 rounded-lg text-xs focus:outline-none focus:border-stone-900 font-medium"
+                />
+                <button
+                  type="submit"
+                  disabled={chatLoading}
+                  className="px-5 py-2.5 bg-stone-900 hover:bg-stone-800 text-white font-semibold text-xs rounded-lg shadow-xs transition"
+                >
+                  Send
+                </button>
+              </form>
             </div>
           </div>
         )}
 
-        {/* TAB 3: CHAT */}
-        {activeTab === 'CHAT' && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 max-w-4xl mx-auto">
-            <div className="border-b pb-3 flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-extrabold text-slate-900">RakshakMitra AI Welfare Companion</h2>
-                <p className="text-xs text-slate-500">Confidential welfare counseling and operational stress support</p>
+        {/* ========================================================================= */}
+        {/* TAB 5: CHECK-IN HISTORY */}
+        {/* ========================================================================= */}
+        {activeTab === 'HISTORY' && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="bg-white border border-stone-200 rounded-xl p-6 sm:p-8 shadow-xs space-y-4">
+              <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-stone-900">Longitudinal Check-in Records</h2>
+                  <p className="text-xs text-stone-500">Anonymized deployment welfare logs</p>
+                </div>
+                <span className="text-xs text-stone-500 font-mono">
+                  {history.length} Logs Stored
+                </span>
+              </div>
+
+              <div className="divide-y divide-stone-100">
+                {history.map((rec) => (
+                  <div key={rec.id} className="py-3.5 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-semibold text-stone-900">{rec.id}</span>
+                      <p className="text-stone-500 text-[11px] mt-0.5">
+                        Deployment: {rec.deployment_days} days &bull; Duty: {rec.duty_hours_per_week} hrs/wk &bull; PHQ Score: {rec.assessment_score}/27
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <span
+                        className={`px-2.5 py-1 rounded text-[11px] font-semibold ${
+                          rec.risk_tier === 'CRITICAL'
+                            ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        }`}
+                      >
+                        Score: {rec.burnout_score} ({rec.risk_tier})
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-
-            <div className="h-80 overflow-y-auto space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div
-                    className={`max-w-[80%] p-3 rounded-2xl font-medium leading-relaxed ${
-                      msg.role === 'user'
-                        ? 'bg-slate-900 text-white rounded-br-none'
-                        : 'bg-white text-slate-800 border border-slate-200 rounded-bl-none shadow-xs'
-                    }`}
-                  >
-                    {msg.content}
-                  </div>
-                </div>
-              ))}
-              {chatLoading && <div className="text-slate-400 text-xs italic">RakshakMitra AI is thinking...</div>}
-            </div>
-
-            <form onSubmit={handleSendChat} className="flex gap-2">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Share your operational thoughts or ask for stress mitigation advice..."
-                className="flex-1 px-4 py-2.5 bg-slate-50 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-slate-900"
-              />
-              <button
-                type="submit"
-                disabled={chatLoading}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs transition"
-              >
-                Send
-              </button>
-            </form>
           </div>
         )}
 
-        {/* TAB 4: HISTORY */}
-        {activeTab === 'HISTORY' && (
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4 max-w-4xl mx-auto">
-            <div className="border-b pb-3 flex items-center justify-between">
-              <h2 className="text-base font-extrabold text-slate-900">Check-in History ({history.length})</h2>
-              <span className="text-xs text-slate-500 font-mono">Anonymized Records</span>
-            </div>
-
-            <div className="divide-y divide-slate-100">
-              {history.map((rec) => (
-                <div key={rec.id} className="py-3.5 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-bold text-slate-900">{rec.id}</span>
-                    <p className="text-slate-500 text-[11px] mt-0.5">
-                      Deployment: {rec.deployment_days} days | Duty: {rec.duty_hours_per_week} hrs/wk | PHQ Score: {rec.assessment_score}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <span
-                      className={`px-2.5 py-1 rounded text-[10px] font-black ${
-                        rec.risk_tier === 'CRITICAL'
-                          ? 'bg-rose-100 text-rose-800'
-                          : 'bg-emerald-100 text-emerald-800'
-                      }`}
-                    >
-                      Score: {rec.burnout_score} ({rec.risk_tier})
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* PHQ9 Modal */}
+        {/* ========================================================================= */}
+        {/* MODAL: PHQ-9 TEST */}
+        {/* ========================================================================= */}
         {showPhqModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 max-h-[85vh] overflow-y-auto text-xs shadow-xl">
-              <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="font-bold text-sm text-slate-900">PHQ-9 Psychological Assessment</h3>
-                <button onClick={() => setShowPhqModal(false)} className="text-slate-400 hover:text-slate-600 font-bold">
+          <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl max-w-xl w-full p-6 sm:p-7 space-y-5 max-h-[85vh] overflow-y-auto text-xs shadow-xl">
+              <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+                <div>
+                  <h3 className="font-semibold text-sm text-stone-900">PHQ-9 Psychological Assessment</h3>
+                  <p className="text-[11px] text-stone-500">Confidential clinical screening for duty fatigue and emotional distress</p>
+                </div>
+                <button
+                  onClick={() => setShowPhqModal(false)}
+                  className="text-stone-400 hover:text-stone-700 font-semibold p-1"
+                >
                   ✕
                 </button>
               </div>
 
               <div className="space-y-4">
                 {PHQ9_QUESTIONS.map((q, qIdx) => (
-                  <div key={qIdx} className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                    <p className="font-semibold text-slate-800">{q}</p>
+                  <div key={qIdx} className="space-y-2 bg-stone-50 p-3.5 rounded-xl border border-stone-200">
+                    <p className="font-medium text-stone-800">{q}</p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       {PHQ9_OPTIONS.map((opt) => {
                         const isSelected = phqAnswers[qIdx] === opt.score;
@@ -732,10 +826,10 @@ export default function RakshakMitraPage() {
                               newAns[qIdx] = opt.score;
                               setPhqAnswers(newAns);
                             }}
-                            className={`p-1.5 rounded-lg text-[10px] font-bold transition border ${
+                            className={`p-2 rounded-lg text-[10px] font-semibold transition border ${
                               isSelected
-                                ? 'bg-indigo-600 text-white border-indigo-600'
-                                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                                ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
+                                : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100'
                             }`}
                           >
                             {opt.label}
@@ -749,10 +843,39 @@ export default function RakshakMitraPage() {
 
               <button
                 onClick={() => setShowPhqModal(false)}
-                className="w-full py-2.5 bg-slate-900 text-white font-bold rounded-xl shadow-xs"
+                className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-xl shadow-xs transition text-xs"
               >
-                Save Assessment ({cumulativePhqScore} / 27)
+                Save Assessment (Total Score: {cumulativePhqScore} / 27)
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* MODAL: VOICE RECORDER */}
+        {/* ========================================================================= */}
+        {showVoiceRecorderModal && (
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="max-w-2xl w-full">
+              <div className="flex justify-end mb-2">
+                <button
+                  type="button"
+                  onClick={() => setShowVoiceRecorderModal(false)}
+                  className="px-3 py-1 bg-stone-800 text-stone-300 hover:text-white rounded-lg text-xs font-semibold"
+                >
+                  ✕ Close Recorder
+                </button>
+              </div>
+              <VoiceStressRecorder
+                onAnalysisComplete={(res) => {
+                  setVoiceStressResult(res);
+                  setVoiceText(res.text);
+                  setShowVoiceRecorderModal(false);
+                }}
+                onTranscriptChange={(t) => setVoiceText(t)}
+                title="Soldier Voice Stress &amp; Fatigue Analyzer"
+                description="Speak freely into your microphone to capture duty fatigue, acoustic micro-tremors, and voice stress."
+              />
             </div>
           </div>
         )}
@@ -761,3 +884,4 @@ export default function RakshakMitraPage() {
     </div>
   );
 }
+

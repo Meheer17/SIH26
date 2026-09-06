@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Any, List, Callable
+from typing import Dict, Any, List, Callable, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -20,10 +20,12 @@ def calculate_heat_stress_tool(
     env_temp_c: float = 35.0,
     humidity_percent: float = 60.0,
     activity_level: str = "moderate",
-    time_since_water_mins: int = 60
+    time_since_water_mins: int = 60,
+    has_respiratory_condition: bool = False,
+    us_aqi: Optional[float] = None
 ) -> Dict[str, Any]:
     """
-    Calculate heat stress index, dehydration risk percentage, and health recommendations.
+    Calculate heat stress index, dehydration risk percentage, and plain-language health recommendations.
     
     Args:
         body_temp_c: Body temperature in Celsius (default 37.0)
@@ -31,6 +33,8 @@ def calculate_heat_stress_tool(
         humidity_percent: Relative humidity percentage
         activity_level: Activity level ('resting', 'moderate', 'strenuous')
         time_since_water_mins: Minutes elapsed since water consumption
+        has_respiratory_condition: True if user has asthma, COPD, or chronic lung conditions
+        us_aqi: Optional live Air Quality Index
     """
     activity_factor = {"resting": 1.0, "moderate": 1.3, "strenuous": 1.7}.get(str(activity_level).lower(), 1.2)
     heat_index = (env_temp_c * 0.5) + (humidity_percent * 0.2) + (body_temp_c * 0.3 * activity_factor)
@@ -43,12 +47,39 @@ def calculate_heat_stress_tool(
         severity = "HIGH"
     elif heat_index > 32:
         severity = "MODERATE"
+
+    # Human-friendly recommendation synthesis
+    advice_points = []
+    if severity == "CRITICAL":
+        advice_points.append("🚨 **Emergency Action Needed**: Move to air-cooled shade immediately, loosen tight clothing, and sip chilled Oral Rehydration Salts (ORS).")
+    elif severity == "HIGH":
+        advice_points.append("⚠️ **High Heat Stress**: Drink 250-500ml of water or electrolyte fluids immediately and take a 15-minute rest in shaded ventilation.")
+    elif severity == "MODERATE":
+        advice_points.append("💧 **Moderate Strain**: Keep drinking water at regular 30-minute intervals and pace physical exertion.")
+    else:
+        advice_points.append("✅ **Conditions Normal**: Maintain standard hydration of 1 glass of water every hour.")
+
+    # Respiratory specific advisory
+    respiratory_advisory = None
+    if has_respiratory_condition or (us_aqi is not None and us_aqi > 100):
+        if us_aqi is not None and us_aqi > 200:
+            respiratory_advisory = "🫁 **Severe Air Hazard (Asthma/COPD Alert)**: AQI is very unhealthy. Keep emergency bronchodilator inhalers accessible. Avoid all outdoor physical activity and keep windows closed."
+        elif us_aqi is not None and us_aqi > 100:
+            respiratory_advisory = "🫁 **Respiratory Sensitivity Alert**: Elevated particulate matter detected. Wear a well-fitted N95 mask if outdoors and keep rescue medication nearby."
+        elif has_respiratory_condition:
+            respiratory_advisory = "🫁 **Asthma / COPD Care Note**: Monitor for chest tightness or wheezing under high humidity and elevated ambient heat."
+            
+        if respiratory_advisory:
+            advice_points.append(respiratory_advisory)
         
     return {
         "heat_index": round(heat_index, 1),
         "dehydration_risk_percent": dehydration_prob,
         "severity": severity,
-        "recommendation": "Hydrate immediately with ORS solution and shift to shaded area." if severity in ["HIGH", "CRITICAL"] else "Maintain regular fluid intake."
+        "us_aqi": us_aqi,
+        "has_respiratory_condition": has_respiratory_condition,
+        "respiratory_advisory": respiratory_advisory,
+        "recommendation": "\n\n".join(advice_points)
     }
 
 
@@ -56,27 +87,48 @@ def calculate_heat_stress_tool(
 def generate_disaster_advisory_tool(
     disaster_type: str,
     severity: str = "moderate",
-    user_vitals_summary: str = "vitals normal"
+    user_vitals_summary: str = "vitals normal",
+    has_respiratory_condition: bool = False
 ) -> Dict[str, Any]:
     """
-    Generate disaster-specific health advisories compliant with NDMA guidelines.
+    Generate disaster-specific health advisories compliant with NDMA guidelines in clear, human-understandable language.
     
     Args:
         disaster_type: Type of disaster ('heatwave', 'flood', 'aqi_spike')
         severity: Severity tier of disaster
         user_vitals_summary: Summary of current patient vitals
+        has_respiratory_condition: Whether the patient has Asthma, COPD, or chronic breathing issues
     """
     advisories = {
-        "heatwave": "Avoid direct sunlight between 12 PM - 4 PM. Consume electrolytes and wear light cotton clothes.",
-        "flood": "Boil drinking water. Guard against waterborne infections and leptospirosis. Seek immediate care for fever.",
-        "aqi_spike": "Use N95 mask outdoors. Avoid morning outdoor workouts. Use bronchodilators if prescribed for asthma."
+        "heatwave": (
+            "☀️ **Heatwave Protection Protocol (NDMA Guidelines)**:\n"
+            "• Stay indoors during peak sunlight hours (12:00 PM to 4:00 PM).\n"
+            "• Drink coconut water, buttermilk, or ORS electrolytes regularly—do not wait until you feel thirsty.\n"
+            "• Wear light-colored, loose cotton clothing and protect your head with a damp cloth or umbrella."
+        ),
+        "flood": (
+            "🌊 **Flood & Waterborne Disease Precautions**:\n"
+            "• Boil all drinking water for at least 1 minute or use chlorine purification tablets.\n"
+            "• Avoid wading through stagnant flood waters to prevent Leptospirosis and skin infections.\n"
+            "• Seek medical help immediately if you develop sudden fever, chills, or diarrhea."
+        ),
+        "aqi_spike": (
+            "🌫️ **Air Quality Alert & Smog Safeguards**:\n"
+            "• Wear a certified N95 / FFP2 mask when stepping outside.\n"
+            "• Avoid morning outdoor exercise during thermal smog inversion hours.\n"
+            + ("• **Asthma/COPD Notice**: Keep your prescribed reliever inhaler close and consider using a HEPA room air purifier." if has_respiratory_condition else "• Rinse your eyes and nostrils with clean saline water after outdoor travel.")
+        )
     }
     return {
         "disaster_type": disaster_type,
         "severity": severity,
         "vitals_context": user_vitals_summary,
-        "advisory": advisories.get(str(disaster_type).lower(), "Stay tuned to local civil defense advisories and keep emergency contacts ready."),
-        "ndma_helpline": "1078"
+        "has_respiratory_condition": has_respiratory_condition,
+        "advisory": advisories.get(
+            str(disaster_type).lower(),
+            "Stay tuned to local civil defense advisories, keep an emergency first-aid kit ready, and stay in touch with your community health worker."
+        ),
+        "ndma_helpline": "1078 (National Disaster Helpline)"
     }
 
 
