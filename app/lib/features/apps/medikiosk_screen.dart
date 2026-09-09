@@ -28,7 +28,6 @@ class _MediKioskScreenState extends State<MediKioskScreen> {
   bool _isDictating = false;
   List<dynamic> _intakes = [];
   Map<String, dynamic>? _selectedIntake;
-  Map<String, dynamic>? _ocrResult;
 
   @override
   void initState() {

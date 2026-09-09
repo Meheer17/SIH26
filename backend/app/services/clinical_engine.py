@@ -1,25 +1,45 @@
-"""
-Clinical Decision Support & Dual-Path Treatment Engine
-Integrated Western (ICD-11) + AYUSH (Ayurveda/Yoga/Unani/Siddha/Homeopathy) Clinical Pathways
-Colorimetric Palmar/Conjunctival Anemia Screening
-"""
+import os
+import joblib
+import numpy as np
 from typing import Dict, Any, List
+
+# Load real trained ML model
+_ANEMIA_MODEL_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../models/trained/anemia_estimator.pkl"))
+_ANEMIA_MODEL = None
+if os.path.exists(_ANEMIA_MODEL_PATH):
+    try:
+        _ANEMIA_MODEL = joblib.load(_ANEMIA_MODEL_PATH)
+    except Exception:
+        _ANEMIA_MODEL = None
+
 
 def analyze_palmar_anemia_colorimetry(red_avg: int, green_avg: int, blue_avg: int) -> Dict[str, Any]:
     """
-    Colorimetric hemoglobin estimation based on RGB ratio of conjunctival / palmar surface.
-    Calculates R/G ratio and estimates Hb (g/dL).
+    Colorimetric hemoglobin estimation based on RGB parameters of palmar / conjunctival tissue.
+    Uses trained Gradient Boosting Regressor model on color chromaticity features.
     """
     if red_avg + green_avg + blue_avg == 0:
-        red_avg, green_avg, blue_avg = 180, 140, 130 # default sample fallback
+        red_avg, green_avg, blue_avg = 180, 140, 130
 
-    rg_ratio = red_avg / float(green_avg + 1e-6)
-    
-    # Heuristic non-linear formula mapping R/G ratio to estimated Hb level g/dL
-    # Normal healthy palm: high redness with adequate green absorption (R/G ~ 1.35 - 1.55) -> Hb 12-15
-    # Pale palm (anemia): R/G ratio drops below 1.25 -> Hb < 10
-    
-    estimated_hb = round(min(max(rg_ratio * 9.2, 5.5), 16.5), 1)
+    r = float(red_avg)
+    g = float(green_avg)
+    b = float(blue_avg)
+    total = r + g + b + 1e-6
+    rg_ratio = r / (g + 1e-6)
+    r_norm = r / total
+    g_norm = g / total
+    b_norm = b / total
+    norm_diff = (r - g) / (r + g + 1e-6)
+
+    feature_vec = np.array([[r, g, b, rg_ratio, r_norm, g_norm, b_norm, norm_diff]])
+
+    if _ANEMIA_MODEL is not None:
+        predicted_hb = float(_ANEMIA_MODEL.predict(feature_vec)[0])
+        estimated_hb = round(min(max(predicted_hb, 5.0), 18.0), 1)
+        model_name = "GradientBoosting-Palmar-Colorimetry (Real Trained)"
+    else:
+        estimated_hb = round(min(max(rg_ratio * 9.2, 5.5), 16.5), 1)
+        model_name = "Heuristic-Chromaticity-Formula"
     
     if estimated_hb < 8.0:
         severity = "SEVERE_ANEMIA"
@@ -47,10 +67,19 @@ def analyze_palmar_anemia_colorimetry(red_avg: int, green_avg: int, blue_avg: in
         "estimated_hb_g_dl": estimated_hb,
         "anemia_severity": severity,
         "icd_10_code": icd_code,
-        "colorimetric_rgb": {"red": red_avg, "green": green_avg, "blue": blue_avg, "rg_ratio": round(rg_ratio, 3)},
+        "ml_model": model_name,
+        "colorimetric_rgb": {
+            "red": red_avg,
+            "green": green_avg,
+            "blue": blue_avg,
+            "rg_ratio": round(rg_ratio, 3),
+            "red_chromaticity": round(r_norm, 3),
+            "green_chromaticity": round(g_norm, 3)
+        },
         "triage_urgency": urgency,
         "clinical_action": recommendations
     }
+
 
 
 # Dual Prescription Knowledge Base: ICD-11 to Allopathy + AYUSH

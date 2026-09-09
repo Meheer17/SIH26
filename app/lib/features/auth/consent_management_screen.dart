@@ -101,6 +101,7 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
                 final purpose = purposeController.text.trim();
                 if (grantee.isEmpty || purpose.isEmpty) return;
 
+                final messenger = ScaffoldMessenger.of(context);
                 Navigator.of(context).pop();
                 try {
                   await _authService.grantConsent(
@@ -112,7 +113,7 @@ class _ConsentManagementScreenState extends State<ConsentManagementScreen> {
                   _fetchConsents();
                 } catch (e) {
                   if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       SnackBar(content: Text('Failed: ${e.toString()}')),
                     );
                   }

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import '../../core/api/api_endpoints.dart';
 
 class AiAgentInfo {
   final String agentId;
@@ -154,7 +156,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
       final currentList = _messagesMap[_selectedAgent.agentId] ?? [];
       final payloadMessages = currentList.map((m) => {'role': m.role, 'content': m.content}).toList();
 
-      final url = Uri.parse('http://localhost:8000/api/v1/ai/chat');
+      final url = Uri.parse(ApiEndpoints.endpoint('ai/chat'));
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -179,7 +181,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           content: data['content'] ?? '',
           engine: data['engine'],
           toolCalls: data['tool_calls'],
-          timestamp: TimeOfDay.now().format(context),
+          timestamp: DateFormat('hh:mm a').format(DateTime.now()),
         );
 
         setState(() {
@@ -194,7 +196,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
         role: 'assistant',
         content: '[${_selectedAgent.name}] Operating in smart offline fallback mode. Received: "$text".',
         engine: 'fallback_offline',
-        timestamp: TimeOfDay.now().format(context),
+        timestamp: DateFormat('hh:mm a').format(DateTime.now()),
       );
 
       setState(() {

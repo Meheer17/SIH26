@@ -19,88 +19,94 @@ export default function Navbar() {
       .catch(() => setIsBackendOnline(false));
   }, []);
 
-  const psModules = [
-    { id: 'SIH26181', name: 'ArogyaSathi', icon: '🫀', href: '/arogya', badge: 'Qualcomm' },
-    { id: 'SIH26047', name: 'MediKiosk', icon: '🏥', href: '/medikiosk', badge: 'Ayush' },
-    { id: 'SIH26186', name: 'RakshakMitra', icon: '🎖️', href: '/rakshak', badge: 'MHA' },
-    { id: 'SIH26094', name: 'NyayaSahay', icon: '⚖️', href: '/nyaya', badge: 'MoSJE' },
+  const navHubs = [
+    { name: 'Command Center', href: '/', icon: '⚡' },
+    { name: 'Clinical & OPD', href: '/medikiosk', icon: '🏥' },
+    { name: 'Diagnostics & Screening', href: '/screening', icon: '🫁' },
+    { name: 'ASHA & Community', href: '/asha', icon: '👩‍⚕️' },
+    { name: 'Mind & Wellness', href: '/rakshak', icon: '🧠' },
+    { name: 'Safety & Evidence', href: '/covert-sos', icon: '🛡️' },
+    { name: 'Digital Twin', href: '/digital-twin', icon: '🧬' },
+    { name: 'Health Karma', href: '/karma', icon: '🏆' },
+    { name: 'AI Companion', href: '/chat', icon: '🤖' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-slate-200 font-sans shadow-xs">
+    <header className="sticky top-0 z-50 bg-slate-900 border-b border-slate-800 text-white font-sans shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
-        {/* Brand Logo */}
+        {/* Unified Brand Logo */}
         <div className="flex items-center gap-3 shrink-0">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center text-white font-black text-base shadow-xs group-hover:bg-teal-700 transition">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-teal-500/20 group-hover:scale-105 transition">
               SS
             </div>
             <div className="flex flex-col">
-              <span className="font-bold text-sm tracking-tight text-slate-900 flex items-center gap-1.5">
+              <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
                 SvasthyaSetu
-                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-                  SIH 2026
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-teal-500/20 text-teal-300 border border-teal-500/30">
+                  SUPER-APP
                 </span>
               </span>
-              <span className="text-[10px] font-medium text-slate-500">Bridge to Health &amp; Defense Platform</span>
+              <span className="text-[10px] font-medium text-slate-400">National Healthcare &amp; Resilience Platform</span>
             </div>
           </Link>
 
-          {/* Backend Status Indicator */}
-          <div className="hidden lg:flex items-center gap-1.5 pl-3 border-l border-slate-200 text-[11px] font-medium text-slate-600">
+          {/* Backend & ML Live Status Indicator */}
+          <div className="hidden xl:flex items-center gap-2 pl-3 border-l border-slate-800 text-[11px] font-medium text-slate-300">
             <span
               className={`w-2 h-2 rounded-full ${
                 isBackendOnline === true
-                  ? 'bg-emerald-500 animate-pulse'
+                  ? 'bg-emerald-400 animate-pulse ring-4 ring-emerald-400/20'
                   : isBackendOnline === false
-                  ? 'bg-amber-500'
-                  : 'bg-slate-300'
+                  ? 'bg-amber-400 ring-4 ring-amber-400/20'
+                  : 'bg-slate-500'
               }`}
             />
-            <span>{isBackendOnline ? 'API Connected' : isBackendOnline === false ? 'Live Simulation' : 'Connecting...'}</span>
+            <span>{isBackendOnline ? 'Live ML Engines Online' : 'Connecting ML Backend...'}</span>
           </div>
         </div>
 
-        {/* Problem Statement Switcher Buttons */}
+        {/* Unified Navigation Hubs */}
         <div className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none">
-          {psModules.map((ps) => {
-            const isActive = pathname === ps.href;
+          {navHubs.map((hub) => {
+            const isActive = pathname === hub.href;
             return (
               <Link
-                key={ps.id}
-                href={ps.href}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition whitespace-nowrap ${
+                key={hub.name}
+                href={hub.href}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition whitespace-nowrap ${
                   isActive
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200'
+                    ? 'bg-teal-600 text-white shadow-sm shadow-teal-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`}
               >
-                <span>{ps.icon}</span>
-                <span>{ps.name}</span>
-                <span
-                  className={`text-[9px] px-1 py-0.2 rounded font-mono ${
-                    isActive ? 'bg-slate-800 text-slate-200' : 'bg-slate-200 text-slate-600'
-                  }`}
-                >
-                  {ps.id}
-                </span>
+                <span>{hub.icon}</span>
+                <span>{hub.name}</span>
               </Link>
             );
           })}
         </div>
 
-        {/* Auth Actions & User Info */}
-        <div className="flex items-center gap-3">
+        {/* Emergency SOS Quick Button & User Profile */}
+        <div className="flex items-center gap-3 shrink-0">
+          <Link
+            href="/sos-demo"
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600/90 hover:bg-rose-600 text-white text-xs font-bold shadow-md shadow-rose-600/30 hover:scale-105 transition"
+          >
+            <span className="animate-ping w-1.5 h-1.5 rounded-full bg-white"></span>
+            <span>1-Tap SOS</span>
+          </Link>
+
           {isAuthenticated && user ? (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-bold text-slate-900">{user.full_name}</span>
-                <span className="text-[10px] font-semibold text-teal-600 uppercase tracking-wider">{user.primary_role}</span>
+                <span className="text-xs font-bold text-white">{user.full_name}</span>
+                <span className="text-[10px] font-semibold text-teal-400 uppercase tracking-wider">{user.primary_role}</span>
               </div>
               <button
                 onClick={logout}
-                className="px-3.5 py-2 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 font-semibold text-xs transition border border-slate-200"
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-950 hover:text-rose-300 text-slate-300 text-xs font-semibold transition border border-slate-700"
               >
                 Sign Out
               </button>
@@ -109,13 +115,13 @@ export default function Navbar() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="px-3.5 py-2 rounded-lg text-slate-700 hover:text-slate-900 font-bold text-xs hover:bg-slate-100 transition"
+                className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white text-xs font-semibold hover:bg-slate-800 transition"
               >
                 Sign In
               </Link>
               <Link
                 href="/register"
-                className="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition"
+                className="px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shadow-md shadow-teal-600/20 transition"
               >
                 Register
               </Link>
@@ -126,3 +132,4 @@ export default function Navbar() {
     </header>
   );
 }
+

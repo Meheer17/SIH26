@@ -105,6 +105,7 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
                   onPressed: () async {
+                    final messenger = ScaffoldMessenger.of(context);
                     Navigator.of(context).pop();
                     try {
                       await _authService.mapUserRoles(
@@ -113,13 +114,13 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
                       );
                       _fetchUsers();
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        messenger.showSnackBar(
                           SnackBar(content: Text('Updated roles for ${targetUser.fullName}!')),
                         );
                       }
                     } catch (e) {
                       if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        messenger.showSnackBar(
                           SnackBar(content: Text('Failed: ${e.toString()}')),
                         );
                       }

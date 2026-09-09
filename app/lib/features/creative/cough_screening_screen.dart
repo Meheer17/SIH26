@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../core/api/api_endpoints.dart';
 
 class CoughScreeningScreen extends StatefulWidget {
   const CoughScreeningScreen({super.key});
@@ -19,7 +20,7 @@ class _CoughScreeningScreenState extends State<CoughScreeningScreen> {
   Future<void> _runCoughAnalysis() async {
     setState(() => _loadingCough = true);
     try {
-      final response = await http.post(Uri.parse('http://localhost:8000/api/v1/screening/cough-demo'));
+      final response = await http.post(Uri.parse(ApiEndpoints.endpoint('screening/cough-demo')));
       if (response.statusCode == 200) {
         setState(() {
           _coughResult = jsonDecode(response.body);
@@ -36,7 +37,7 @@ class _CoughScreeningScreenState extends State<CoughScreeningScreen> {
     setState(() => _loadingAnemia = true);
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8000/api/v1/screening/anemia-colorimetry'),
+        Uri.parse(ApiEndpoints.endpoint('screening/anemia-colorimetry')),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'red': r, 'green': g, 'blue': b}),
       );
@@ -164,10 +165,20 @@ class _CoughScreeningScreenState extends State<CoughScreeningScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
-                            OutlinedButton(onPressed: () => _runAnemiaScreening(185, 125, 120), child: const Text('Healthy Palm')),
-                            OutlinedButton(onPressed: () => _runAnemiaScreening(140, 145, 140), child: const Text('Pallor Anemia')),
+                            OutlinedButton(
+                              onPressed: _loadingAnemia ? null : () => _runAnemiaScreening(185, 125, 120),
+                              child: const Text('Healthy Palm'),
+                            ),
+                            OutlinedButton(
+                              onPressed: _loadingAnemia ? null : () => _runAnemiaScreening(140, 145, 140),
+                              child: const Text('Pallor Anemia'),
+                            ),
                           ],
-                        )
+                        ),
+                        if (_loadingAnemia) ...[
+                          const SizedBox(height: 12),
+                          const LinearProgressIndicator(color: Color(0xFFE11D48)),
+                        ],
                       ],
                     ),
                   ),

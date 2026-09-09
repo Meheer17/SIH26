@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../core/auth/auth_service.dart';
-import '../chat/ai_chat_screen.dart';
 import 'otp_verification_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -194,7 +193,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 // Primary Role Dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedRole,
+                  initialValue: _selectedRole,
                   dropdownColor: const Color(0xFF1E293B),
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(
@@ -221,7 +220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 // Target Application Dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedAppContext,
+                  initialValue: _selectedAppContext,
                   dropdownColor: const Color(0xFF1E293B),
                   style: const TextStyle(color: Colors.white, fontSize: 14),
                   decoration: InputDecoration(

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../api/api_endpoints.dart';
 
 class SosLocation {
   final double latitude;
@@ -135,7 +136,7 @@ class SosEmergencyModule {
     _activeEvent!.status = 'CANCELLED';
 
     try {
-      final url = Uri.parse('http://localhost:8000/api/v1/sos/${_activeEvent!.sosId}/cancel');
+      final url = Uri.parse(ApiEndpoints.endpoint('sos/${_activeEvent!.sosId}/cancel'));
       await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -149,7 +150,7 @@ class SosEmergencyModule {
 
   static Future<void> _dispatchSosToBackend(SosEvent event) async {
     try {
-      final url = Uri.parse('http://localhost:8000/api/v1/sos/trigger');
+      final url = Uri.parse(ApiEndpoints.endpoint('sos/trigger'));
       await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

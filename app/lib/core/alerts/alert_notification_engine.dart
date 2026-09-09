@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../api/api_endpoints.dart';
 
 enum AlertSeverity { low, moderate, high, criticalSos }
 
@@ -75,7 +76,7 @@ class AlertNotificationEngine {
 
     // Send payload to Backend API
     try {
-      final url = Uri.parse('http://localhost:8000/api/v1/alerts/dispatch');
+      final url = Uri.parse(ApiEndpoints.endpoint('alerts/dispatch'));
       await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

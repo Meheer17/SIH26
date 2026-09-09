@@ -3,6 +3,7 @@ Clinical Engine & Dual-Path Prescriptions Router
 """
 from fastapi import APIRouter, Body
 from typing import List, Optional
+from datetime import datetime, timezone
 from pydantic import BaseModel
 from app.services.clinical_engine import generate_dual_prescription, DUAL_PATHWAY_DB
 

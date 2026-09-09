@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../core/api/api_endpoints.dart';
 
 class CommunityImmunityNetworkScreen extends StatefulWidget {
   const CommunityImmunityNetworkScreen({super.key});
@@ -23,7 +24,7 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
   Future<void> _fetchMeshSync() async {
     setState(() => _loading = true);
     try {
-      final response = await http.get(Uri.parse('http://localhost:8000/api/v1/cin/outbreaks'));
+      final response = await http.get(Uri.parse(ApiEndpoints.endpoint('cin/outbreaks')));
       if (response.statusCode == 200) {
         setState(() {
           _meshData = jsonDecode(response.body);

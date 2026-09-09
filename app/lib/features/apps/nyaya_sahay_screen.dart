@@ -231,7 +231,7 @@ class _NyayaSahayScreenState extends State<NyayaSahayScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         dropdownColor: const Color(0xFF1E293B),
-                        value: _selectedStage,
+                        initialValue: _selectedStage,
                         style: const TextStyle(color: Colors.white, fontSize: 12),
                         decoration: const InputDecoration(
                           labelText: 'Case Stage',

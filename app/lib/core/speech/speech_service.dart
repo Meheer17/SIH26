@@ -75,9 +75,11 @@ class SpeechService {
         onResult: (result) {
           onResult(result.recognizedWords);
         },
-        listenFor: const Duration(seconds: 30),
-        pauseFor: const Duration(seconds: 5),
-        partialResults: true,
+        listenOptions: stt.SpeechListenOptions(
+          listenFor: const Duration(seconds: 30),
+          pauseFor: const Duration(seconds: 5),
+          partialResults: true,
+        ),
       );
     } else {
       debugPrint("STT engine not available on this device.");

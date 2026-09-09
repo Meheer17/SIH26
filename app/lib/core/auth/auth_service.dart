@@ -215,7 +215,7 @@ class AuthService {
       body: {
         'user_id': userId,
         'roles': roles,
-        if (appContext != null) 'app_context': appContext,
+        'app_context': ?appContext,
       },
     );
   }

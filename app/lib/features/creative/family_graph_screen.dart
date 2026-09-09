@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../core/api/api_endpoints.dart';
 
 class FamilyGraphScreen extends StatefulWidget {
   const FamilyGraphScreen({super.key});
@@ -16,7 +17,7 @@ class _FamilyGraphScreenState extends State<FamilyGraphScreen> {
   Future<void> _fetchGraphDemo() async {
     setState(() => _loading = true);
     try {
-      final response = await http.get(Uri.parse('http://localhost:8000/api/v1/mind-family/family-health-graph/demo'));
+      final response = await http.get(Uri.parse(ApiEndpoints.endpoint('mind-family/family-health-graph/demo')));
       if (response.statusCode == 200) {
         setState(() {
           _graphData = jsonDecode(response.body);

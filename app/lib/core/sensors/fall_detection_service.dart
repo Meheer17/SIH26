@@ -14,8 +14,8 @@ class FallDetectionService {
   DateTime? _freefallTime;
 
   // Threshold constants
-  static const double FREEFALL_THRESHOLD = 3.5;  // m/s^2 near zero gravity drop
-  static const double IMPACT_THRESHOLD = 25.0;   // m/s^2 severe high-impact threshold
+  static const double freefallThreshold = 3.5;  // m/s^2 near zero gravity drop
+  static const double impactThreshold = 25.0;   // m/s^2 severe high-impact threshold
 
   void startMonitoring({required Function() onFallDetected}) {
     if (_isListening) return;
@@ -30,13 +30,13 @@ class FallDetectionService {
           );
 
           // 1. Detect low-gravity freefall signature
-          if (magnitude < FREEFALL_THRESHOLD) {
+          if (magnitude < freefallThreshold) {
             _freefallDetected = true;
             _freefallTime = DateTime.now();
           }
 
           // 2. Detect sudden severe impact G-force spike
-          if (magnitude > IMPACT_THRESHOLD) {
+          if (magnitude > impactThreshold) {
             final now = DateTime.now();
             // Verify impact occurred within 1.5 seconds of freefall
             if (_freefallDetected &&
@@ -46,7 +46,7 @@ class FallDetectionService {
               _freefallTime = null;
               debugPrint("⚠️ CRITICAL ACCELEROMETER FALL SIGNATURE DETECTED! G=$magnitude");
               onFallDetected();
-            } else if (magnitude > (IMPACT_THRESHOLD * 1.2)) {
+            } else if (magnitude > (impactThreshold * 1.2)) {
               // Direct severe impact fall signature
               debugPrint("⚠️ DIRECT SEVERE IMPACT FALL DETECTED! G=$magnitude");
               onFallDetected();

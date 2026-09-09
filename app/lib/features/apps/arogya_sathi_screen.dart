@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../core/api/api_client.dart';
-import '../../core/auth/auth_service.dart';
 import '../../core/speech/speech_service.dart';
 import '../../core/sensors/fall_detection_service.dart';
 
@@ -14,7 +13,6 @@ class ArogyaSathiScreen extends StatefulWidget {
 
 class _ArogyaSathiScreenState extends State<ArogyaSathiScreen> {
   final ApiClient _apiClient = ApiClient();
-  final _authService = AuthService();
   final SpeechService _speechService = SpeechService();
   final FallDetectionService _fallDetectionService = FallDetectionService();
 
@@ -422,7 +420,7 @@ class _ArogyaSathiScreenState extends State<ArogyaSathiScreen> {
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
                         dropdownColor: const Color(0xFF1E293B),
-                        value: _selectedActivity,
+                        initialValue: _selectedActivity,
                         style: const TextStyle(color: Colors.white, fontSize: 13),
                         decoration: const InputDecoration(
                           labelText: 'Activity Level',

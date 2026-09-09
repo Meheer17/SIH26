@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import '../../core/api/api_endpoints.dart';
 
 class PanicDisguiseScreen extends StatefulWidget {
   const PanicDisguiseScreen({super.key});
@@ -30,7 +31,7 @@ class _PanicDisguiseScreenState extends State<PanicDisguiseScreen> {
   Future<void> _triggerCovertSOS(String type) async {
     try {
       final response = await http.post(
-        Uri.parse('http://localhost:8000/api/v1/covert-sos/covert-trigger'),
+        Uri.parse(ApiEndpoints.endpoint('covert-sos/covert-trigger')),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'trigger_type': type, 'lat': 28.6139, 'lng': 77.2090}),
       );

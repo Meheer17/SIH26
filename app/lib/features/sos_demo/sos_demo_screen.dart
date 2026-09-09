@@ -122,7 +122,7 @@ class _SosDemoScreenState extends State<SosDemoScreen> {
               children: [
                 // App Picker
                 DropdownButtonFormField<String>(
-                  value: _selectedAppContext,
+                  initialValue: _selectedAppContext,
                   dropdownColor: const Color(0xFF1E293B),
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
