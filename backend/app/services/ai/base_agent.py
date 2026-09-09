@@ -122,9 +122,8 @@ class BaseAIAgent(ABC):
 
                 response = self.openai_client.chat.completions.create(**kwargs)
                 choice = response.choices[0]
-                message = choice.message
-
                 executed_tools_output = []
+                synthesized_tool_texts = []
                 if hasattr(message, "tool_calls") and message.tool_calls:
                     for tc in message.tool_calls:
                         fn_name = tc.function.name
@@ -138,11 +137,27 @@ class BaseAIAgent(ABC):
                             "arguments": fn_args,
                             "result": tool_res
                         })
+                        
+                        # Generate human-friendly text for each tool result
+                        human_summary = self._format_tool_result_for_human(fn_name, tool_res)
+                        if human_summary:
+                            synthesized_tool_texts.append(human_summary)
+
+                final_content = message.content or ""
+                
+                # If LLM response was empty or raw JSON, use synthesized human text
+                if not final_content.strip() or (final_content.strip().startswith("{") and final_content.strip().endswith("}")):
+                    if synthesized_tool_texts:
+                        final_content = "\n\n".join(synthesized_tool_texts)
+                    else:
+                        final_content = self._clean_raw_json_to_human_text(final_content)
+                elif synthesized_tool_texts:
+                    final_content = f"{final_content}\n\n" + "\n\n".join(synthesized_tool_texts)
 
                 return {
                     "agent_id": self.agent_id,
                     "engine": "openai_bedrock_mantle",
-                    "content": message.content or "Tool execution completed.",
+                    "content": final_content,
                     "tool_calls": executed_tools_output
                 }
             except Exception as e:
@@ -232,6 +247,87 @@ class BaseAIAgent(ABC):
             "content": reply,
             "tool_calls": []
         }
+
+    def _format_tool_result_for_human(self, tool_name: str, result: Dict[str, Any]) -> str:
+        """Translate raw dictionary tool outputs into warm, plain-language bullet points."""
+        if not isinstance(result, dict) or "error" in result:
+            return ""
+
+        if tool_name == "calculate_heat_stress_tool":
+            severity = result.get("severity", "MODERATE")
+            heat_idx = result.get("heat_index", 35.0)
+            dehydration = result.get("dehydration_risk_percent", 40)
+            recommendation = result.get("recommendation", "Maintain regular hydration.")
+            
+            return (
+                f"🌡️ **Heat Stress & Dehydration Assessment**:\n"
+                f"• Risk Tier: **{severity}** (Heat Index: {heat_idx}°C equivalent, Dehydration Risk: {dehydration}%)\n"
+                f"• Recommended Actions:\n{recommendation}"
+            )
+
+        elif tool_name == "generate_disaster_advisory_tool":
+            advisory = result.get("advisory", "")
+            helpline = result.get("ndma_helpline", "1078")
+            return f"{advisory}\n\n📞 *National Disaster Helpline*: {helpline}"
+
+        elif tool_name == "flag_clinical_redflags_tool":
+            triage = result.get("triage_level", "ROUTINE")
+            action = result.get("action_recommended", "Consult doctor during routine OPD.")
+            is_critical = result.get("is_critical", False)
+            icon = "🚨" if is_critical else "🩺"
+            return (
+                f"{icon} **Clinical Triage Evaluation**:\n"
+                f"• Assigned Triage Level: **{triage}**\n"
+                f"• Guidance: {action}"
+            )
+
+        elif tool_name == "predict_burnout_risk_tool":
+            risk = result.get("risk_level", "MODERATE")
+            score = result.get("burnout_index", 45)
+            factors = ", ".join(result.get("key_drivers", ["Operational duty schedule"]))
+            actions = result.get("recommended_actions", ["Ensure adequate rest between shifts."])
+            action_bullets = "\n".join([f"  • {a}" for a in actions]) if isinstance(actions, list) else f"  • {actions}"
+            
+            return (
+                f"🎖️ **Workforce Wellness & Burnout Evaluation**:\n"
+                f"• Burnout Risk Category: **{risk}** (Score: {score}/100)\n"
+                f"• Contributing Factors: {factors}\n"
+                f"• Recommended Welfare Steps:\n{action_bullets}"
+            )
+
+        elif tool_name == "assess_victim_distress_tool":
+            distress = result.get("distress_level", "MODERATE")
+            score = result.get("distress_score", 50)
+            status = result.get("escalation_status", "Standard Monitoring")
+            return (
+                f"⚖️ **Legal Aid & Wellbeing Assessment**:\n"
+                f"• Distress Level: **{distress}** (Score: {score}/100)\n"
+                f"• Status: {status}\n"
+                f"• Legal Aid Notice: Under the SC/ST Act, you are entitled to free legal aid, witness protection, and financial relief."
+            )
+
+        return ""
+
+    def _clean_raw_json_to_human_text(self, text: str) -> str:
+        """Convert a raw JSON text string into a human-friendly narrative."""
+        try:
+            data = json.loads(text.strip())
+            if isinstance(data, dict):
+                lines = ["Here is a summary of the assessment:\n"]
+                for k, v in data.items():
+                    clean_k = k.replace("_", " ").capitalize()
+                    if isinstance(v, list):
+                        lines.append(f"• **{clean_k}**:")
+                        for item in v:
+                            lines.append(f"  - {item}")
+                    elif isinstance(v, dict):
+                        lines.append(f"• **{clean_k}**: {json.dumps(v)}")
+                    else:
+                        lines.append(f"• **{clean_k}**: {v}")
+                return "\n".join(lines)
+        except Exception:
+            pass
+        return text
 
     def to_dict(self) -> Dict[str, Any]:
         """Metadata representation of the agent."""

@@ -63,12 +63,12 @@ export default function Navbar() {
                   : 'bg-slate-300'
               }`}
             />
-            <span>{isBackendOnline ? 'Live ML Engines Online' : 'Connecting ML Backend...'}</span>
+            <span>{isBackendOnline ? 'Live ML Engines Online' : isBackendOnline === false ? 'Connecting ML Backend...' : 'Checking Server...'}</span>
           </div>
         </div>
 
         {/* Clean Navigation Hubs */}
-        <div className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none">
+        <nav className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none">
           {navHubs.map((hub) => {
             const isActive = pathname === hub.href;
             return (
@@ -86,7 +86,7 @@ export default function Navbar() {
               </Link>
             );
           })}
-        </div>
+        </nav>
 
         {/* Emergency SOS Quick Button & User Profile */}
         <div className="flex items-center gap-3 shrink-0">
@@ -101,14 +101,14 @@ export default function Navbar() {
           {isAuthenticated && user ? (
             <div className="flex items-center gap-2.5">
               <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-bold text-slate-900">{user.full_name}</span>
-                <span className="text-[10px] font-semibold text-teal-600 uppercase tracking-wider">{user.primary_role}</span>
+                <span className="text-xs font-semibold text-slate-900">{user.full_name}</span>
+                <span className="text-[10px] text-slate-500">{user.primary_role}</span>
               </div>
               <button
                 onClick={logout}
                 className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 text-xs font-semibold transition border border-slate-200"
               >
-                Sign Out
+                Sign out
               </button>
             </div>
           ) : (
@@ -117,7 +117,7 @@ export default function Navbar() {
                 href="/login"
                 className="px-3 py-1.5 rounded-lg text-slate-700 hover:text-slate-900 text-xs font-semibold hover:bg-slate-100 transition"
               >
-                Sign In
+                Sign in
               </Link>
               <Link
                 href="/register"

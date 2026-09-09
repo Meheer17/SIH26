@@ -356,17 +356,26 @@ class _AiChatScreenState extends State<AiChatScreen> {
                               ),
                               if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) ...[
                                 const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF0F172A),
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white10),
-                                  ),
-                                  child: Text(
-                                    '🛠️ Tool Output:\n${jsonEncode(msg.toolCalls)}',
-                                    style: const TextStyle(color: Color(0xFF34D399), fontSize: 11, fontFamily: 'monospace'),
-                                  ),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children: msg.toolCalls!.map<Widget>((tc) {
+                                    final name = (tc is Map && tc['tool_name'] != null)
+                                        ? tc['tool_name'].toString().replaceAll('_', ' ').replaceAll('tool', '').trim()
+                                        : 'Clinical Analysis';
+                                    return Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0F172A),
+                                        borderRadius: BorderRadius.circular(8),
+                                        border: Border.all(color: Colors.indigo.withValues(alpha: 0.3)),
+                                      ),
+                                      child: Text(
+                                        '✨ Analyzed via $name',
+                                        style: const TextStyle(color: Color(0xFF818CF8), fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    );
+                                  }).toList(),
                                 ),
                               ],
                               const SizedBox(height: 4),

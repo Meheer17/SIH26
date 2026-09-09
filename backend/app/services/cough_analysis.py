@@ -1,3 +1,8 @@
+"""
+Acoustic Biomarker Cough Screening Engine
+Analyzes cough audio signals using spectral centroid, zero crossing rate, and acoustic energy envelope.
+Categorizes into Wet/Productive Cough, Dry/Irritative Cough, Pertussis/Whooping Pattern, or Normal Respiratory.
+"""
 import os
 import io
 import wave

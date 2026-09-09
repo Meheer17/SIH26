@@ -1,3 +1,8 @@
+"""
+Spatial-Temporal DBSCAN Outbreak Cluster Engine
+Identifies active disease clusters from GPS syndromic case reports using Haversine metric.
+Integrates trained Random Forest model for epidemic threat categorization.
+"""
 import os
 import joblib
 import numpy as np
@@ -38,19 +43,21 @@ def run_dbscan_epidemic_clustering(
 
     coords_arr = np.array(coordinates)
     
-    # Earth radius in KM
+    # 1. Earth radius in km for Haversine metric
     kms_per_radian = 6371.0088
     epsilon = eps_km / kms_per_radian
     
-    # Convert lat/lng to radians for haversine metric
+    # 2. Convert degrees to radians for Haversine
     coords_rad = np.radians(coords_arr)
     
+    # 3. Fit DBSCAN with real scikit-learn
     db = DBSCAN(eps=epsilon, min_samples=min_samples, metric='haversine')
     db.fit(coords_rad)
-    
+
     labels = db.labels_
-    n_clusters = len(set(labels)) - (1 if -1 in labels else 0)
-    n_outliers = list(labels).count(-1)
+    unique_labels = set(labels)
+    n_clusters = len(unique_labels - {-1})
+    n_outliers = int(list(labels).count(-1))
 
     clusters_output = []
     for cluster_id in range(n_clusters):

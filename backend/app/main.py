@@ -43,3 +43,10 @@ def root():
         "docs": "/docs",
         "health": f"{settings.API_V1_STR}/health"
     }
+
+
+@app.get("/health")
+def root_health():
+    from app.api.v1.endpoints.health import health_check
+    return health_check()
+
