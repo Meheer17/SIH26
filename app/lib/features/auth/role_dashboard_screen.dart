@@ -103,27 +103,42 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        scrolledUnderElevation: 0,
+        scrolledUnderElevation: 0.5,
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              width: 34,
+              height: 34,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+                  colors: [Color(0xFF0D9488), Color(0xFF0284C7)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-              child: const Text('SS', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 13)),
+              child: const Center(
+                child: Text(
+                  '✚',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 18),
+                ),
+              ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'SvasthyaSetu Super-App',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+                    'SvasthyaSetu',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF0F172A), letterSpacing: -0.3),
                   ),
                   Row(
                     children: [
@@ -137,8 +152,12 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        _backendConnected ? '5 ML Engines & FastAPI Online' : 'Connecting...',
-                        style: TextStyle(fontSize: 10, color: _backendConnected ? const Color(0xFF059669) : Colors.amber.shade800, fontWeight: FontWeight.w600),
+                        _backendConnected ? '5 ML Engines & FastAPI Live' : 'Connecting...',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: _backendConnected ? const Color(0xFF0D9488) : Colors.amber.shade800,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ],
                   ),
@@ -150,28 +169,47 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
         actions: [
           IconButton(
             tooltip: '1-Tap Emergency SOS',
-            icon: const Icon(Icons.emergency, color: Color(0xFFDC2626)),
+            icon: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFEE2E2),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFFECACA)),
+              ),
+              child: const Icon(Icons.emergency, color: Color(0xFFDC2626), size: 18),
+            ),
             onPressed: () {
               Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SosDemoScreen()));
             },
           ),
           if (user == null)
-            TextButton.icon(
-              icon: const Icon(Icons.login, size: 16, color: Color(0xFF2563EB)),
-              label: const Text('Login', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2563EB), fontSize: 13)),
-              onPressed: () async {
-                await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
-                if (mounted) setState(() {});
-              },
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  backgroundColor: const Color(0xFFF0FDFA),
+                  foregroundColor: const Color(0xFF0D9488),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(color: Color(0xFFCCFBF1)),
+                  ),
+                ),
+                child: const Text('Login', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 12)),
+                onPressed: () async {
+                  await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+                  if (mounted) setState(() {});
+                },
+              ),
             )
           else
             PopupMenuButton<String>(
               icon: CircleAvatar(
-                radius: 14,
-                backgroundColor: const Color(0xFF2563EB),
+                radius: 15,
+                backgroundColor: const Color(0xFF0D9488),
                 child: Text(
                   user.fullName.isNotEmpty ? user.fullName[0].toUpperCase() : 'U',
-                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                  style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold),
                 ),
               ),
               onSelected: (val) {
@@ -186,17 +224,17 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(user.fullName, style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                      Text(user.primaryRole, style: const TextStyle(fontSize: 11, color: Color(0xFF2563EB))),
+                      Text(user.primaryRole, style: const TextStyle(fontSize: 11, color: Color(0xFF0D9488), fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
                 const PopupMenuDivider(),
                 const PopupMenuItem(value: 'admin', child: Text('🛡️ Admin Role Matrix')),
                 const PopupMenuItem(value: 'consent', child: Text('📋 DPDP Consent Manager')),
-                const PopupMenuItem(value: 'logout', child: Text('🚪 Sign Out', style: TextStyle(color: Colors.redAccent))),
+                const PopupMenuItem(value: 'logout', child: Text('🚪 Sign Out', style: TextStyle(color: Color(0xFFE11D48)))),
               ],
             ),
-          const SizedBox(width: 6),
+          const SizedBox(width: 4),
         ],
       ),
       body: SafeArea(
@@ -211,39 +249,45 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentTabIndex,
-        onDestinationSelected: (idx) => setState(() => _currentTabIndex = idx),
-        backgroundColor: Colors.white,
-        elevation: 6,
-        indicatorColor: const Color(0xFFEFF6FF),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard, color: Color(0xFF2563EB)),
-            label: 'Command',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.medical_services_outlined),
-            selectedIcon: Icon(Icons.medical_services, color: Color(0xFF0D9488)),
-            label: 'Clinical',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.hub_outlined),
-            selectedIcon: Icon(Icons.hub, color: Color(0xFF10B981)),
-            label: 'Field & Mesh',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.psychology_outlined),
-            selectedIcon: Icon(Icons.psychology, color: Color(0xFF7C3AED)),
-            label: 'Resilience',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.verified_user_outlined),
-            selectedIcon: Icon(Icons.verified_user, color: Color(0xFF0284C7)),
-            label: 'Vault & AI',
-          ),
-        ],
+      bottomNavigationBar: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentTabIndex,
+          onDestinationSelected: (idx) => setState(() => _currentTabIndex = idx),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          indicatorColor: const Color(0xFFF0FDFA),
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined, color: Color(0xFF64748B)),
+              selectedIcon: Icon(Icons.dashboard_rounded, color: Color(0xFF0D9488)),
+              label: 'Command',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.medical_services_outlined, color: Color(0xFF64748B)),
+              selectedIcon: Icon(Icons.medical_services_rounded, color: Color(0xFF0D9488)),
+              label: 'Clinical',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.hub_outlined, color: Color(0xFF64748B)),
+              selectedIcon: Icon(Icons.hub_rounded, color: Color(0xFF0D9488)),
+              label: 'Field & Mesh',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.psychology_outlined, color: Color(0xFF64748B)),
+              selectedIcon: Icon(Icons.psychology_rounded, color: Color(0xFF0D9488)),
+              label: 'Resilience',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.verified_user_outlined, color: Color(0xFF64748B)),
+              selectedIcon: Icon(Icons.verified_user_rounded, color: Color(0xFF0D9488)),
+              label: 'Vault & AI',
+            ),
+          ],
+        ),
       ),
       floatingActionButton: _currentTabIndex == 0
           ? FloatingActionButton.extended(
@@ -253,7 +297,8 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
               backgroundColor: const Color(0xFFDC2626),
               foregroundColor: Colors.white,
               icon: const Icon(Icons.emergency),
-              label: const Text('1-Tap SOS', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: const Text('1-Tap SOS', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
+              elevation: 3,
             )
           : null,
     );
@@ -262,51 +307,71 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
   // ================= TAB 0: MASTER COMMAND CENTER =================
   Widget _buildMasterCommandTab(dynamic user) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // User Status Header / Quick Login Bar
+          // Clinical Persona Switcher / Active Profile Bar
           if (user == null)
             Container(
-              margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
-                ),
-                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.flash_on, color: Color(0xFF60A5FA), size: 18),
-                      SizedBox(width: 6),
-                      Text('Unified Super-App Live Sandbox', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDFA),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.verified_user, color: Color(0xFF0D9488), size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Live Clinical Persona Switcher',
+                        style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w800, fontSize: 13),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   const Text(
-                    'All modules run live with real ML inference. Switch test personas with 1 tap:',
-                    style: TextStyle(color: Colors.white70, fontSize: 11),
+                    'Test real ML inference with verified multi-role personas:',
+                    style: TextStyle(color: Color(0xFF64748B), fontSize: 11),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
+                    spacing: 8,
+                    runSpacing: 8,
                     children: _demoAccounts.map((acc) {
                       return InkWell(
                         onTap: () => _quickLogin(acc['email']!),
+                        borderRadius: BorderRadius.circular(10),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF334155),
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.white24),
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFCBD5E1)),
                           ),
-                          child: Text('${acc['icon']} ${acc['role']}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
+                          child: Text(
+                            '${acc['icon']} ${acc['role']}',
+                            style: const TextStyle(color: Color(0xFF334155), fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
                         ),
                       );
                     }).toList(),
@@ -316,120 +381,157 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
             )
           else
             Container(
-              margin: const EdgeInsets.only(bottom: 14),
-              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFBFDBFE)),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFCCFBF1)),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0D9488).withValues(alpha: 0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
                   CircleAvatar(
-                    backgroundColor: const Color(0xFF2563EB),
-                    radius: 16,
-                    child: Text(user.fullName[0].toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    backgroundColor: const Color(0xFF0D9488),
+                    radius: 18,
+                    child: Text(user.fullName[0].toUpperCase(), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Welcome, ${user.fullName}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF1E3A8A))),
-                        Text('Role: ${user.primaryRole} • ABHA: ${user.abhaId ?? "Active"}', style: const TextStyle(fontSize: 10, color: Color(0xFF3B82F6))),
+                        Text(user.fullName, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13, color: Color(0xFF0F172A))),
+                        Text('${user.primaryRole} • ABHA: ${user.abhaId ?? "91-1234-5678-9012"}', style: const TextStyle(fontSize: 11, color: Color(0xFF0D9488), fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
                   TextButton(
                     onPressed: _logout,
-                    child: const Text('Switch', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF2563EB))),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: const Text('Switch', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF0D9488))),
                   )
                 ],
               ),
             ),
 
-          // Live Environmental & Physiological Telemetry Ribbon
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF1E3A8A), Color(0xFF1D4ED8)],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: const Color(0xFF1E3A8A).withValues(alpha: 0.25), blurRadius: 10, offset: const Offset(0, 4)),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
-                  children: [
-                    Icon(Icons.sensors, color: Colors.white, size: 16),
-                    SizedBox(width: 6),
-                    Text(
-                      'Live Telemetry & Environmental Ribbon',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                    Spacer(),
-                    Text('REAL-TIME', style: TextStyle(color: Color(0xFF93C5FD), fontSize: 9, fontWeight: FontWeight.w900)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    _buildTelemetryPill('Pulse', '74 bpm', Icons.favorite, const Color(0xFFF87171)),
-                    _buildTelemetryPill('SpO2', '99%', Icons.bloodtype, const Color(0xFF60A5FA)),
-                    _buildTelemetryPill('WBGT Heat', '31.2°C', Icons.thermostat, const Color(0xFFFBBF24)),
-                    _buildTelemetryPill('Fall Guard', 'Active', Icons.shield, const Color(0xFF34D399)),
-                  ],
-                ),
-              ],
-            ),
+          // Live Environmental & Physiological Telemetry (Clean Medical Cards)
+          const Text(
+            'Live Patient Telemetry & Environmental Sentinel',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.2),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 8),
 
-          // Real ML Engines Status Strip
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 1.6,
+            children: [
+              _buildCleanTelemetryCard(
+                label: 'Heart Rate',
+                value: '74 bpm',
+                status: 'Optimal',
+                icon: Icons.favorite_rounded,
+                iconBg: const Color(0xFFFEE2E2),
+                iconColor: const Color(0xFFEF4444),
+              ),
+              _buildCleanTelemetryCard(
+                label: 'Blood Oxygen',
+                value: '99% SpO2',
+                status: 'Normal',
+                icon: Icons.bloodtype_rounded,
+                iconBg: const Color(0xFFE0F2FE),
+                iconColor: const Color(0xFF0284C7),
+              ),
+              _buildCleanTelemetryCard(
+                label: 'Thermal WBGT',
+                value: '28.4°C',
+                status: 'Safe Range',
+                icon: Icons.thermostat_rounded,
+                iconBg: const Color(0xFFFEF3C7),
+                iconColor: const Color(0xFFD97706),
+              ),
+              _buildCleanTelemetryCard(
+                label: 'Fall Sentinel',
+                value: 'Active',
+                status: 'Monitoring',
+                icon: Icons.shield_rounded,
+                iconBg: const Color(0xFFDCFCE7),
+                iconColor: const Color(0xFF16A34A),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Zero-Mock Production ML Engine Badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(14),
               border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.memory, size: 18, color: Color(0xFF7C3AED)),
-                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF0FDFA),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.smart_toy_rounded, size: 16, color: Color(0xFF0D9488)),
+                ),
+                const SizedBox(width: 10),
                 const Expanded(
-                  child: Text(
-                    '5 Real Trained Models (Cough FFT, Anemia Hb, Voice Stress, Crisis NLP, Outbreak DBSCAN)',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '5 Production ML Models Online',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+                      ),
+                      Text(
+                        'Cough FFT, Anemia Hb, Voice Stress, Crisis NLP, DBSCAN',
+                        style: TextStyle(fontSize: 9.5, color: Color(0xFF64748B)),
+                      ),
+                    ],
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
                     color: const Color(0xFFECFDF5),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: const Color(0xFFA7F3D0)),
                   ),
-                  child: const Text('ZERO MOCK', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
+                  child: const Text('ZERO MOCK', style: TextStyle(fontSize: 8.5, fontWeight: FontWeight.w900, color: Color(0xFF059669))),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
 
           // Super-App Unified Functional Modules Grid
           const Text(
-            'Unified Super-App Modules',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            'Unified Clinical Modules',
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.2),
           ),
           const SizedBox(height: 4),
           const Text(
-            '8 integrated health, diagnostic, field intelligence, and resilience capabilities.',
+            'All 6 healthcare domains integrated with real-time diagnostic intelligence.',
             style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 12),
@@ -440,41 +542,41 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            childAspectRatio: 1.15,
+            childAspectRatio: 1.12,
             children: [
               _buildModuleGridCard(
                 icon: Icons.medical_services_rounded,
-                iconColor: const Color(0xFF2563EB),
-                title: 'Clinical & OPD',
-                subtitle: 'SOCRATES intake, AYUSH Prakriti, physician queue',
+                iconColor: const Color(0xFF0D9488),
+                title: 'Smart OPD & Intake',
+                subtitle: 'SOCRATES intake & dual ICD-11 / AYUSH protocols',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MediKioskScreen())),
               ),
               _buildModuleGridCard(
                 icon: Icons.graphic_eq_rounded,
                 iconColor: const Color(0xFF0284C7),
-                title: 'AI Screening',
-                subtitle: 'Cough FFT audio ML & palmar anemia colorimetry',
+                title: 'Diagnostics Lab',
+                subtitle: 'Acoustic cough FFT & palmar anemia colorimetry',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CoughScreeningScreen())),
               ),
               _buildModuleGridCard(
                 icon: Icons.hub_rounded,
                 iconColor: const Color(0xFF10B981),
                 title: 'Field Mesh (CIN)',
-                subtitle: 'Offline BLE mesh swarm & epidemic clusters',
+                subtitle: 'Zero-internet BLE mesh & DBSCAN clusters',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CommunityImmunityNetworkScreen())),
               ),
               _buildModuleGridCard(
                 icon: Icons.psychology_rounded,
                 iconColor: const Color(0xFF7C3AED),
-                title: 'Stress & Burnout',
-                subtitle: 'Forces burnout formula & acoustic voice mood',
+                title: 'Forces Resilience',
+                subtitle: 'Duty burnout formula & acoustic voice mood',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RakshakMitraScreen())),
               ),
               _buildModuleGridCard(
                 icon: Icons.balance_rounded,
                 iconColor: const Color(0xFFD97706),
                 title: 'Legal & Distress',
-                subtitle: 'Trauma distress score & court stage tracker',
+                subtitle: 'Trauma distress index & BSA Sec 63 chain',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NyayaSahayScreen())),
               ),
               _buildModuleGridCard(
@@ -488,14 +590,14 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
                 icon: Icons.family_restroom_rounded,
                 iconColor: const Color(0xFF9333EA),
                 title: 'Family Risk Graph',
-                subtitle: 'Pedigree NetworkX lineage & cultural AI',
+                subtitle: 'Pedigree NetworkX lineage & hereditary AI',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const FamilyGraphScreen())),
               ),
               _buildModuleGridCard(
                 icon: Icons.auto_awesome_rounded,
-                iconColor: const Color(0xFF059669),
+                iconColor: const Color(0xFF0D9488),
                 title: 'Digital Twin & AI',
-                subtitle: 'Organ simulation, Health Karma, federated AI',
+                subtitle: 'Organ simulation, Health Karma, federated node',
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GroundbreakingSuiteScreen())),
               ),
             ],
@@ -514,26 +616,26 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Clinical & Diagnostic Intelligence Hub',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            'Clinical & Diagnostic Intelligence',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.3),
           ),
           const SizedBox(height: 4),
           const Text(
-            'Comprehensive clinical intake, non-invasive ML screening, and dual-system medicine.',
+            'Structured intake, non-invasive ML screening, and dual-system clinical pathways.',
             style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           _buildHubCard(
             tag: 'OPD & TRIAGE',
             title: '🏥 Smart Clinical History & OPD Intake',
             subtitle: 'SOCRATES Protocol & AYUSH Prakriti Profiling',
             description: 'Interactive voice/text intake structuring symptoms, pain severity, duration, and Ayurvedic constitutional matrix for physician review.',
-            color: const Color(0xFF2563EB),
+            color: const Color(0xFF0D9488),
             actionLabel: 'Open Clinical Intake',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MediKioskScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'AUDIO ML & COLORIMETRY',
@@ -544,14 +646,14 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
             actionLabel: 'Launch AI Screener',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CoughScreeningScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'TELEMETRY',
             title: '🫀 Disaster Health & Vital Monitoring',
             subtitle: 'Live Open-Meteo Weather & Fall Sentinel',
             description: 'Real-time Wet Bulb Globe Temperature heat stress calculation, continuous sensor vitals stream, and low-gravity fall detection.',
-            color: const Color(0xFF0D9488),
+            color: const Color(0xFF0F766E),
             actionLabel: 'Open Vitals Monitor',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ArogyaSathiScreen())),
           ),
@@ -570,14 +672,14 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
         children: [
           const Text(
             'Field & Community Outbreak Hub',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.3),
           ),
           const SizedBox(height: 4),
           const Text(
             'Decentralized frontline health surveillance, offline BLE mesh swarms, and spatial outbreak clustering.',
             style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           _buildHubCard(
             tag: 'OFFLINE MESH',
@@ -588,7 +690,7 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
             actionLabel: 'Open CIN Mesh Monitor',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CommunityImmunityNetworkScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'SPATIAL ML',
@@ -599,14 +701,14 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
             actionLabel: 'Explore Outbreak Engine',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CommunityImmunityNetworkScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'SECURE SDK',
             title: '🔒 SvasthyaStorage Encrypted Local Buffer',
             subtitle: 'AES-256 Offline Database & Background Sync',
             description: 'Zero-data-loss guarantee for frontline ASHA workers in zero-connectivity remote regions.',
-            color: const Color(0xFF2563EB),
+            color: const Color(0xFF0D9488),
             actionLabel: 'Inspect Local Storage SDK',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const StorageDemoScreen())),
           ),
@@ -625,14 +727,14 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
         children: [
           const Text(
             'Resilience, Mental Health & Protection Hub',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.3),
           ),
           const SizedBox(height: 4),
           const Text(
             'Specialized support for armed forces, trauma victims, and covert emergency situations.',
             style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           _buildHubCard(
             tag: 'FORCES STRESS',
@@ -643,7 +745,7 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
             actionLabel: 'Open Resilience Suite',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RakshakMitraScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'LEGAL & TRAUMA',
@@ -654,7 +756,7 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
             actionLabel: 'Open Nyaya Aid Desk',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const NyayaSahayScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'STEALTH SOS',
@@ -665,7 +767,7 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
             actionLabel: 'Test Panic Disguise',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PanicDisguiseScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'GENETICS GRAPH',
@@ -691,14 +793,14 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
         children: [
           const Text(
             'Vault, Intelligence & Compliance',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A)),
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.3),
           ),
           const SizedBox(height: 4),
           const Text(
             'Digital twin simulation, gamified health karma, Merkle evidence chain, and DPDP Act consent.',
             style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 16),
 
           _buildHubCard(
             tag: 'ADVANCED SUITE',
@@ -709,29 +811,29 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
             actionLabel: 'Explore Innovation Suite',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const GroundbreakingSuiteScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'AI ASSISTANT',
             title: '💬 Multilingual AI Health Companion',
             subtitle: 'Specialized Agents for Clinical, Military, Legal & Field',
             description: 'Context-aware intelligence answering clinical questions, calculating dosages, and advising on emergency protocols in Indian regional languages.',
-            color: const Color(0xFF2563EB),
+            color: const Color(0xFF0D9488),
             actionLabel: 'Open AI Assistant',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const AiChatScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'GOVERNANCE',
             title: '📋 ABDM DPDP Act Granular Consent Manager',
             subtitle: 'Time-Bound & Purpose-Specific Health Data Sharing',
             description: 'Explicit, revokeable consent architecture complying with India Digital Personal Data Protection Act and ABDM standards.',
-            color: const Color(0xFF0D9488),
+            color: const Color(0xFF0F766E),
             actionLabel: 'Manage Data Consents',
             onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ConsentManagementScreen())),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
 
           _buildHubCard(
             tag: 'RBAC SECURITY',
@@ -749,19 +851,69 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
   }
 
   // ================= REUSABLE UI HELPERS =================
-  Widget _buildTelemetryPill(String label, String value, IconData icon, Color color) {
+  Widget _buildCleanTelemetryCard({
+    required String label,
+    required String value,
+    required String status,
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+  }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(height: 4),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 8)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: iconColor, size: 16),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F9),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  status,
+                  style: const TextStyle(fontSize: 8.5, fontWeight: FontWeight.w700, color: Color(0xFF475569)),
+                ),
+              ),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF0F172A), letterSpacing: -0.3),
+              ),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 10, color: Color(0xFF64748B), fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -780,7 +932,7 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
           border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: [
             BoxShadow(
@@ -797,14 +949,14 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
               padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: iconColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: iconColor, size: 20),
             ),
             const Spacer(),
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)),
+              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 2),
             Text(
@@ -834,7 +986,7 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           border: Border.all(color: const Color(0xFFE2E8F0)),
           boxShadow: [
             BoxShadow(
@@ -854,20 +1006,21 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: color.withValues(alpha: 0.3)),
+                    border: Border.all(color: color.withValues(alpha: 0.25)),
                   ),
-                  child: Text(tag, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: color)),
+                  child: Text(tag, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: color)),
                 ),
                 const Spacer(),
                 Icon(Icons.arrow_forward_ios, size: 12, color: color),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-            Text(subtitle, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+            const SizedBox(height: 10),
+            Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Color(0xFF0F172A), letterSpacing: -0.2)),
+            const SizedBox(height: 2),
+            Text(subtitle, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
             const SizedBox(height: 6),
             Text(description, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.35)),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -876,10 +1029,10 @@ class _RoleDashboardScreenState extends State<RoleDashboardScreen> {
                   backgroundColor: color,
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(vertical: 11),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: Text(actionLabel, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                child: Text(actionLabel, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800)),
               ),
             ),
           ],

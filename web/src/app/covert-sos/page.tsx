@@ -3,13 +3,13 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, ShieldAlert, Calculator, Heart, Lock, CheckCircle2 } from "lucide-react";
+import { apiClient } from "@/lib/api/apiClient";
 
 export default function CovertSOSPage() {
   const [calcDisplay, setCalcDisplay] = useState("0");
   const [covertStatus, setCovertStatus] = useState<any>(null);
 
   const handleCalcClick = (val: string) => {
-
     if (val === "C") {
       setCalcDisplay("0");
       return;
@@ -25,15 +25,12 @@ export default function CovertSOSPage() {
 
   const triggerCovertSOS = async (triggerType: string) => {
     try {
-      const res = await fetch("http://localhost:8000/api/v1/covert-sos/covert-trigger", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trigger_type: triggerType, lat: 28.6139, lng: 77.2090 })
+      const data = await apiClient.post<any>("/covert-sos/covert-trigger", {
+        trigger_type: triggerType,
+        lat: 28.6139,
+        lng: 77.2090,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setCovertStatus(data);
-      }
+      setCovertStatus(data);
     } catch (err) {
       console.error(err);
     }

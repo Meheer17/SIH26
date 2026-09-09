@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Mic, Camera, Activity, AlertCircle, CheckCircle, FileText, Stethoscope } from "lucide-react";
+import { apiClient } from "@/lib/api/apiClient";
 
 export default function NonInvasiveScreeningPage() {
   const [activeTab, setActiveTab] = useState<"cough" | "anemia">("cough");
@@ -15,11 +16,8 @@ export default function NonInvasiveScreeningPage() {
   const runCoughAnalysis = async () => {
     setCoughLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/v1/screening/cough-demo", { method: "POST" });
-      if (res.ok) {
-        const data = await res.json();
-        setCoughResult(data);
-      }
+      const data = await apiClient.post<any>("/screening/cough-demo");
+      setCoughResult(data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -28,18 +26,14 @@ export default function NonInvasiveScreeningPage() {
   };
 
   const runAnemiaScreening = async (red: number, green: number, blue: number) => {
-
     setAnemiaLoading(true);
     try {
-      const res = await fetch("http://localhost:8000/api/v1/screening/anemia-colorimetry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ red, green, blue })
+      const data = await apiClient.post<any>("/screening/anemia-colorimetry", {
+        red,
+        green,
+        blue,
       });
-      if (res.ok) {
-        const data = await res.json();
-        setAnemiaResult(data);
-      }
+      setAnemiaResult(data);
     } catch (err) {
       console.error(err);
     } finally {

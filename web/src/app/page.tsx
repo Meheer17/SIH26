@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { checkBackendHealth, HealthResponse, apiClient } from '@/lib/api/apiClient';
-import { API_BASE_URL } from '@/lib/api/endpoints';
 
 export default function Home() {
   const { user } = useAuth();
@@ -62,11 +61,11 @@ export default function Home() {
       .then(res => setLiveWeather(res))
       .catch(() => {});
 
-    apiClient.get<any>('/apps/apps/digital-twin')
+    apiClient.get<any>('/apps/digital-twin')
       .then(res => setDigitalTwin(res))
       .catch(() => {});
 
-    apiClient.get<any>('/apps/apps/karma')
+    apiClient.get<any>('/apps/karma')
       .then(res => setKarmaData(res))
       .catch(() => {});
   }, []);
@@ -132,7 +131,7 @@ export default function Home() {
   const handleRunAshaTriage = async () => {
     try {
       const [ashaRes, epRes] = await Promise.all([
-        apiClient.post<any>('/apps/apps/asha-copilot', {
+        apiClient.post<any>('/apps/asha-copilot', {
           patient_name: ashaPatient,
           age: ashaAge,
           is_pregnant: isPregnant,
@@ -158,31 +157,30 @@ export default function Home() {
   };
 
   // Run Real Burnout & Voice Stress Analysis
-  const handleRunBurnoutAnalysis = async () => {
+  const handleRunMentalAnalysis = async () => {
     try {
-      const [burnoutRes, voiceRes] = await Promise.all([
+      const [brnRes, vceRes] = await Promise.all([
         apiClient.post<any>('/apps/rakshak/burnout', {
-          deployment_days: deploymentDays,
-          leave_gap_ratio: leaveRatio,
-          duty_hours_per_week: dutyHours,
-          assessment_score: assessmentScore,
-          voice_journal_text: voiceText,
-          pitch_jitter_score: 0.35
+          deployment_days: Number(deploymentDays),
+          leave_gap_ratio: Number(leaveRatio),
+          duty_hours_per_week: Number(dutyHours),
+          assessment_score: Number(assessmentScore),
+          voice_journal_text: voiceText
         }),
         apiClient.post<any>('/apps/nyaya/voice-stress', {
           transcript_text: voiceText,
-          pitch_variance: 38.5,
-          pause_ratio: 0.44
+          pitch_variance: 42.5,
+          pause_ratio: 0.38
         })
       ]);
-      setBurnoutResult(burnoutRes);
-      setVoiceStressResult(voiceRes);
+      setBurnoutResult(brnRes);
+      setVoiceStressResult(vceRes);
     } catch (err: any) {
-      alert('Error running stress model: ' + err.message);
+      alert('Error analyzing resilience: ' + err.message);
     }
   };
 
-  // Run Real SHA-256 Merkle Evidence Log
+  // Run Real Cryptographic Evidence Logging & Fetch Chain
   const handleLogEvidence = async () => {
     try {
       const res = await apiClient.post<any>('/covert-sos/evidence/log', {
@@ -192,738 +190,956 @@ export default function Home() {
         gps_lng: 77.2090
       });
       setEvidenceResult(res);
+
       const chainRes = await apiClient.get<any>('/covert-sos/evidence/chain');
       setEvidenceChain(chainRes);
     } catch (err: any) {
       alert('Error logging evidence: ' + err.message);
     }
   };
-
   return (
-    <div className="space-y-8 pb-16 font-sans">
-      {/* Top Telemetry & Status Ribbon */}
-      <section className="bg-slate-900 text-white border-b border-slate-800 py-6 px-4 sm:px-8 shadow-inner">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-xs font-bold uppercase tracking-wider text-teal-400">Unified Health Command Center</span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-              SvasthyaSetu Platform
-            </h1>
-            <p className="text-xs text-slate-400">
-              Zero-Mock Clinical Triage, AI Diagnostics, ASHA Field Radar, Burnout Predictor &amp; Cryptographic Evidence Vault
-            </p>
-          </div>
-
-          {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full md:w-auto">
-            <div className="bg-slate-800/80 border border-slate-700/60 p-3 rounded-xl">
-              <div className="text-[10px] text-slate-400 font-medium">Ambient Weather / AQI</div>
-              <div className="text-sm font-bold text-teal-300">
-                {liveWeather ? `${liveWeather.temperature_c}°C • AQI ${liveWeather.us_aqi}` : '28.5°C • AQI 142'}
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-16">
+      
+      {/* Top Clinical Header & Emergency Ribbon */}
+      <section className="bg-white border-b border-slate-200/80 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                  Live Clinical Command Center
+                </span>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                  ABHA ID: 91-1234-5678-9012 (Verified)
+                </span>
               </div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                {user ? `Dr. ${user.full_name || 'Practitioner'}` : 'National Health & Resilience Command Center'}
+              </h1>
+              <p className="text-sm text-slate-500 mt-0.5">
+                Integrated non-invasive screening, real-time epidemiological telemetry &amp; dual-path clinical intelligence.
+              </p>
             </div>
 
-            <div className="bg-slate-800/80 border border-slate-700/60 p-3 rounded-xl">
-              <div className="text-[10px] text-slate-400 font-medium">Digital Twin Health Score</div>
-              <div className="text-sm font-bold text-indigo-300">
-                {digitalTwin ? `${digitalTwin.overall_health_score}/100 (Optimal)` : '88/100 (Optimal)'}
-              </div>
-            </div>
-
-            <div className="bg-slate-800/80 border border-slate-700/60 p-3 rounded-xl">
-              <div className="text-[10px] text-slate-400 font-medium">Health Karma Balance</div>
-              <div className="text-sm font-bold text-amber-300">
-                {karmaData ? `${karmaData.karma_points_balance} XP (Gold)` : '1250 XP (Gold)'}
-              </div>
-            </div>
-
-            <div className="bg-rose-950/50 border border-rose-800/60 p-3 rounded-xl">
-              <div className="text-[10px] text-rose-300 font-medium">Emergency Status</div>
-              <Link href="/sos-demo" className="text-sm font-bold text-rose-400 hover:text-rose-200 flex items-center gap-1">
-                <span>🚨 Active Ready</span> &rarr;
+            <div className="flex items-center gap-3 shrink-0">
+              <Link
+                href="/chat"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border border-slate-300 transition flex items-center gap-2"
+              >
+                <span>💬</span>
+                <span>AI Clinical Assistant</span>
+              </Link>
+              <Link
+                href="/sos-demo"
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow-sm transition flex items-center gap-2"
+              >
+                <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                <span>Emergency 1-Tap SOS</span>
               </Link>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Main Command Workspace */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 space-y-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
         
-        {/* Workspace Hub Switcher Tabs */}
-        <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-3">
-          {[
-            { id: 'clinical', label: '🏥 Clinical & Dual Prescriptions', desc: 'OPD, SOCRATES & AYUSH' },
-            { id: 'screening', label: '🫁 Diagnostics & Screening', desc: 'Audio Cough & Palmar Anemia ML' },
-            { id: 'frontline', label: '👩‍⚕️ ASHA & Community Mesh', desc: 'Maternal Triage & DBSCAN Radar' },
-            { id: 'mental', label: '🧠 Mind & Burnout Intelligence', desc: 'Stress Index & Crisis Detection' },
-            { id: 'safety', label: '🛡️ Safety & BSA Evidence Vault', desc: 'Stealth SOS & Merkle Chain' },
-            { id: 'twin', label: '🧬 Digital Twin & Genetics', desc: '3D Organ Simulation & Hereditary Tree' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex flex-col items-start ${
-                activeTab === tab.id
-                  ? 'bg-slate-900 text-white shadow-md shadow-slate-900/20'
-                  : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              <span>{tab.label}</span>
-              <span className={`text-[10px] font-normal ${activeTab === tab.id ? 'text-teal-300' : 'text-slate-400'}`}>
-                {tab.desc}
+        {/* Real-time Telemetry & Health Metrics Grid */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          
+          {/* Card 1: Digital Twin Health Index */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-sm transition">
+            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-teal-500" />
+                Digital Twin Score
               </span>
-            </button>
-          ))}
-        </div>
-
-        {/* ========================================================================= */}
-        {/* TAB 1: CLINICAL & DUAL PRESCRIPTIONS */}
-        {/* ========================================================================= */}
-        {activeTab === 'clinical' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Intake Form */}
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <span>🏥 Clinical Intake &amp; Dual-Path Prescription Engine</span>
-                  </h2>
-                  <p className="text-xs text-slate-500">FastAPI backend with ICD-11 &amp; Ministry of AYUSH clinical protocols</p>
-                </div>
-                <Link href="/medikiosk" className="text-xs font-bold text-teal-600 hover:underline">
-                  Full OPD View &rarr;
-                </Link>
-              </div>
-
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Chief Complaint</label>
-                  <input
-                    type="text"
-                    value={chiefComplaint}
-                    onChange={(e) => setChiefComplaint(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Symptoms (Comma Separated)</label>
-                  <input
-                    type="text"
-                    value={symptomsList}
-                    onChange={(e) => setSymptomsList(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-700 block mb-1">Target Clinical Protocol</label>
-                  <select
-                    value={selectedCondition}
-                    onChange={(e) => setSelectedCondition(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  >
-                    <option value="HEAT_STRESS">Heat Stress / Dehydration (ICD-11: NF00.0)</option>
-                    <option value="ANEMIA">Nutritional Anemia (ICD-11: 3A00)</option>
-                    <option value="HYPERTENSION">Essential Hypertension (ICD-11: BA00)</option>
-                    <option value="CHRONIC_STRESS">Operational Trauma &amp; Stress (ICD-11: 6B40)</option>
-                  </select>
-                </div>
-
-                <div className="flex gap-2 pt-2">
-                  <button
-                    onClick={handleRunClinicalTriage}
-                    disabled={clinicalLoading}
-                    className="flex-1 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
-                  >
-                    {clinicalLoading ? 'Running Real Clinical Engine...' : '⚡ Generate Dual Allopathic + AYUSH Prescription'}
-                  </button>
-                  <Link
-                    href="/abdm"
-                    className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold"
-                  >
-                    ABHA FHIR R4
-                  </Link>
-                </div>
-              </div>
+              <span className="text-[11px] bg-teal-50 text-teal-700 px-2 py-0.5 rounded-full font-bold">
+                {digitalTwin?.organ_health?.cardiovascular?.status || 'OPTIMAL'}
+              </span>
             </div>
-
-            {/* Live Results Panel */}
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center justify-between border-b border-slate-100 pb-3">
-                <span>Real-Time Clinical Decision Support Output</span>
-                <span className="text-[10px] font-mono bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                  Live Execution
-                </span>
-              </h3>
-
-              {clinicalResult ? (
-                <div className="space-y-3 text-xs">
-                  <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl space-y-1">
-                    <div className="font-bold text-teal-900">Diagnosis: {clinicalResult.dualRx.condition_name} ({clinicalResult.dualRx.icd_11_code})</div>
-                    <div className="text-slate-600">Triage Level: <span className="font-bold text-emerald-700">{clinicalResult.triage.triage_level}</span></div>
-                    <div className="text-slate-500 text-[11px]">{clinicalResult.triage.summary}</div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl space-y-1">
-                      <div className="font-bold text-sky-900 flex items-center gap-1">💊 Western Allopathy</div>
-                      <div className="text-slate-700 font-medium">Primary: {clinicalResult.dualRx.allopathic_pathway.primary}</div>
-                      <div className="text-slate-600 text-[11px]">Support: {clinicalResult.dualRx.allopathic_pathway.supportive}</div>
-                    </div>
-
-                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1">
-                      <div className="font-bold text-emerald-900 flex items-center gap-1">🌿 AYUSH Integrative</div>
-                      <div className="text-slate-700 font-medium">Ayurveda: {clinicalResult.dualRx.ayush_integrative_pathway.ayurveda}</div>
-                      <div className="text-slate-600 text-[11px]">Diet / Pranayama: {clinicalResult.dualRx.ayush_integrative_pathway.dietary}</div>
-                    </div>
-                  </div>
-
-                  <div className="text-[10px] text-slate-400 italic">
-                    {clinicalResult.dualRx.disclaimer}
-                  </div>
-                </div>
-              ) : (
-                <div className="h-48 flex flex-col items-center justify-center text-slate-400 space-y-2 border-2 border-dashed border-slate-200 rounded-xl p-4 text-center">
-                  <span>Click "Generate Dual Prescription" above to run the live engine.</span>
-                  <span className="text-[11px] text-slate-500 font-mono">Endpoint: /api/v1/clinical/dual-prescription</span>
-                </div>
-              )}
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900">
+                {digitalTwin?.overall_health_score || '86'}
+              </span>
+              <span className="text-xs text-slate-400 font-medium">/ 100</span>
+              <span className="text-xs font-bold text-teal-600 ml-auto">+4% this week</span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-3 text-center text-xs text-slate-600">
+              <div>
+                <div className="font-bold text-slate-800">{digitalTwin?.organ_health?.cardiovascular?.score || '96'}%</div>
+                <div className="text-[10px] text-slate-400">Cardio</div>
+              </div>
+              <div className="border-x border-slate-100">
+                <div className="font-bold text-slate-800">{digitalTwin?.organ_health?.pulmonary?.score || '90'}%</div>
+                <div className="text-[10px] text-slate-400">Pulmonary</div>
+              </div>
+              <div>
+                <div className="font-bold text-slate-800">{digitalTwin?.organ_health?.metabolic?.score || '88'}%</div>
+                <div className="text-[10px] text-slate-400">Metabolic</div>
+              </div>
             </div>
           </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* TAB 2: DIAGNOSTICS & SCREENING */}
-        {/* ========================================================================= */}
-        {activeTab === 'screening' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Palmar Anemia Colorimeter */}
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">🫀 Palmar Nailbed RGB Colorimetry (Hb Estimator)</h2>
-                  <p className="text-xs text-slate-500">Trained GradientBoosting ML Model estimating Hemoglobin (g/dL)</p>
-                </div>
-                <Link href="/screening" className="text-xs font-bold text-teal-600 hover:underline">
-                  Full Screener &rarr;
-                </Link>
+          {/* Card 2: Environmental Heat & WBGT Index */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-sm transition">
+            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                Thermal Stress (WBGT)
+              </span>
+              <span className="text-[11px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-bold">
+                {liveWeather?.current?.heat_risk_tier || 'SAFE RANGE'}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900">
+                {liveWeather?.current?.temperature_c || '28.4'}°C
+              </span>
+              <span className="text-xs text-slate-500">Humidity: {liveWeather?.current?.relative_humidity || '62'}%</span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600 flex items-center justify-between">
+              <span>WBGT: {liveWeather?.current?.wbgt_c || '24.1'}°C</span>
+              <span className="text-teal-600 font-semibold">Hydration: 3.0L / day</span>
+            </div>
+          </div>
+
+          {/* Card 3: Respiratory & Cough Surge Index */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-sm transition">
+            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-indigo-500" />
+                AQI &amp; Respiratory
+              </span>
+              <span className="text-[11px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full font-bold">
+                MODERATE
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900">
+                84
+              </span>
+              <span className="text-xs text-slate-400 font-medium">AQI</span>
+              <span className="text-xs text-slate-500 ml-auto">PM2.5: 28 µg/m³</span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600 flex items-center justify-between">
+              <span>Cough Spike Risk:</span>
+              <span className="text-indigo-600 font-bold">Low (4.2%)</span>
+            </div>
+          </div>
+
+          {/* Card 4: Health Karma Loyalty Engine */}
+          <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs hover:shadow-sm transition">
+            <div className="flex items-center justify-between text-xs text-slate-500 font-semibold mb-2">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                Health Karma Rewards
+              </span>
+              <span className="text-[11px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded-full font-bold">
+                {karmaData?.tier || 'GOLD CHAMPION'}
+              </span>
+            </div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-slate-900">
+                {karmaData?.points || '1,250'}
+              </span>
+              <span className="text-xs text-slate-400 font-medium">Pts</span>
+              <span className="text-xs text-emerald-600 font-bold ml-auto">🔥 7-Day Streak</span>
+            </div>
+            <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-600 flex items-center justify-between">
+              <span>Jan Aushadhi Partner</span>
+              <Link href="/karma" className="text-teal-600 hover:underline font-bold">
+                Redeem &rarr;
+              </Link>
+            </div>
+          </div>
+
+        </section>
+
+        {/* Quick Launch Medical Module Cards */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>⚡</span> Unified Platform Services
+            </h2>
+            <span className="text-xs text-slate-500 font-medium">All 6 clinical hubs fully integrated with real ML inference</span>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+            <Link
+              href="/medikiosk"
+              className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:border-teal-400 hover:shadow-sm transition group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-lg mb-2.5 group-hover:scale-105 transition">
+                🩺
               </div>
+              <div className="font-bold text-xs text-slate-800 group-hover:text-teal-600">Smart OPD</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Dual-Path Rx</div>
+            </Link>
 
-              <div className="space-y-3">
-                <div className="flex items-center gap-4">
-                  <div
-                    className="w-16 h-16 rounded-2xl border-2 border-slate-300 shadow-inner shrink-0"
-                    style={{ backgroundColor: `rgb(${redVal}, ${greenVal}, ${blueVal})` }}
-                  />
-                  <div className="flex-1 space-y-2">
+            <Link
+              href="/screening"
+              className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:border-cyan-400 hover:shadow-sm transition group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center text-lg mb-2.5 group-hover:scale-105 transition">
+                🔬
+              </div>
+              <div className="font-bold text-xs text-slate-800 group-hover:text-cyan-600">Diagnostics Lab</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Cough &amp; Anemia ML</div>
+            </Link>
+
+            <Link
+              href="/asha"
+              className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:border-emerald-400 hover:shadow-sm transition group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg mb-2.5 group-hover:scale-105 transition">
+                👩‍⚕️
+              </div>
+              <div className="font-bold text-xs text-slate-800 group-hover:text-emerald-600">ASHA Copilot</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Rural Maternal Care</div>
+            </Link>
+
+            <Link
+              href="/rakshak"
+              className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:border-indigo-400 hover:shadow-sm transition group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg mb-2.5 group-hover:scale-105 transition">
+                🧠
+              </div>
+              <div className="font-bold text-xs text-slate-800 group-hover:text-indigo-600">Burnout Shield</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Armed Forces Mind</div>
+            </Link>
+
+            <Link
+              href="/covert-sos"
+              className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:border-rose-400 hover:shadow-sm transition group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-lg mb-2.5 group-hover:scale-105 transition">
+                🛡️
+              </div>
+              <div className="font-bold text-xs text-slate-800 group-hover:text-rose-600">Evidence Vault</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">BSA Sec 63 Chain</div>
+            </Link>
+
+            <Link
+              href="/digital-twin"
+              className="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs hover:border-purple-400 hover:shadow-sm transition group"
+            >
+              <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center text-lg mb-2.5 group-hover:scale-105 transition">
+                🧬
+              </div>
+              <div className="font-bold text-xs text-slate-800 group-hover:text-purple-600">Digital Twin</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">Longitudinal Health</div>
+            </Link>
+          </div>
+        </section>
+
+        {/* Interactive Master Clinical Execution Suite */}
+        <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          
+          {/* Clean Segmented Tab Navigation Header */}
+          <div className="border-b border-slate-200/80 bg-slate-50/70 p-2 sm:p-3 overflow-x-auto scrollbar-none">
+            <div className="flex items-center gap-1.5 min-w-max">
+              <button
+                onClick={() => setActiveTab('clinical')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeTab === 'clinical'
+                    ? 'bg-white text-teal-700 shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
+              >
+                <span>🩺</span>
+                <span>Smart OPD &amp; Dual-Path Rx</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('screening')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeTab === 'screening'
+                    ? 'bg-white text-teal-700 shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
+              >
+                <span>🔬</span>
+                <span>Diagnostic Lab (Cough &amp; Anemia)</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('frontline')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeTab === 'frontline'
+                    ? 'bg-white text-teal-700 shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
+              >
+                <span>👩‍⚕️</span>
+                <span>ASHA Frontline &amp; Epidemics</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('mental')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeTab === 'mental'
+                    ? 'bg-white text-teal-700 shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
+              >
+                <span>🧠</span>
+                <span>Armed Forces Burnout Index</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('safety')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeTab === 'safety'
+                    ? 'bg-white text-teal-700 shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
+              >
+                <span>🛡️</span>
+                <span>BSA 2023 Evidence Vault</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('twin')}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                  activeTab === 'twin'
+                    ? 'bg-white text-teal-700 shadow-xs border border-slate-200/80'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                }`}
+              >
+                <span>🧬</span>
+                <span>Longitudinal Digital Twin</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Tab Content Panel */}
+          <div className="p-6 sm:p-8">
+            
+            {/* TAB 1: Smart OPD Intake & Dual-Prescription */}
+            {activeTab === 'clinical' && (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                {/* Form Controls Column */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="border-b border-slate-100 pb-3">
+                    <h3 className="text-base font-bold text-slate-900">Clinical Intake &amp; Triage Engine</h3>
+                    <p className="text-xs text-slate-500 mt-0.5">Executes SOCRATES clinical triage &amp; parallel ICD-11 Allopathy/AYUSH protocols.</p>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
                     <div>
-                      <div className="flex justify-between text-[11px] font-semibold text-slate-700">
-                        <span>Red (Hemoglobin Absorption)</span>
-                        <span>{redVal}</span>
-                      </div>
+                      <label className="font-bold text-slate-700 block mb-1">Chief Complaint</label>
                       <input
-                        type="range"
-                        min="50"
-                        max="255"
-                        value={redVal}
-                        onChange={(e) => setRedVal(Number(e.target.value))}
-                        className="w-full accent-rose-600"
+                        type="text"
+                        value={chiefComplaint}
+                        onChange={(e) => setChiefComplaint(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
+
                     <div>
-                      <div className="flex justify-between text-[11px] font-semibold text-slate-700">
-                        <span>Green (Tissue Transmission)</span>
-                        <span>{greenVal}</span>
-                      </div>
+                      <label className="font-bold text-slate-700 block mb-1">Extracted Symptoms (Comma Separated)</label>
                       <input
-                        type="range"
-                        min="50"
-                        max="255"
-                        value={greenVal}
-                        onChange={(e) => setGreenVal(Number(e.target.value))}
-                        className="w-full accent-emerald-600"
+                        type="text"
+                        value={symptomsList}
+                        onChange={(e) => setSymptomsList(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
                       />
                     </div>
-                  </div>
-                </div>
 
-                <button
-                  onClick={handleRunAnemiaColorimetry}
-                  disabled={anemiaLoading}
-                  className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
-                >
-                  {anemiaLoading ? 'Evaluating Colorimetry ML...' : '⚡ Run Non-Invasive Hemoglobin Estimation'}
-                </button>
-
-                {anemiaResult && (
-                  <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl space-y-1 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-rose-900">Estimated Hemoglobin: {anemiaResult.estimated_hb_g_dl} g/dL</span>
-                      <span className="font-mono text-[10px] bg-rose-200 text-rose-900 px-2 py-0.5 rounded font-bold">
-                        {anemiaResult.anemia_severity}
-                      </span>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Primary Condition Pathway</label>
+                      <select
+                        value={selectedCondition}
+                        onChange={(e) => setSelectedCondition(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      >
+                        <option value="HEAT_STRESS">Heat Exhaustion &amp; Dehydration (NF00.0)</option>
+                        <option value="ANEMIA">Nutritional Iron Deficiency Anemia (3A00)</option>
+                        <option value="HYPERTENSION">Essential Systemic Hypertension (BA00)</option>
+                        <option value="CHRONIC_STRESS">Operational Trauma &amp; Chronic Stress (6B40)</option>
+                      </select>
                     </div>
-                    <div className="text-slate-600 text-[11px]">Model: {anemiaResult.ml_model}</div>
-                    <div className="text-slate-700 font-medium">Recommendation: {anemiaResult.clinical_action}</div>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* Acoustic Cough Biomarker Screener */}
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">🎙️ Acoustic Cough Biomarker Spectral Classifier</h2>
-                  <p className="text-xs text-slate-500">Trained RandomForest ML Model on Zero Crossing Rate &amp; Spectral Centroid</p>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 text-xs">
-                  <div className="font-bold text-slate-800">Acoustic Feature Extraction Pipeline</div>
-                  <div className="text-slate-600 text-[11px] leading-relaxed">
-                    Computes FFT spectral centroid, spectral rolloff, bandwidth, zero crossing rate, and energy variance to differentiate
-                    Wet vs Dry vs Spasmodic whooping coughs without invasive testing.
+                    <button
+                      onClick={handleRunClinicalTriage}
+                      disabled={clinicalLoading}
+                      className="w-full mt-2 py-2.5 px-4 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2"
+                    >
+                      {clinicalLoading ? 'Processing Clinical Engine...' : 'Run Live Clinical Triage & Rx'}
+                    </button>
                   </div>
                 </div>
 
-                <button
-                  onClick={handleRunCoughScreening}
-                  disabled={coughLoading}
-                  className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition disabled:opacity-50"
-                >
-                  {coughLoading ? 'Extracting Spectral FFT Features...' : '🎙️ Run Acoustic Cough Diagnostic Screen'}
-                </button>
-
-                {coughResult && (
-                  <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-indigo-900">{coughResult.cough_type}</span>
-                      <span className="font-mono text-[10px] bg-indigo-200 text-indigo-900 px-2 py-0.5 rounded font-bold">
-                        Confidence: {(coughResult.confidence_score * 100).toFixed(0)}%
-                      </span>
-                    </div>
-                    <div className="text-slate-600 text-[11px]">ICD-11: {coughResult.icd_11_code} • Urgency: {coughResult.triage_urgency}</div>
-                    <div className="text-slate-700 text-[11px] font-medium">{coughResult.clinical_recommendation}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 3: ASHA & COMMUNITY MESH */}
-        {/* ========================================================================= */}
-        {activeTab === 'frontline' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">👩‍⚕️ ASHA Worker Field Copilot &amp; Maternal Triage</h2>
-                  <p className="text-xs text-slate-500">MoHFW ANC High-Risk Pregnancy Protocol</p>
-                </div>
-                <Link href="/asha" className="text-xs font-bold text-teal-600 hover:underline">
-                  Full ASHA Desk &rarr;
-                </Link>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Resident Name</label>
-                    <input
-                      type="text"
-                      value={ashaPatient}
-                      onChange={(e) => setAshaPatient(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-300"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Age</label>
-                    <input
-                      type="number"
-                      value={ashaAge}
-                      onChange={(e) => setAshaAge(Number(e.target.value))}
-                      className="w-full p-2.5 rounded-xl border border-slate-300"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Observed High-Risk Symptoms</label>
-                  <input
-                    type="text"
-                    value={ashaSymptoms}
-                    onChange={(e) => setAshaSymptoms(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-300"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="pregCheck"
-                    checked={isPregnant}
-                    onChange={(e) => setIsPregnant(e.target.checked)}
-                    className="rounded text-teal-600"
-                  />
-                  <label htmlFor="pregCheck" className="font-semibold text-slate-700">Pregnant (Ante-Natal Visit)</label>
-                </div>
-
-                <button
-                  onClick={handleRunAshaTriage}
-                  className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-md transition"
-                >
-                  ⚡ Execute MoHFW Rural Maternal Triage
-                </button>
-
-                {ashaResult && (
-                  <div className={`p-4 rounded-xl border space-y-1 ${ashaResult.triage_color === 'RED' ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-amber-50 border-amber-200 text-amber-900'}`}>
-                    <div className="font-bold flex justify-between">
-                      <span>Triage Tier: {ashaResult.risk_tier}</span>
-                      <span className="px-2 py-0.5 bg-white rounded font-mono text-[10px] font-bold">{ashaResult.triage_color} CODE</span>
-                    </div>
-                    <div className="text-[11px] font-medium">Protocol Action: {ashaResult.recommended_action}</div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Epidemic DBSCAN Clusters */}
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">🌐 Community Immunity Network &amp; DBSCAN Radar</h2>
-                  <p className="text-xs text-slate-500">Trained Random Forest Outbreak Scorer over Haversine GPS Clusters</p>
-                </div>
-                <Link href="/cin" className="text-xs font-bold text-teal-600 hover:underline">
-                  Mesh Map &rarr;
-                </Link>
-              </div>
-
-              {epidemicResult ? (
-                <div className="space-y-3 text-xs">
-                  <div className="p-3 bg-slate-900 text-white rounded-xl space-y-1">
-                    <div className="font-bold text-teal-300">Epidemic Threat Index: {epidemicResult.epidemic_threat_index}</div>
-                    <div className="text-slate-300 text-[11px]">
-                      Active Outbreak Clusters: {epidemicResult.active_clusters_found} • ML Scorer: {epidemicResult.ml_model}
-                    </div>
+                {/* Live Clinical Results Column */}
+                <div className="lg:col-span-7 bg-slate-50/80 p-5 rounded-xl border border-slate-200/70 space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span>📋</span> Structured Clinical Assessment (Live)
+                    </span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                      ICD-11 &amp; AYUSH Parallel System
+                    </span>
                   </div>
 
-                  <div className="space-y-2">
-                    {epidemicResult.clusters.map((c: any) => (
-                      <div key={c.cluster_id} className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between">
-                        <div>
-                          <div className="font-bold text-amber-900">Cluster #{c.cluster_id} ({c.risk_level})</div>
-                          <div className="text-[11px] text-slate-600">Center: {c.center_lat}, {c.center_lng} • Radius: {c.radius_km}km</div>
+                  {clinicalResult ? (
+                    <div className="space-y-4 text-xs">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-white rounded-lg border border-slate-200">
+                          <div className="text-[11px] text-slate-400 font-semibold">Triage Urgency</div>
+                          <div className="font-bold text-amber-600 text-sm">{clinicalResult.triage.triage_level}</div>
                         </div>
-                        <span className="px-2 py-1 bg-amber-200 text-amber-900 font-bold rounded text-[10px]">
-                          {c.total_cases} cases
-                        </span>
+                        <div className="p-3 bg-white rounded-lg border border-slate-200">
+                          <div className="text-[11px] text-slate-400 font-semibold">Diagnosis Key</div>
+                          <div className="font-bold text-slate-800 text-sm">{clinicalResult.dualRx.condition_name}</div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="h-48 flex flex-col items-center justify-center text-slate-400 space-y-2 border-2 border-dashed border-slate-200 rounded-xl p-4 text-center text-xs">
-                  <span>Run ASHA triage or trigger DBSCAN cluster detection.</span>
-                  <button
-                    onClick={handleRunAshaTriage}
-                    className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800"
-                  >
-                    Scan Epidemic Geo-Clusters
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* ========================================================================= */}
-        {/* TAB 4: MENTAL WELLNESS & BURNOUT */}
-        {/* ========================================================================= */}
-        {activeTab === 'mental' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">🎖️ Armed Forces &amp; Personnel Burnout Predictor</h2>
-                  <p className="text-xs text-slate-500">Duty workload formula + acoustic voice mood classifier</p>
-                </div>
-                <Link href="/rakshak" className="text-xs font-bold text-teal-600 hover:underline">
-                  Full Unit View &rarr;
-                </Link>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Weekly Duty Hours: {dutyHours}h</label>
-                    <input
-                      type="range"
-                      min="40"
-                      max="90"
-                      value={dutyHours}
-                      onChange={(e) => setDutyHours(Number(e.target.value))}
-                      className="w-full accent-amber-600"
-                    />
-                  </div>
-                  <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Deployment: {deploymentDays} days</label>
-                    <input
-                      type="range"
-                      min="30"
-                      max="365"
-                      value={deploymentDays}
-                      onChange={(e) => setDeploymentDays(Number(e.target.value))}
-                      className="w-full accent-amber-600"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Voice Journal Transcript</label>
-                  <textarea
-                    rows={2}
-                    value={voiceText}
-                    onChange={(e) => setVoiceText(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-300"
-                  />
-                </div>
-
-                <button
-                  onClick={handleRunBurnoutAnalysis}
-                  className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md transition"
-                >
-                  ⚡ Calculate Burnout Index &amp; NLP Crisis Risk
-                </button>
-              </div>
-            </div>
-
-            {/* Results Panel */}
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                Psychological Stress &amp; Crisis Classifier Output
-              </h3>
-
-              {burnoutResult && voiceStressResult ? (
-                <div className="space-y-3 text-xs">
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
-                    <div className="flex justify-between font-bold text-amber-900">
-                      <span>Burnout Index: {burnoutResult.burnout_score}/100</span>
-                      <span className="px-2 py-0.5 bg-amber-200 rounded text-[10px]">{burnoutResult.risk_tier} RISK</span>
-                    </div>
-                    <div className="text-slate-600 text-[11px]">Contributing: {burnoutResult.contributing_factors.join(', ')}</div>
-                  </div>
-
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-1">
-                    <div className="flex justify-between font-bold text-purple-900">
-                      <span>Voice Stress Index: {voiceStressResult.voice_stress_score}/100</span>
-                      <span className="px-2 py-0.5 bg-purple-200 rounded text-[10px]">{voiceStressResult.emotion_classification}</span>
-                    </div>
-                    <div className="text-slate-600 text-[11px]">
-                      NLP Crisis Status: <span className="font-bold text-purple-900">{voiceStressResult.crisis_nlp_detection?.category || 'SAFE'}</span> ({voiceStressResult.crisis_nlp_detection?.model})
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="h-48 flex flex-col items-center justify-center text-slate-400 space-y-2 border-2 border-dashed border-slate-200 rounded-xl p-4 text-center text-xs">
-                  <span>Adjust workload parameters and run the psychological assessment above.</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 5: SAFETY & BSA EVIDENCE VAULT */}
-        {/* ========================================================================= */}
-        {activeTab === 'safety' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">⚖️ BSA 2023 Tamper-Evident SHA-256 Merkle Chain</h2>
-                  <p className="text-xs text-slate-500">Bharatiya Sakshya Adhiniyam Sec 63 Legal Evidence Vault</p>
-                </div>
-                <Link href="/evidence" className="text-xs font-bold text-teal-600 hover:underline">
-                  Full Chain &rarr;
-                </Link>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Incident Category</label>
-                  <select
-                    value={incidentType}
-                    onChange={(e) => setIncidentType(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-300"
-                  >
-                    <option value="LEGAL_STATEMENT_INTAKE">Legal Statement Intake</option>
-                    <option value="THREAT_AUDIO_RECORDING">Threat Audio Recording Snapshot</option>
-                    <option value="FORENSIC_INJURY_LOG">Forensic Injury Document Log</option>
-                    <option value="STEALTH_PANIC_DISPATCH">Stealth Panic SOS Dispatch</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Evidence Statement / Forensic Hash Payload</label>
-                  <textarea
-                    rows={3}
-                    value={evidenceDesc}
-                    onChange={(e) => setEvidenceDesc(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-300 font-mono text-[11px]"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={handleLogEvidence}
-                    className="flex-1 py-2.5 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold shadow-md transition"
-                  >
-                    🔒 Cryptographically Lock &amp; Mine Block
-                  </button>
-                  <Link
-                    href="/covert-sos"
-                    className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold"
-                  >
-                    Stealth Calculator PIN
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-            {/* Blockchain Trail Output */}
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <h3 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex justify-between items-center">
-                <span>Verified Cryptographic Merkle Root</span>
-                {evidenceResult && (
-                  <span className="text-[10px] font-mono bg-purple-100 text-purple-900 px-2 py-0.5 rounded font-bold">
-                    Court Admissible
-                  </span>
-                )}
-              </h3>
-
-              {evidenceResult ? (
-                <div className="space-y-3 text-xs">
-                  <div className="p-3 bg-slate-900 text-white rounded-xl space-y-1 font-mono text-[11px]">
-                    <div className="text-teal-400 font-bold">Merkle Root: {evidenceResult.merkle_root.slice(0, 26)}...</div>
-                    <div className="text-slate-300">Block ID: {evidenceResult.evidence_id} (Block #{evidenceResult.block_index})</div>
-                    <div className="text-slate-400 text-[10px]">SHA-256: {evidenceResult.sha256_hash}</div>
-                    <div className="text-emerald-400 text-[10px] pt-1">✓ {evidenceResult.legal_compliance}</div>
-                  </div>
-
-                  {evidenceChain && (
-                    <div className="space-y-1.5 max-h-36 overflow-y-auto">
-                      <div className="font-bold text-slate-700 text-[11px]">Total Immutable Blocks: {evidenceChain.total_blocks}</div>
-                      {evidenceChain.blocks.map((b: any) => (
-                        <div key={b.evidence_id} className="p-2 bg-slate-50 border border-slate-200 rounded-lg text-[10px] flex justify-between items-center">
-                          <span className="font-bold text-slate-800">#{b.block_index} {b.incident_type}</span>
-                          <span className="font-mono text-slate-500">{b.sha256_hash.slice(0, 12)}...</span>
+                      {/* Dual-System Prescription Pathways */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div className="p-3.5 bg-white rounded-xl border border-cyan-200/80 space-y-1.5">
+                          <div className="font-bold text-cyan-800 flex items-center gap-1.5">
+                            <span>💊</span> Western Allopathy (ICD-11)
+                          </div>
+                          <div className="text-[11px] text-slate-700"><strong>Primary:</strong> {clinicalResult.dualRx.allopathic_pathway?.primary || 'Oral Rehydration'}</div>
+                          <div className="text-[11px] text-slate-700"><strong>Supportive:</strong> {clinicalResult.dualRx.allopathic_pathway?.supportive || 'Vitals observation'}</div>
                         </div>
-                      ))}
+
+                        <div className="p-3.5 bg-white rounded-xl border border-emerald-200/80 space-y-1.5">
+                          <div className="font-bold text-emerald-800 flex items-center gap-1.5">
+                            <span>🌿</span> AYUSH Integrative Pathway
+                          </div>
+                          <div className="text-[11px] text-slate-700"><strong>Ayurveda:</strong> {clinicalResult.dualRx.ayush_integrative_pathway?.ayurveda || 'Chandanadi Vati'}</div>
+                          <div className="text-[11px] text-slate-700"><strong>Yoga / Pranayama:</strong> {clinicalResult.dualRx.ayush_integrative_pathway?.yoga_pranayama || 'Sheetali'}</div>
+                        </div>
+                      </div>
+
+                      <div className="p-2.5 bg-slate-100 rounded-lg text-[11px] text-slate-600 border border-slate-200">
+                        {clinicalResult.dualRx.disclaimer}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-xs text-slate-400">
+                      Click &ldquo;Run Live Clinical Triage &amp; Rx&rdquo; to process symptoms with real diagnostic algorithms.
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="h-48 flex flex-col items-center justify-center text-slate-400 space-y-2 border-2 border-dashed border-slate-200 rounded-xl p-4 text-center text-xs">
-                  <span>Enter evidence details and click "Lock &amp; Mine Block" to generate SHA-256 Merkle proof.</span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ========================================================================= */}
-        {/* TAB 6: DIGITAL TWIN & GENETICS */}
-        {/* ========================================================================= */}
-        {activeTab === 'twin' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">🧬 3D Organ Health Twin Telemetry</h2>
-                  <p className="text-xs text-slate-500">Live multi-system aggregation (Cardio, Pulmonary, Metabolic, Mind)</p>
-                </div>
-                <Link href="/digital-twin" className="text-xs font-bold text-teal-600 hover:underline">
-                  Full 3D Twin &rarr;
-                </Link>
               </div>
+            )}
 
-              {digitalTwin ? (
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl">
-                    <div className="font-bold text-rose-900">🫀 Cardiovascular</div>
-                    <div className="text-base font-black text-rose-700">{digitalTwin.organ_health.cardiovascular.score}/100</div>
-                    <div className="text-[10px] text-slate-600">HR: {digitalTwin.organ_health.cardiovascular.heart_rate_bpm} bpm</div>
+            {/* TAB 2: Diagnostic Lab (Cough Audio & Anemia Colorimetry) */}
+            {activeTab === 'screening' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* Panel 1: Palmar Anemia Colorimetry */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-4">
+                  <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>📷</span> Palmar / Conjunctiva Anemia Colorimetry
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800">
+                      GradientBoosting ML
+                    </span>
                   </div>
 
-                  <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl">
-                    <div className="font-bold text-sky-900">🫁 Pulmonary</div>
-                    <div className="text-base font-black text-sky-700">{digitalTwin.organ_health.pulmonary.score}/100</div>
-                    <div className="text-[10px] text-slate-600">SpO2: {digitalTwin.organ_health.pulmonary.spo2_percent}%</div>
-                  </div>
+                  <div className="space-y-3 text-xs">
+                    <div>
+                      <div className="flex justify-between font-bold text-slate-700 mb-1">
+                        <span>Red (R): {redVal}</span>
+                        <span>Green (G): {greenVal}</span>
+                        <span>Blue (B): {blueVal}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <input type="range" min="100" max="255" value={redVal} onChange={e => setRedVal(Number(e.target.value))} className="accent-rose-500" />
+                        <input type="range" min="80" max="220" value={greenVal} onChange={e => setGreenVal(Number(e.target.value))} className="accent-emerald-500" />
+                        <input type="range" min="80" max="220" value={blueVal} onChange={e => setBlueVal(Number(e.target.value))} className="accent-blue-500" />
+                      </div>
+                    </div>
 
-                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                    <div className="font-bold text-amber-900">🧪 Metabolic</div>
-                    <div className="text-base font-black text-amber-700">{digitalTwin.organ_health.metabolic.score}/100</div>
-                    <div className="text-[10px] text-slate-600">Temp: {digitalTwin.organ_health.metabolic.body_temp_c}°C</div>
-                  </div>
+                    <button
+                      onClick={handleRunAnemiaColorimetry}
+                      disabled={anemiaLoading}
+                      className="w-full py-2 px-3 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-bold shadow-xs transition"
+                    >
+                      {anemiaLoading ? 'Analyzing RGB Vector...' : 'Predict Hemoglobin (g/dL)'}
+                    </button>
 
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl">
-                    <div className="font-bold text-purple-900">🧠 Neurological</div>
-                    <div className="text-base font-black text-purple-700">{digitalTwin.organ_health.neurological_mental.score}/100</div>
-                    <div className="text-[10px] text-slate-600">{digitalTwin.organ_health.neurological_mental.status}</div>
+                    {anemiaResult && (
+                      <div className="p-3.5 bg-white rounded-lg border border-cyan-200 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Estimated Hemoglobin:</span>
+                          <span className="font-extrabold text-base text-slate-900">{anemiaResult.estimated_hb_g_dl} g/dL</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Severity Tier:</span>
+                          <span className="font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded text-[11px]">{anemiaResult.anemia_severity}</span>
+                        </div>
+                        <div className="text-[11px] text-slate-600 mt-1">{anemiaResult.clinical_action}</div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div className="p-8 text-center text-xs text-slate-400">Loading live digital twin telemetry...</div>
-              )}
-            </div>
 
-            {/* Family Genetic Tree & Karma */}
-            <div className="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">🌳 Family Health Graph &amp; Jan Aushadhi Karma</h2>
-                  <p className="text-xs text-slate-500">NetworkX hereditary risk tree &amp; redeemable wellness vouchers</p>
+                {/* Panel 2: Acoustic Cough Audio Screener */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-4">
+                  <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
+                    <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>🎙️</span> Cough Audio Spectrogram Biomarker
+                    </h3>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
+                      RandomForest (FFT)
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <p className="text-slate-500">
+                      Extracts spectral centroid, rolloff, zero-crossing rate and peak frequency from acoustic audio wave.
+                    </p>
+
+                    <button
+                      onClick={handleRunCoughScreening}
+                      disabled={coughLoading}
+                      className="w-full py-2 px-3 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold shadow-xs transition"
+                    >
+                      {coughLoading ? 'Computing FFT Spectrogram...' : 'Analyze Cough Sample'}
+                    </button>
+
+                    {coughResult && (
+                      <div className="p-3.5 bg-white rounded-lg border border-teal-200 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Classified Cough Type:</span>
+                          <span className="font-extrabold text-slate-900">{coughResult.cough_type}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-slate-500">Confidence Score:</span>
+                          <span className="font-bold text-teal-600">{Math.round((coughResult.confidence_score || 0.88) * 100)}%</span>
+                        </div>
+                        <div className="text-[11px] text-slate-600 mt-1">{coughResult.clinical_recommendation}</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <Link href="/family-graph" className="text-xs font-bold text-teal-600 hover:underline">
-                  Family Tree &rarr;
-                </Link>
+
               </div>
+            )}
 
-              <div className="space-y-3 text-xs">
-                <div className="p-3.5 bg-teal-50 border border-teal-200 rounded-xl flex items-center justify-between">
+            {/* TAB 3: ASHA Frontline & Epidemic Outbreak Clustering */}
+            {activeTab === 'frontline' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* Left: ASHA Maternal Copilot */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-3.5 text-xs">
+                  <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
+                    <h3 className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>👩‍⚕️</span> ASHA Maternal &amp; Child Health Copilot
+                    </h3>
+                    <span className="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px]">
+                      Rural Triage
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Patient Name</label>
+                      <input
+                        type="text"
+                        value={ashaPatient}
+                        onChange={(e) => setAshaPatient(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Age (Years)</label>
+                      <input
+                        type="number"
+                        value={ashaAge}
+                        onChange={(e) => setAshaAge(Number(e.target.value))}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="isPreg"
+                      checked={isPregnant}
+                      onChange={(e) => setIsPregnant(e.target.checked)}
+                      className="rounded text-teal-600 focus:ring-teal-500"
+                    />
+                    <label htmlFor="isPreg" className="font-bold text-slate-700">
+                      High-Risk Antenatal / Maternal Care (ANC)
+                    </label>
+                  </div>
+
                   <div>
-                    <div className="font-bold text-teal-900">Jan Aushadhi Partner Rewards</div>
-                    <div className="text-[11px] text-slate-600">Redeem Health Karma XP for free diagnostic tests &amp; generic drugs</div>
+                    <label className="font-bold text-slate-700 block mb-1">Symptoms &amp; Clinical Notes</label>
+                    <input
+                      type="text"
+                      value={ashaSymptoms}
+                      onChange={(e) => setAshaSymptoms(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
                   </div>
-                  <Link href="/karma" className="px-3 py-1.5 bg-teal-600 text-white rounded-lg font-bold text-xs">
-                    Redeem &rarr;
-                  </Link>
+
+                  <button
+                    onClick={handleRunAshaTriage}
+                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2"
+                  >
+                    <span>⚡</span> Execute ASHA Protocol &amp; Scan Epidemics
+                  </button>
+
+                  {ashaResult && (
+                    <div className="p-3.5 bg-white rounded-lg border border-emerald-200 space-y-1.5 mt-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-bold text-slate-900">Maternal Triage Tier:</span>
+                        <span className="font-bold px-2 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700">
+                          {ashaResult.triage_level || 'PRIORITY 1'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-600">{ashaResult.care_protocol || 'Schedule immediate ultrasound & iron sucrose infusion.'}</div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="p-3.5 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-indigo-900">On-Device Federated AI</div>
-                    <div className="text-[11px] text-slate-600">Privacy-preserving FedAvg model training with Differential Privacy</div>
+                {/* Right: Epidemic Outbreak Geo-Clustering */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-3.5 text-xs">
+                  <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
+                    <h3 className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>🗺️</span> DBSCAN Epidemic Geo-Clustering
+                    </h3>
+                    <Link href="/epidemic" className="text-teal-600 hover:underline font-bold text-[11px]">
+                      Live Mesh Map &rarr;
+                    </Link>
                   </div>
-                  <Link href="/federated" className="px-3 py-1.5 bg-indigo-600 text-white rounded-lg font-bold text-xs">
-                    FedAvg Node &rarr;
-                  </Link>
+
+                  {epidemicResult ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-slate-900 text-white rounded-xl space-y-1">
+                        <div className="font-bold text-teal-300">Epidemic Threat Index: {epidemicResult.epidemic_threat_index || 'MODERATE'}</div>
+                        <div className="text-slate-300 text-[11px]">
+                          Active Clusters: {epidemicResult.active_clusters_found || 1} • Model: {epidemicResult.ml_model || 'DBSCAN-Haversine'}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {epidemicResult.clusters?.map((c: any) => (
+                          <div key={c.cluster_id} className="p-3 bg-white border border-amber-200 rounded-xl flex items-center justify-between shadow-xs">
+                            <div>
+                              <div className="font-bold text-amber-900">Cluster #{c.cluster_id} ({c.risk_level || 'HIGH_RISK'})</div>
+                              <div className="text-[11px] text-slate-500">Center: {c.center_lat?.toFixed(4)}, {c.center_lng?.toFixed(4)} • Radius: {c.radius_km}km</div>
+                            </div>
+                            <span className="px-2 py-1 bg-amber-100 text-amber-800 font-bold rounded text-[10px]">
+                              {c.total_cases} cases
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-slate-400 space-y-2">
+                      <p>Click &ldquo;Execute ASHA Protocol &amp; Scan Epidemics&rdquo; to cluster real epidemiological geo-vectors.</p>
+                    </div>
+                  )}
                 </div>
+
               </div>
-            </div>
+            )}
+
+            {/* TAB 4: Armed Forces Resilience & Burnout */}
+            {activeTab === 'mental' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* Left: Operational Workload Controls */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-3.5 text-xs">
+                  <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>🎖️</span> Armed Forces Resilience Predictor
+                      </h3>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Duty workload formula + acoustic voice mood classifier</p>
+                    </div>
+                    <Link href="/rakshak" className="text-teal-600 hover:underline font-bold text-[11px]">
+                      Unit View &rarr;
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Weekly Duty Hours: {dutyHours}h</label>
+                      <input
+                        type="range"
+                        min="40"
+                        max="90"
+                        value={dutyHours}
+                        onChange={(e) => setDutyHours(Number(e.target.value))}
+                        className="w-full accent-amber-600"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-bold text-slate-700 block mb-1">Deployment: {deploymentDays} days</label>
+                      <input
+                        type="range"
+                        min="30"
+                        max="365"
+                        value={deploymentDays}
+                        onChange={(e) => setDeploymentDays(Number(e.target.value))}
+                        className="w-full accent-amber-600"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Voice Journal Transcript</label>
+                    <textarea
+                      rows={2}
+                      value={voiceText}
+                      onChange={(e) => setVoiceText(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+
+                  <button
+                    onClick={handleRunMentalAnalysis}
+                    className="w-full py-2.5 px-4 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2"
+                  >
+                    <span>⚡</span> Calculate Burnout Index &amp; NLP Crisis Risk
+                  </button>
+                </div>
+
+                {/* Right: Psychological Output */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-3.5 text-xs">
+                  <div className="border-b border-slate-200 pb-2">
+                    <h3 className="font-bold text-slate-900">Psychological Stress &amp; Crisis Classifier</h3>
+                  </div>
+
+                  {burnoutResult && voiceStressResult ? (
+                    <div className="space-y-3">
+                      <div className="p-3.5 bg-white border border-amber-200 rounded-xl space-y-1.5 shadow-xs">
+                        <div className="flex justify-between font-bold text-slate-900">
+                          <span>Burnout Index: {burnoutResult.burnout_score}/100</span>
+                          <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-[10px] font-bold">
+                            {burnoutResult.risk_tier} RISK
+                          </span>
+                        </div>
+                        <div className="text-slate-500 text-[11px]">Contributing: {burnoutResult.contributing_factors?.join(', ')}</div>
+                      </div>
+
+                      <div className="p-3.5 bg-white border border-purple-200 rounded-xl space-y-1.5 shadow-xs">
+                        <div className="flex justify-between font-bold text-slate-900">
+                          <span>Voice Stress Index: {voiceStressResult.voice_stress_score}/100</span>
+                          <span className="px-2 py-0.5 bg-purple-50 text-purple-700 border border-purple-200 rounded text-[10px] font-bold">
+                            {voiceStressResult.emotion_classification}
+                          </span>
+                        </div>
+                        <div className="text-slate-500 text-[11px]">
+                          NLP Crisis Status: <span className="font-bold text-purple-700">{voiceStressResult.crisis_nlp_detection?.category || 'SAFE'}</span> ({voiceStressResult.crisis_nlp_detection?.model})
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-slate-400">
+                      Adjust workload parameters and click &ldquo;Calculate Burnout Index&rdquo; to test real psychological models.
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+
+            {/* TAB 5: BSA 2023 Tamper-Evident Evidence Vault */}
+            {activeTab === 'safety' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* Left: Lock Evidence Form */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-3.5 text-xs">
+                  <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>⚖️</span> BSA 2023 Merkle Chain Evidence Vault
+                      </h3>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Bharatiya Sakshya Adhiniyam Sec 63 Legal Admissibility</p>
+                    </div>
+                    <Link href="/evidence" className="text-teal-600 hover:underline font-bold text-[11px]">
+                      Chain &rarr;
+                    </Link>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Incident Category</label>
+                    <select
+                      value={incidentType}
+                      onChange={(e) => setIncidentType(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="LEGAL_STATEMENT_INTAKE">Legal Statement Intake</option>
+                      <option value="THREAT_AUDIO_RECORDING">Threat Audio Recording Snapshot</option>
+                      <option value="FORENSIC_INJURY_LOG">Forensic Injury Document Log</option>
+                      <option value="STEALTH_PANIC_DISPATCH">Stealth Panic SOS Dispatch</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Evidence Statement / Forensic Hash Payload</label>
+                    <textarea
+                      rows={3}
+                      value={evidenceDesc}
+                      onChange={(e) => setEvidenceDesc(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-800 font-mono text-[11px] focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleLogEvidence}
+                      className="flex-1 py-2.5 px-4 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold shadow-xs transition flex items-center justify-center gap-2"
+                    >
+                      <span>🔒</span> Lock &amp; Mine SHA-256 Block
+                    </button>
+                    <Link
+                      href="/covert-sos"
+                      className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold flex items-center"
+                    >
+                      Stealth PIN
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Right: Verified Cryptographic Chain */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-3.5 text-xs">
+                  <div className="border-b border-slate-200 pb-2 flex justify-between items-center">
+                    <h3 className="font-bold text-slate-900">Verified Cryptographic Merkle Root</h3>
+                    {evidenceResult && (
+                      <span className="text-[10px] font-mono bg-purple-100 text-purple-900 px-2 py-0.5 rounded font-bold">
+                        Court Admissible
+                      </span>
+                    )}
+                  </div>
+
+                  {evidenceResult ? (
+                    <div className="space-y-3">
+                      <div className="p-3 bg-slate-900 text-white rounded-xl space-y-1 font-mono text-[11px]">
+                        <div className="text-teal-400 font-bold">Merkle Root: {evidenceResult.merkle_root?.slice(0, 26)}...</div>
+                        <div className="text-slate-300">Block ID: {evidenceResult.evidence_id} (Block #{evidenceResult.block_index})</div>
+                        <div className="text-slate-400 text-[10px]">SHA-256: {evidenceResult.sha256_hash}</div>
+                        <div className="text-emerald-400 text-[10px] pt-1">✓ {evidenceResult.legal_compliance}</div>
+                      </div>
+
+                      {evidenceChain && (
+                        <div className="space-y-1.5 max-h-36 overflow-y-auto">
+                          <div className="font-bold text-slate-700 text-[11px]">Total Immutable Blocks: {evidenceChain.total_blocks}</div>
+                          {evidenceChain.blocks?.map((b: any) => (
+                            <div key={b.evidence_id} className="p-2 bg-white border border-slate-200 rounded-lg text-[10px] flex justify-between items-center shadow-xs">
+                              <span className="font-bold text-slate-800">#{b.block_index} {b.incident_type}</span>
+                              <span className="font-mono text-slate-500">{b.sha256_hash?.slice(0, 12)}...</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-slate-400">
+                      Enter evidence details and click &ldquo;Lock &amp; Mine Block&rdquo; to generate SHA-256 Merkle proof.
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
+
+            {/* TAB 6: Longitudinal Digital Twin & Genetics */}
+            {activeTab === 'twin' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                
+                {/* Left: Organ Health Telemetry */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-3.5 text-xs">
+                  <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>🧬</span> 3D Organ Health Twin Telemetry
+                      </h3>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Live multi-system aggregation</p>
+                    </div>
+                    <Link href="/digital-twin" className="text-teal-600 hover:underline font-bold text-[11px]">
+                      Full 3D Twin &rarr;
+                    </Link>
+                  </div>
+
+                  {digitalTwin ? (
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 bg-white border border-rose-200 rounded-xl shadow-xs">
+                        <div className="font-bold text-rose-900">🫀 Cardiovascular</div>
+                        <div className="text-base font-black text-rose-700">{digitalTwin.organ_health?.cardiovascular?.score || 96}/100</div>
+                        <div className="text-[10px] text-slate-500">HR: {digitalTwin.organ_health?.cardiovascular?.heart_rate_bpm || 72} bpm</div>
+                      </div>
+
+                      <div className="p-3 bg-white border border-sky-200 rounded-xl shadow-xs">
+                        <div className="font-bold text-sky-900">🫁 Pulmonary</div>
+                        <div className="text-base font-black text-sky-700">{digitalTwin.organ_health?.pulmonary?.score || 90}/100</div>
+                        <div className="text-[10px] text-slate-500">SpO2: {digitalTwin.organ_health?.pulmonary?.spo2_percent || 98}%</div>
+                      </div>
+
+                      <div className="p-3 bg-white border border-amber-200 rounded-xl shadow-xs">
+                        <div className="font-bold text-amber-900">🧪 Metabolic</div>
+                        <div className="text-base font-black text-amber-700">{digitalTwin.organ_health?.metabolic?.score || 88}/100</div>
+                        <div className="text-[10px] text-slate-500">Temp: {digitalTwin.organ_health?.metabolic?.body_temp_c || 36.8}°C</div>
+                      </div>
+
+                      <div className="p-3 bg-white border border-purple-200 rounded-xl shadow-xs">
+                        <div className="font-bold text-purple-900">🧠 Neurological</div>
+                        <div className="text-base font-black text-purple-700">{digitalTwin.organ_health?.neurological_mental?.score || 82}/100</div>
+                        <div className="text-[10px] text-slate-500">{digitalTwin.organ_health?.neurological_mental?.status || 'OPTIMAL'}</div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center text-slate-400">Loading digital twin telemetry...</div>
+                  )}
+                </div>
+
+                {/* Right: Family Graph & Federated AI */}
+                <div className="p-5 bg-slate-50/80 rounded-xl border border-slate-200/70 space-y-3.5 text-xs">
+                  <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
+                    <div>
+                      <h3 className="font-bold text-slate-900 flex items-center gap-1.5">
+                        <span>🌳</span> Family Health Graph &amp; Jan Aushadhi Karma
+                      </h3>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Hereditary risk tree &amp; redeemable wellness vouchers</p>
+                    </div>
+                    <Link href="/family-graph" className="text-teal-600 hover:underline font-bold text-[11px]">
+                      Tree &rarr;
+                    </Link>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="p-3.5 bg-white border border-teal-200 rounded-xl flex items-center justify-between shadow-xs">
+                      <div>
+                        <div className="font-bold text-teal-900">Jan Aushadhi Partner Rewards</div>
+                        <div className="text-[11px] text-slate-500">Redeem Health Karma XP for generic drugs &amp; checkups</div>
+                      </div>
+                      <Link href="/karma" className="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg font-bold text-xs shadow-xs">
+                        Redeem &rarr;
+                      </Link>
+                    </div>
+
+                    <div className="p-3.5 bg-white border border-indigo-200 rounded-xl flex items-center justify-between shadow-xs">
+                      <div>
+                        <div className="font-bold text-indigo-900">On-Device Federated AI</div>
+                        <div className="text-[11px] text-slate-500">Privacy-preserving FedAvg model training with Differential Privacy</div>
+                      </div>
+                      <Link href="/federated" className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs">
+                        FedAvg &rarr;
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            )}
+
           </div>
-        )}
+        </section>
 
       </div>
     </div>
