@@ -162,7 +162,7 @@ class SosEmergencyModule {
   /// OpenStreetMap Nominatim Reverse Geocoding
   static Future<Map<String, dynamic>> reverseGeocode(double lat, double lon) async {
     try {
-      final url = Uri.parse('http://localhost:8000/api/v1/sos/reverse-geocode?lat=$lat&lon=$lon');
+      final url = Uri.parse(ApiEndpoints.endpoint('sos/reverse-geocode?lat=$lat&lon=$lon'));
       final resp = await http.get(url).timeout(const Duration(seconds: 4));
       if (resp.statusCode == 200) {
         return jsonDecode(resp.body);
@@ -178,7 +178,7 @@ class SosEmergencyModule {
   /// OpenStreetMap Overpass Nearby Emergency Facilities
   static Future<List<EmergencyFacility>> getNearbyFacilities(double lat, double lon, {double radiusKm = 5.0}) async {
     try {
-      final url = Uri.parse('http://localhost:8000/api/v1/sos/nearby-emergency-services?lat=$lat&lon=$lon&radius_km=$radiusKm');
+      final url = Uri.parse(ApiEndpoints.endpoint('sos/nearby-emergency-services?lat=$lat&lon=$lon&radius_km=$radiusKm'));
       final resp = await http.get(url).timeout(const Duration(seconds: 4));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
@@ -203,7 +203,7 @@ class SosEmergencyModule {
   /// Get Emergency ICE Contacts
   static Future<List<EmergencyContact>> getEmergencyContacts() async {
     try {
-      final url = Uri.parse('http://localhost:8000/api/v1/sos/contacts');
+      final url = Uri.parse(ApiEndpoints.endpoint('sos/contacts'));
       final resp = await http.get(url).timeout(const Duration(seconds: 3));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);

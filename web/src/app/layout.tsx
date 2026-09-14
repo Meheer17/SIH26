@@ -4,17 +4,17 @@ import { AuthProvider } from "@/lib/auth/AuthContext";
 import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
-  title: "SvasthyaSetu — Smart India Hackathon 2026",
-  description: "Bridge to Health: Unified platform for SIH26181, SIH26047, SIH26186, and SIH26094",
+  title: "SvasthyaSetu — SIH 2026 Unified National Healthcare Platform",
+  description: "Bridge to Health: Unified clinical AI & resilience ecosystem integrating SIH26181, SIH26047, SIH26186, and SIH26094",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
-      className="h-full antialiased"
+      className="h-full antialiased dark"
     >
-      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans selection:bg-teal-700 selection:text-white">
+      <body className="min-h-full flex flex-col bg-[#0B0F17] text-slate-100 font-sans selection:bg-teal-500 selection:text-slate-950 bg-mesh-dark">
         <AuthProvider>
           <Navbar />
           <main className="flex-1">{children}</main>
@@ -23,4 +23,3 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 }
-

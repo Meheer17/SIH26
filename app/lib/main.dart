@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'core/theme/app_theme.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/auth/role_dashboard_screen.dart';
@@ -22,20 +23,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SvasthyaSetu Unified App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB),
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF8FAFC),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF0F172A),
-          elevation: 0,
-          scrolledUnderElevation: 0,
-        ),
-      ),
+      theme: AppTheme.darkTheme,
       initialRoute: '/dashboard',
       routes: {
         '/login': (context) => const LoginScreen(),
@@ -52,4 +40,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

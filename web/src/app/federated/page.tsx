@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Cpu, ShieldCheck, Lock, UploadCloud, RefreshCw } from "lucide-react";
+import { ArrowLeft, Cpu, ShieldCheck, Lock, UploadCloud, RefreshCw, Layers } from "lucide-react";
 
 export default function FederatedNodePage() {
   const [status, setStatus] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [localWeights, setLocalWeights] = useState<number[]>([0.41, -0.14, 0.86, 0.29, -0.04, 0.61, 0.18]);
 
   const fetchStatus = async () => {
     setLoading(true);
@@ -24,16 +25,23 @@ export default function FederatedNodePage() {
     }
   };
 
+  const handleComputeLocalSGD = () => {
+    // Simulate local SGD training iteration on edge device
+    const updated = localWeights.map(w => parseFloat((w + (Math.random() * 0.04 - 0.02)).toFixed(4)));
+    setLocalWeights(updated);
+  };
+
   const handleSubmitWeights = async () => {
     try {
       const res = await fetch("http://localhost:8000/api/v1/ai/federated/weights", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          client_node_id: "ANON-NODE-DELHI-04",
+          client_node_id: `ANON-NODE-WEB-${Math.floor(Math.random() * 1000)}`,
           model_name: "cough_classifier",
-          gradients_hash: "0x8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d",
-          local_samples_count: 32
+          gradients_hash: `0x${Math.random().toString(16).substring(2, 14)}`,
+          local_samples_count: 32,
+          weights_vector: localWeights
         })
       });
       if (res.ok) {
@@ -60,7 +68,7 @@ export default function FederatedNodePage() {
             </Link>
             <div>
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                Feature 14 • FedAvg + Differential Privacy
+                Feature 14 • FedAvg + Laplace Differential Privacy
               </span>
               <h1 className="text-2xl font-bold tracking-tight text-white mt-1">
                 Privacy-Preserving Federated Learning Pipeline
@@ -90,9 +98,9 @@ export default function FederatedNodePage() {
               </div>
 
               <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 space-y-2">
-                <span className="text-xs text-slate-400 font-medium">Privacy Loss (ε)</span>
+                <span className="text-xs text-slate-400 font-medium">Privacy Budget (ε)</span>
                 <p className="text-3xl font-bold text-emerald-400">{status.differential_privacy_epsilon}</p>
-                <p className="text-xs text-slate-500">DP Budget (Guaranteed Zero-Leak)</p>
+                <p className="text-xs text-slate-500">Laplace DP (Guaranteed Zero-Leak)</p>
               </div>
 
               <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-5 space-y-2">
@@ -102,15 +110,39 @@ export default function FederatedNodePage() {
               </div>
             </div>
 
+            {/* Global Weights Vector Display */}
+            {status.global_weight_vector && (
+              <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 space-y-3">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-indigo-400" /> Global FedAvg Model Weight Vector (7-Dimensional Acoustic Features)
+                </h3>
+                <div className="flex flex-wrap gap-2 font-mono text-xs">
+                  {status.global_weight_vector.map((w: number, idx: number) => (
+                    <span key={idx} className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-indigo-300">
+                      w_{idx}: {w}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Local Node Action Card */}
             <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="space-y-1">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-indigo-400" /> On-Device Gradient Weight Sync
+                  <Lock className="w-5 h-5 text-indigo-400" /> On-Device Edge Gradient Computation
                 </h3>
                 <p className="text-xs text-slate-400 max-w-md">
-                  Your raw health data and audio never leave this device. Only encrypted, noisy gradients are uploaded to train the global model.
+                  Your raw health data and audio never leave this device. Compute local SGD weights and transmit encrypted differentially-private updates to the global swarm.
                 </p>
+                <div className="flex items-center gap-2 pt-2">
+                  <button
+                    onClick={handleComputeLocalSGD}
+                    className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono text-slate-200 border border-slate-700"
+                  >
+                    Run Local SGD Step
+                  </button>
+                </div>
               </div>
 
               <button

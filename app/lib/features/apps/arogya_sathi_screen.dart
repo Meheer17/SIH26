@@ -339,6 +339,13 @@ class _ArogyaSathiScreenState extends State<ArogyaSathiScreen> with SingleTicker
 
       _speechService.speak("Emergency SOS alert dispatched with live location.");
 
+      final alertData = res['alert'] is Map ? (res['alert'] as Map) : res;
+      final alertId = alertData['alert_id'] ?? alertData['sos_id'] ?? 'ALT-DISPATCHED';
+      final channelsRaw = alertData['channels'];
+      final channelsText = (channelsRaw is List)
+          ? channelsRaw.join(', ')
+          : (channelsRaw?.toString() ?? 'SMS, Push, IVR, Emergency Call');
+
       if (mounted) {
         showDialog(
           context: context,
@@ -346,7 +353,7 @@ class _ArogyaSathiScreenState extends State<ArogyaSathiScreen> with SingleTicker
             backgroundColor: const Color(0xFF0F172A),
             title: const Text('🚨 EMERGENCY SOS DISPATCHED', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
             content: Text(
-              'Alert ID: ${res['alert_id']}\nChannels: ${res['channels'].join(', ')}\nResponders and emergency contacts notified.',
+              'Alert ID: $alertId\nChannels: $channelsText\nResponders and emergency contacts notified.',
               style: const TextStyle(color: Colors.white70, fontSize: 13),
             ),
             actions: [

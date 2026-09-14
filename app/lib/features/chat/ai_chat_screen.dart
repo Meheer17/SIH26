@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../../core/api/api_endpoints.dart';
+import '../../core/speech/speech_service.dart';
 
 class AiAgentInfo {
   final String agentId;
@@ -90,6 +92,34 @@ class _AiChatScreenState extends State<AiChatScreen> {
   late AiAgentInfo _selectedAgent;
   final Map<String, List<ChatMessageModel>> _messagesMap = {};
   bool _isLoading = false;
+  bool _isDictating = false;
+  final SpeechService _speechService = SpeechService();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedAgent = _agents[0];
+    _speechService.init();
+  }
+
+  void _toggleDictation() {
+    if (_isDictating) {
+      _speechService.stopListening(onStatusChange: (listening) {
+        setState(() => _isDictating = listening);
+      });
+    } else {
+      _speechService.listen(
+        onResult: (text) {
+          setState(() {
+            _inputController.text = text;
+          });
+        },
+        onStatusChange: (listening) {
+          setState(() => _isDictating = listening);
+        },
+      );
+    }
+  }
 
   final Map<String, List<String>> _suggestionsMap = {
     'arogya_sathi_agent': [
@@ -113,12 +143,6 @@ class _AiChatScreenState extends State<AiChatScreen> {
       'Preventive health tips for seasonal flu.',
     ],
   };
-
-  @override
-  void initState() {
-    super.initState();
-    _selectedAgent = _agents[0];
-  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -350,10 +374,38 @@ class _AiChatScreenState extends State<AiChatScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                msg.content,
-                                style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
-                              ),
+                              isUser
+                                  ? Text(
+                                      msg.content,
+                                      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+                                    )
+                                  : MarkdownBody(
+                                      data: msg.content,
+                                      selectable: true,
+                                      styleSheet: MarkdownStyleSheet(
+                                        p: const TextStyle(color: Colors.white, fontSize: 14, height: 1.4),
+                                        h1: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                                        h2: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                        h3: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                                        strong: const TextStyle(color: Color(0xFFF59E0B), fontWeight: FontWeight.bold),
+                                        em: const TextStyle(color: Color(0xFF38BDF8), fontStyle: FontStyle.italic),
+                                        code: const TextStyle(color: Color(0xFF38BDF8), backgroundColor: Color(0xFF0F172A), fontFamily: 'monospace', fontSize: 13),
+                                        codeblockDecoration: BoxDecoration(
+                                          color: const Color(0xFF0F172A),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(color: Colors.white12),
+                                        ),
+                                        listBullet: const TextStyle(color: Color(0xFF818CF8), fontSize: 14),
+                                        blockquoteDecoration: BoxDecoration(
+                                          color: const Color(0xFF0F172A),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: const Border(left: BorderSide(color: Color(0xFF6366F1), width: 4)),
+                                        ),
+                                        horizontalRuleDecoration: const BoxDecoration(
+                                          border: Border(top: BorderSide(color: Colors.white24, width: 1)),
+                                        ),
+                                      ),
+                                    ),
                               if (msg.toolCalls != null && msg.toolCalls!.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Wrap(
@@ -455,6 +507,14 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
+                IconButton(
+                  onPressed: _toggleDictation,
+                  icon: Icon(
+                    _isDictating ? Icons.mic : Icons.mic_none,
+                    color: _isDictating ? Colors.redAccent : Colors.white70,
+                  ),
+                ),
+                const SizedBox(width: 4),
                 IconButton(
                   onPressed: _isLoading ? null : () => _sendMessage(),
                   icon: const Icon(Icons.send_rounded, color: Color(0xFF6366F1)),

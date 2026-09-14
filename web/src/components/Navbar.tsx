@@ -22,52 +22,59 @@ export default function Navbar() {
   const navHubs = [
     { name: 'Command Center', href: '/', icon: '⚡' },
     { name: 'Clinical & OPD', href: '/medikiosk', icon: '🩺' },
-    { name: 'Diagnostics', href: '/screening', icon: '🔬' },
-    { name: 'ASHA & Community', href: '/asha', icon: '👩‍⚕️' },
-    { name: 'Mind & Wellness', href: '/rakshak', icon: '🧠' },
-    { name: 'Safety & Vault', href: '/covert-sos', icon: '🛡️' },
+    { name: 'Palmar Anemia & Cough', href: '/screening', icon: '🔬' },
+    { name: 'ASHA Copilot', href: '/asha', icon: '👩‍⚕️' },
+    { name: 'Rakshak Welfare', href: '/rakshak', icon: '🧠' },
+    { name: 'Nyaya Legal Aid', href: '/nyaya', icon: '⚖️' },
+    { name: 'Stealth SOS & Vault', href: '/covert-sos', icon: '🛡️' },
     { name: 'Digital Twin', href: '/digital-twin', icon: '🧬' },
     { name: 'Health Karma', href: '/karma', icon: '🏆' },
     { name: 'AI Companion', href: '/chat', icon: '💬' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 text-slate-800 font-sans shadow-xs">
+    <header className="sticky top-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800/80 text-slate-100 font-sans shadow-lg shadow-black/20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
         
-        {/* Medical Platform Brand Logo */}
+        {/* Brand Logo & Live System Status */}
         <div className="flex items-center gap-3 shrink-0">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-teal-600 to-cyan-600 flex items-center justify-center text-white font-black text-base shadow-sm shadow-teal-600/20 group-hover:scale-105 transition">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-500 via-cyan-500 to-indigo-500 flex items-center justify-center text-slate-950 font-black text-lg shadow-md shadow-teal-500/25 group-hover:scale-105 transition duration-300">
               ✚
             </div>
             <div className="flex flex-col">
-              <span className="font-extrabold text-base tracking-tight text-slate-900 flex items-center gap-1.5">
+              <span className="font-extrabold text-base tracking-tight text-white flex items-center gap-1.5">
                 SvasthyaSetu
-                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-teal-50 text-teal-700 border border-teal-200">
-                  HEALTH PORTAL
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-teal-500/10 text-teal-400 border border-teal-500/20">
+                  SIH 2026
                 </span>
               </span>
-              <span className="text-[10px] font-medium text-slate-500">National Healthcare &amp; Resilience Platform</span>
+              <span className="text-[10px] font-medium text-slate-400">National Healthcare &amp; Resilience Grid</span>
             </div>
           </Link>
 
-          {/* Backend & ML Live Status Indicator */}
-          <div className="hidden xl:flex items-center gap-2 pl-3 border-l border-slate-200 text-[11px] font-medium text-slate-600">
+          {/* Backend & ML Engines Live Status Indicator */}
+          <div className="hidden xl:flex items-center gap-2 pl-3 border-l border-slate-800 text-[11px] font-medium text-slate-400">
             <span
-              className={`w-2 h-2 rounded-full ${
+              className={`w-2.5 h-2.5 rounded-full transition-all ${
                 isBackendOnline === true
-                  ? 'bg-emerald-500 animate-pulse ring-4 ring-emerald-500/20'
+                  ? 'bg-emerald-400 animate-pulse ring-4 ring-emerald-500/20'
                   : isBackendOnline === false
-                  ? 'bg-amber-500 ring-4 ring-amber-500/20'
-                  : 'bg-slate-300'
+                  ? 'bg-amber-400 ring-4 ring-amber-500/20'
+                  : 'bg-slate-600'
               }`}
             />
-            <span>{isBackendOnline ? 'Live ML Engines Online' : isBackendOnline === false ? 'Connecting ML Backend...' : 'Checking Server...'}</span>
+            <span>
+              {isBackendOnline
+                ? '5 ML Engines & FastAPI Live'
+                : isBackendOnline === false
+                ? 'Connecting ML Backend...'
+                : 'Checking System Status...'}
+            </span>
           </div>
         </div>
 
-        {/* Clean Navigation Hubs */}
+        {/* Navigation Tabs */}
         <nav className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none">
           {navHubs.map((hub) => {
             const isActive = pathname === hub.href;
@@ -75,10 +82,10 @@ export default function Navbar() {
               <Link
                 key={hub.name}
                 href={hub.href}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all whitespace-nowrap ${
                   isActive
-                    ? 'bg-teal-50 text-teal-700 border border-teal-200/80 shadow-xs'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-gradient-to-r from-teal-500/20 to-cyan-500/20 text-teal-300 border border-teal-500/30 shadow-sm shadow-teal-500/10'
+                    : 'text-slate-400 hover:bg-slate-900/80 hover:text-slate-200'
                 }`}
               >
                 <span>{hub.icon}</span>
@@ -88,25 +95,28 @@ export default function Navbar() {
           })}
         </nav>
 
-        {/* Emergency SOS Quick Button & User Profile */}
+        {/* Action Controls & User Account */}
         <div className="flex items-center gap-3 shrink-0">
           <Link
             href="/sos-demo"
-            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs hover:shadow-sm transition"
+            className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white text-xs font-bold shadow-md shadow-rose-600/25 hover:shadow-lg hover:shadow-rose-600/40 transition duration-300"
           >
-            <span className="animate-ping w-1.5 h-1.5 rounded-full bg-white"></span>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+            </span>
             <span>Emergency SOS</span>
           </Link>
 
           {isAuthenticated && user ? (
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-3 border-l border-slate-800 pl-3">
               <div className="hidden sm:flex flex-col text-right">
-                <span className="text-xs font-semibold text-slate-900">{user.full_name}</span>
-                <span className="text-[10px] text-slate-500">{user.primary_role}</span>
+                <span className="text-xs font-bold text-slate-200">{user.full_name}</span>
+                <span className="text-[10px] font-semibold text-teal-400 tracking-wide">{user.primary_role}</span>
               </div>
               <button
                 onClick={logout}
-                className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 text-xs font-semibold transition border border-slate-200"
+                className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-rose-950 hover:text-rose-300 text-slate-300 text-xs font-semibold transition border border-slate-800"
               >
                 Sign out
               </button>
@@ -115,13 +125,13 @@ export default function Navbar() {
             <div className="flex items-center gap-2">
               <Link
                 href="/login"
-                className="px-3 py-1.5 rounded-lg text-slate-700 hover:text-slate-900 text-xs font-semibold hover:bg-slate-100 transition"
+                className="px-3 py-1.5 rounded-lg text-slate-300 hover:text-white text-xs font-semibold hover:bg-slate-900 transition"
               >
                 Sign in
               </Link>
               <Link
                 href="/register"
-                className="px-3.5 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold shadow-xs transition"
+                className="px-3.5 py-1.5 rounded-lg bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-400 hover:to-cyan-400 text-slate-950 text-xs font-extrabold shadow-sm shadow-teal-500/20 transition"
               >
                 Register
               </Link>
@@ -132,4 +142,3 @@ export default function Navbar() {
     </header>
   );
 }
-

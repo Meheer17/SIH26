@@ -12,6 +12,7 @@ class UserModel {
   final bool isActive;
   final bool isAdmin;
   final bool isVerified;
+  final String? abhaId;
 
   UserModel({
     required this.id,
@@ -23,19 +24,21 @@ class UserModel {
     required this.isActive,
     required this.isAdmin,
     this.isVerified = false,
+    this.abhaId,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id'] ?? '',
-      fullName: json['full_name'] ?? '',
-      emailOrPhone: json['email_or_phone'] ?? '',
-      primaryRole: json['primary_role'] ?? 'PATIENT',
-      appContext: json['app_context'] ?? 'arogya_sathi',
-      mappedRoles: List<String>.from(json['mapped_roles'] ?? []),
-      isActive: json['is_active'] ?? true,
-      isAdmin: json['is_admin'] ?? false,
-      isVerified: json['is_verified'] ?? false,
+      id: json['id'] ?? json['_id'] ?? '',
+      fullName: json['full_name'] ?? json['fullName'] ?? '',
+      emailOrPhone: json['email_or_phone'] ?? json['emailOrPhone'] ?? '',
+      primaryRole: json['primary_role'] ?? json['primaryRole'] ?? 'PATIENT',
+      appContext: json['app_context'] ?? json['appContext'] ?? 'arogya_sathi',
+      mappedRoles: List<String>.from(json['mapped_roles'] ?? json['mappedRoles'] ?? []),
+      isActive: json['is_active'] ?? json['isActive'] ?? true,
+      isAdmin: json['is_admin'] ?? json['isAdmin'] ?? false,
+      isVerified: json['is_verified'] ?? json['isVerified'] ?? false,
+      abhaId: json['abha_id'] ?? json['abhaId'],
     );
   }
 }

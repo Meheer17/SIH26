@@ -374,6 +374,8 @@ async def add_emergency_contact(contact: EmergencyContactRequest):
         except Exception:
             pass
             
+    if "_id" in doc:
+        doc["_id"] = str(doc["_id"])
     DEMO_EMERGENCY_CONTACTS.insert(0, doc)
     return {"message": "Emergency contact added successfully.", "contact": doc}
 

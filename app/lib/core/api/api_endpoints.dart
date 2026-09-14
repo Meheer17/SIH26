@@ -6,11 +6,9 @@ class ApiEndpoints {
   static String get baseUrl {
     if (kIsWeb) {
       return 'http://localhost:8000/api/v1';
-    } else if (Platform.isAndroid) {
-      // 10.0.2.2 is the Android emulator loopback alias to host machine localhost
-      return 'http://10.0.2.2:8000/api/v1';
     } else {
-      return 'http://localhost:8000/api/v1';
+      // LAN IP for mobile clients / physical devices (e.g. AC2001) / emulators
+      return 'http://192.168.31.202:8000/api/v1';
     }
   }
 

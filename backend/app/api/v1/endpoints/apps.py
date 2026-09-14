@@ -152,6 +152,8 @@ async def record_vitals(req: VitalRecordRequest, current_user: dict = Depends(ge
     else:
         db_manager._in_memory_collections["arogya_vitals"].append(record)
         
+    if "_id" in record:
+        record["_id"] = str(record["_id"])
     return record
 
 
@@ -257,6 +259,8 @@ async def submit_intake(req: ClinicalIntakeRequest, current_user: dict = Depends
     else:
         db_manager._in_memory_collections["medikiosk_intakes"].append(record)
         
+    if "_id" in record:
+        record["_id"] = str(record["_id"])
     return record
 
 
@@ -338,6 +342,8 @@ async def record_burnout(req: BurnoutAssessmentRequest, current_user: dict = Dep
     else:
         db_manager._in_memory_collections["rakshak_burnouts"].append(record)
         
+    if "_id" in record:
+        record["_id"] = str(record["_id"])
     return record
 
 
@@ -470,6 +476,8 @@ async def record_distress(req: DistressCheckinRequest, current_user: dict = Depe
     else:
         db_manager._in_memory_collections["nyaya_distress"].append(record)
         
+    if "_id" in record:
+        record["_id"] = str(record["_id"])
     return record
 
 
@@ -565,6 +573,8 @@ async def record_voice_journal(req: VoiceJournalEntryRequest, current_user: dict
     db = get_database()
     if db is not None:
         await db.voice_journals.insert_one(record)
+    if "_id" in record:
+        record["_id"] = str(record["_id"])
     return record
 
 
@@ -598,6 +608,8 @@ async def log_adherence(req: AdherenceLogRequest, current_user: dict = Depends(g
     db = get_database()
     if db is not None:
         await db.adherence_logs.insert_one(record)
+    if "_id" in record:
+        record["_id"] = str(record["_id"])
     return {"status": "SUCCESS", "record": record, "xp_earned": xp_gained, "current_streak_days": 7}
 
 

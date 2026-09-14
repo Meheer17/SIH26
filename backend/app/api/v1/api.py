@@ -16,5 +16,6 @@ api_router.include_router(clinical.router, prefix="/clinical", tags=["Clinical E
 api_router.include_router(epidemic.router, prefix="/epidemic", tags=["Epidemic Heatmap & DBSCAN Clustering"])
 api_router.include_router(covert_sos.router, prefix="/covert-sos", tags=["Covert Stealth SOS & Dead Man Switch"])
 api_router.include_router(mind_family.router, prefix="/mind-family", tags=["Cultural AI Counselor & Family Health Graph"])
+api_router.include_router(mind_family.router, prefix="/mind", tags=["Cultural AI Counselor & Family Health Graph"])
 
 

@@ -37,9 +37,14 @@ def compute_family_hereditary_risk(family_members: List[Dict[str, Any]]) -> Dict
     condition_risk_accumulators = {}
 
     for member in family_members:
+        m_id = member.get("id", f"node-{len(nodes_dict)+1}")
+        rel = str(member.get("relation", "self")).lower().strip()
+        conditions = member.get("conditions", [])
+        weight = KINSHIP_WEIGHTS.get(rel, 0.25)
+
         nodes_dict[m_id] = {
             "id": m_id,
-            "name": member.get("name"),
+            "name": member.get("name", m_id.capitalize()),
             "relation": rel,
             "conditions": conditions
         }
@@ -48,7 +53,7 @@ def compute_family_hereditary_risk(family_members: List[Dict[str, Any]]) -> Dict
 
         # Accumulate condition weights
         for cond in conditions:
-            c_clean = cond.lower().strip()
+            c_clean = str(cond).lower().strip()
             if c_clean not in condition_risk_accumulators:
                 condition_risk_accumulators[c_clean] = 0.0
             condition_risk_accumulators[c_clean] += weight

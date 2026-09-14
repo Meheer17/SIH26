@@ -5,6 +5,14 @@ from app.core.config import settings
 from app.api.v1.api import api_router
 from app.db.database import connect_to_mongo, close_mongo_connection
 
+try:
+    from bson import ObjectId
+    from fastapi.encoders import ENCODERS_BY_TYPE
+    ENCODERS_BY_TYPE[ObjectId] = str
+except ImportError:
+    pass
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Connect to MongoDB

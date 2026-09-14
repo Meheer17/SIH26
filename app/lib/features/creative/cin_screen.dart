@@ -14,11 +14,14 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
   bool _loading = false;
   Map<String, dynamic>? _meshData;
 
+  final TextEditingController _symptomController = TextEditingController(text: 'fever, dry cough');
+  final TextEditingController _tempController = TextEditingController(text: '38.2');
+
   final List<Map<String, dynamic>> _discoveredNodes = [
-    {"id": "NODE-88A1", "rssi": -42, "battery": 92, "symptoms": ["Fever", "Heat Exhaustion"]},
-    {"id": "NODE-71F4", "rssi": -65, "battery": 78, "symptoms": ["Dry Cough"]},
-    {"id": "NODE-33C9", "rssi": -58, "battery": 84, "symptoms": ["Fever", "Chills"]},
-    {"id": "NODE-90E2", "rssi": -71, "battery": 60, "symptoms": []},
+    {"id": "8088e6406e2a1132", "ttl": 7, "battery": 92, "symptoms": ["Fever", "Heat Exhaustion"], "hmac": "3f8b9a2c1d0e"},
+    {"id": "71f49b1a09c488e1", "ttl": 6, "battery": 78, "symptoms": ["Dry Cough"], "hmac": "7a1e4c9f0b2d"},
+    {"id": "33c910e5b721aa45", "ttl": 5, "battery": 84, "symptoms": ["Fever", "Chills"], "hmac": "9c2d1b4a8e0f"},
+    {"id": "90e28f73120b66c9", "ttl": 7, "battery": 60, "symptoms": ["Asymptomatic"], "hmac": "5e0f9b3a1c4d"},
   ];
 
   Future<void> _fetchMeshSync() async {
@@ -37,10 +40,54 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
     }
   }
 
+  Future<void> _broadcastBitMeshPacket() async {
+    setState(() => _loading = true);
+    try {
+      final symptomsList = _symptomController.text.split(',').map((s) => s.trim()).toList();
+      final body = [
+        {
+          "device_mac_or_uuid": "device-mobile-${DateTime.now().millisecondsSinceEpoch % 10000}",
+          "symptoms": symptomsList,
+          "fever_celsius": double.tryParse(_tempController.text) ?? 38.0,
+          "ambient_temp_celsius": 33.5,
+          "ttl": 7
+        }
+      ];
+
+      final response = await http.post(
+        Uri.parse(ApiEndpoints.endpoint('cin/sync')),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          _meshData = jsonDecode(response.body);
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('BitMesh Packet Broadcasted Successfully!')),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('BitMesh Broadcast Error: $e');
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _fetchMeshSync();
+  }
+
+  @override
+  void dispose() {
+    _symptomController.dispose();
+    _tempController.dispose();
+    super.dispose();
   }
 
   @override
@@ -62,7 +109,7 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
-                    'OFFLINE BLE MESH',
+                    'BitChat-BitMesh P2P v2.6',
                     style: TextStyle(color: Color(0xFF166534), fontSize: 10, fontWeight: FontWeight.bold),
                   ),
                 ),
@@ -112,9 +159,18 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            'Mesh Alert: ${_meshData!['risk_level']} RISK',
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'BitMesh: ${_meshData!['risk_level']} RISK',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              Text(
+                                'R0 = ${_meshData!['estimated_r0'] ?? "1.20"}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.indigo),
+                              ),
+                            ],
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -132,19 +188,68 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
             Row(
               children: [
                 Expanded(
-                  child: _buildStatCard('Active Mesh Nodes', '${_meshData?['total_mesh_nodes'] ?? 4}', Colors.blue),
+                  child: _buildStatCard('BitMesh Peers', '${_meshData?['total_mesh_nodes'] ?? 4}', Colors.blue),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildStatCard('Fever Spikes', '${_meshData?['fever_count'] ?? 3}', const Color(0xFFE11D48)),
+                  child: _buildStatCard('Swarm R0 Rate', '${_meshData?['estimated_r0'] ?? 1.25}', const Color(0xFFE11D48)),
                 ),
-
               ],
+            ),
+            const SizedBox(height: 16),
+
+            // Broadcast BitMesh Packet UI
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Broadcast BitMesh Epidemic Token',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _symptomController,
+                    decoration: const InputDecoration(
+                      labelText: 'Symptoms (comma separated)',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _tempController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Body Temp (°C)',
+                      isDense: true,
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton.icon(
+                    onPressed: _loading ? null : _broadcastBitMeshPacket,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2563EB),
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 42),
+                    ),
+                    icon: const Icon(Icons.cell_tower, size: 18),
+                    label: const Text('Broadcast P2P BitMesh Packet'),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
             const Text(
-              'Discovered Nearby BLE Nodes',
+              'BitChat Store-and-Forward Gossip Peers',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A)),
             ),
             const SizedBox(height: 8),
@@ -165,7 +270,7 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.bluetooth, color: Color(0xFF2563EB)),
+                      const Icon(Icons.bluetooth_searching, color: Color(0xFF2563EB)),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -173,30 +278,34 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
                           children: [
                             Text(
                               node['id'],
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace'),
                             ),
                             Text(
-                              'RSSI: ${node['rssi']} dBm | Batt: ${node['battery']}%',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                              'TTL: ${node['ttl']}/7 | HMAC: ${node['hmac']}',
+                              style: const TextStyle(fontSize: 11, color: Colors.grey, fontFamily: 'monospace'),
                             ),
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: (node['symptoms'] as List).isNotEmpty ? const Color(0xFFFFE4E6) : const Color(0xFFDCFCE7),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          (node['symptoms'] as List).isNotEmpty ? node['symptoms'].join(', ') : 'Asymptomatic',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: (node['symptoms'] as List).isNotEmpty ? const Color(0xFF9F1239) : const Color(0xFF166534),
+                      Builder(builder: (_) {
+                        final symptomsList = (node['symptoms'] is List) ? (node['symptoms'] as List) : [];
+                        final hasSymptoms = symptomsList.isNotEmpty;
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: hasSymptoms ? const Color(0xFFFFE4E6) : const Color(0xFFDCFCE7),
+                            borderRadius: BorderRadius.circular(6),
                           ),
-                        ),
-                      ),
+                          child: Text(
+                            symptomsList.join(', '),
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: hasSymptoms ? const Color(0xFF9F1239) : const Color(0xFF166534),
+                            ),
+                          ),
+                        );
+                      }),
                     ],
                   ),
                 );
@@ -227,3 +336,4 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
     );
   }
 }
+
