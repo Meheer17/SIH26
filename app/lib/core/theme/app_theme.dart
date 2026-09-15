@@ -1,50 +1,58 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  static const Color background = Color(0xFF0B0F17);
-  static const Color surface = Color(0xFF0F172A);
-  static const Color cardBg = Color(0xFF1E293B);
+  // Ultra-Clean Modern Light Palette
+  static const Color lightBackground = Color(0xFFF8FAFC);
+  static const Color lightSurface = Colors.white;
+  static const Color lightCardBg = Colors.white;
+  static const Color background = lightBackground;
+  static const Color surface = lightSurface;
+  static const Color cardBg = lightCardBg;
   static const Color primaryTeal = Color(0xFF0D9488);
-  static const Color secondaryCyan = Color(0xFF06B6D4);
-  static const Color accentIndigo = Color(0xFF6366F1);
-  static const Color alertRose = Color(0xFFF43F5E);
-  static const Color textPrimary = Color(0xFFF8FAFC);
-  static const Color textSecondary = Color(0xFF94A3B8);
-  static const Color cardBorder = Color(0x1FFFFFFF);
+  static const Color primaryIndigo = Color(0xFF4F46E5);
+  static const Color secondaryCyan = Color(0xFF0284C7);
+  static const Color accentAmber = Color(0xFFD97706);
+  static const Color alertRose = Color(0xFFE11D48);
+  static const Color textPrimary = Color(0xFF0F172A);
+  static const Color textSecondary = Color(0xFF475569);
+  static const Color textMuted = Color(0xFF94A3B8);
+  static const Color cardBorder = Color(0xFFE2E8F0);
 
-  static ThemeData get darkTheme {
+
+  static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: background,
+      brightness: Brightness.light,
+      scaffoldBackgroundColor: lightBackground,
       primaryColor: primaryTeal,
-      colorScheme: const ColorScheme.dark(
+      colorScheme: const ColorScheme.light(
         primary: primaryTeal,
-        secondary: secondaryCyan,
-        tertiary: accentIndigo,
-        surface: surface,
+        secondary: primaryIndigo,
+        tertiary: secondaryCyan,
+        surface: lightSurface,
         error: alertRose,
         onPrimary: Colors.white,
         onSurface: textPrimary,
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: surface,
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         centerTitle: false,
         titleTextStyle: TextStyle(
           color: textPrimary,
           fontSize: 18,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900,
           letterSpacing: -0.5,
         ),
         iconTheme: IconThemeData(color: textPrimary),
       ),
       cardTheme: CardThemeData(
-        color: cardBg,
-        elevation: 4,
-        shadowColor: Colors.black45,
+        color: lightCardBg,
+        elevation: 1.5,
+        shadowColor: const Color(0x0F0F172A),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: cardBorder, width: 1),
         ),
       ),
@@ -53,23 +61,23 @@ class AppTheme {
           backgroundColor: primaryTeal,
           foregroundColor: Colors.white,
           elevation: 2,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(
-            fontSize: 14,
+            fontSize: 13.5,
             fontWeight: FontWeight.w800,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: secondaryCyan,
-          side: const BorderSide(color: Color(0x4006B6D4), width: 1.5),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          foregroundColor: primaryTeal,
+          side: const BorderSide(color: Color(0xFFCCFBF1), width: 1.5),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: const TextStyle(
             fontSize: 13,
@@ -78,19 +86,22 @@ class AppTheme {
         ),
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: const Color(0xFF1E293B),
-        disabledColor: Colors.grey,
-        selectedColor: primaryTeal.withOpacity(0.2),
+        backgroundColor: const Color(0xFFF1F5F9),
+        disabledColor: Colors.grey.shade300,
+        selectedColor: const Color(0xFFCCFBF1),
         secondarySelectedColor: primaryTeal,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         labelStyle: const TextStyle(color: textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
         secondaryLabelStyle: const TextStyle(color: primaryTeal, fontSize: 12, fontWeight: FontWeight.bold),
-        brightness: Brightness.dark,
+        brightness: Brightness.light,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Color(0x22FFFFFF)),
+          side: const BorderSide(color: cardBorder),
         ),
       ),
     );
   }
+
+  static ThemeData get darkTheme => lightTheme; // Default to Light theme as requested
 }
+

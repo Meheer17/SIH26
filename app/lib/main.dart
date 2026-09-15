@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'core/theme/app_theme.dart';
+import 'features/apps/problem_statement_shell.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/auth/role_dashboard_screen.dart';
@@ -21,15 +22,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'SvasthyaSetu Unified App',
+      title: 'NYAYA-MANAS NHAA 14566 Distress System',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
-      initialRoute: '/dashboard',
+      theme: AppTheme.lightTheme,
+      initialRoute: '/ps-shell',
       routes: {
+        '/ps-shell': (context) => const ProblemStatementShell(),
         '/login': (context) => const LoginScreen(),
         '/register': (context) => const RegisterScreen(),
         '/chat': (context) => const AiChatScreen(),
-        '/dashboard': (context) => const RoleDashboardScreen(),
+        '/dashboard': (context) => const ProblemStatementShell(),
+        '/legacy-dashboard': (context) => const RoleDashboardScreen(),
         '/storage-demo': (context) => const StorageDemoScreen(),
         '/sos-demo': (context) => const SosDemoScreen(),
         '/cin': (context) => const CommunityImmunityNetworkScreen(),

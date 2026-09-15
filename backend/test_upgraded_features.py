@@ -69,9 +69,39 @@ def test_upgraded_features():
     assert "aggregated_global_weights" in fed_data
     print(f"   ✓ FedAvg Weight Aggregation verified! Global Weights: {fed_data['aggregated_global_weights']}")
 
+    # 4. Test RAKSHAK-MANAS HRMS Stress Engine
+    print("\n4. Testing RAKSHAK-MANAS HRMS Stress Engine...")
+    rakshak_payload = {
+        'weekly_duty_hours': 72.0,
+        'deployment_days': 120,
+        'leave_gap_ratio': 0.90,
+        'station_transfers_count': 4,
+        'training_commitments_count': 5,
+        'phq9_assessment_score': 18,
+        'voice_journal_text': 'Extreme physical exhaustion and continuous night sentinel patrols in Siachen.'
+    }
+    res = client.post("/api/v1/apps/rakshak/hrms-stress", json=rakshak_payload)
+    assert res.status_code == 200, f"Failed RAKSHAK HRMS stress test: {res.text}"
+    rak_data = res.json()
+    assert rak_data["status"] == "SUCCESS"
+    assert "result" in rak_data
+    result = rak_data["result"]
+    assert "hrms_stress_index" in result or "burnout_score" in result or "stress_index" in result
+    print(f"   ✓ RAKSHAK HRMS Stress Index verified! Status: {rak_data['status']} | Result: {result}")
+
+    # 5. Test RAKSHAK-MANAS Commander Dashboard
+    print("\n5. Testing RAKSHAK-MANAS Commander Dashboard...")
+    res = client.get("/api/v1/apps/rakshak/commander-dashboard")
+    assert res.status_code == 200, f"Failed Commander Dashboard test: {res.text}"
+    cmd_data = res.json()
+    assert "unit_id" in cmd_data
+    assert "privacy_guarantee" in cmd_data
+    print(f"   ✓ RAKSHAK Commander Dashboard verified! Unit: {cmd_data['unit_name']} | Guarantee: {cmd_data['privacy_guarantee']}")
+
     print("\n========================================================")
     print(" ALL UPGRADED FEATURES AND BUG FIXES VERIFIED 100%!")
     print("========================================================")
 
 if __name__ == "__main__":
     test_upgraded_features()
+

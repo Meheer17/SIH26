@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../../core/api/api_endpoints.dart';
+import '../../core/ml/mobile_ml_engine.dart';
 
 class CommunityImmunityNetworkScreen extends StatefulWidget {
   const CommunityImmunityNetworkScreen({super.key});
@@ -18,10 +19,10 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
   final TextEditingController _tempController = TextEditingController(text: '38.2');
 
   final List<Map<String, dynamic>> _discoveredNodes = [
-    {"id": "8088e6406e2a1132", "ttl": 7, "battery": 92, "symptoms": ["Fever", "Heat Exhaustion"], "hmac": "3f8b9a2c1d0e"},
-    {"id": "71f49b1a09c488e1", "ttl": 6, "battery": 78, "symptoms": ["Dry Cough"], "hmac": "7a1e4c9f0b2d"},
-    {"id": "33c910e5b721aa45", "ttl": 5, "battery": 84, "symptoms": ["Fever", "Chills"], "hmac": "9c2d1b4a8e0f"},
-    {"id": "90e28f73120b66c9", "ttl": 7, "battery": 60, "symptoms": ["Asymptomatic"], "hmac": "5e0f9b3a1c4d"},
+    {"id": "8088e6406e2a1132", "ttl": 7, "battery": 92, "symptoms": ["Fever", "Heat Exhaustion"], "hmac": "3f8b9a2c1d0e", "temp": 38.5},
+    {"id": "71f49b1a09c488e1", "ttl": 6, "battery": 78, "symptoms": ["Dry Cough"], "hmac": "7a1e4c9f0b2d", "temp": 37.2},
+    {"id": "33c910e5b721aa45", "ttl": 5, "battery": 84, "symptoms": ["Fever", "Chills"], "hmac": "9c2d1b4a8e0f", "temp": 38.9},
+    {"id": "90e28f73120b66c9", "ttl": 7, "battery": 60, "symptoms": ["Asymptomatic"], "hmac": "5e0f9b3a1c4d", "temp": 36.8},
   ];
 
   Future<void> _fetchMeshSync() async {
@@ -51,7 +52,14 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
           "fever_celsius": double.tryParse(_tempController.text) ?? 38.0,
           "ambient_temp_celsius": 33.5,
           "ttl": 7
-        }
+        },
+        ..._discoveredNodes.map((n) => {
+          "device_mac_or_uuid": n["id"],
+          "symptoms": n["symptoms"],
+          "fever_celsius": n["temp"] ?? 37.0,
+          "ambient_temp_celsius": 32.5,
+          "ttl": n["ttl"]
+        }),
       ];
 
       final response = await http.post(
@@ -66,12 +74,38 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('BitMesh Packet Broadcasted Successfully!')),
+            const SnackBar(content: Text('BitMesh Swarm Packet Broadcasted & R0 Recalculated!')),
           );
         }
       }
     } catch (e) {
-      debugPrint('BitMesh Broadcast Error: $e');
+      // Local ML R0 calculation fallback
+      final temp = double.tryParse(_tempController.text) ?? 38.0;
+      final symptomsList = _symptomController.text.split(',').map((s) => s.trim()).toList();
+      final localRisk = MobileMlEngine.evaluateEpidemicClusterRisk(
+        clusterSize: _discoveredNodes.length + 1,
+        growthRate: 1.8,
+        feverRatio: temp >= 37.8 ? 0.6 : 0.2,
+        respiratoryRatio: symptomsList.any((s) => s.contains('cough')) ? 0.5 : 0.1,
+        populationDensity: 12000,
+        pastOutbreakHistory: true,
+      );
+
+      setState(() {
+        _meshData = {
+          "risk_level": localRisk['risk_tier'],
+          "estimated_r0": (1.1 + (localRisk['risk_score'] as double) / 40.0).toStringAsFixed(2),
+          "alert_message": "BitMesh Swarm: Outbreak risk evaluated via local Mobile ML engine.",
+          "total_mesh_nodes": _discoveredNodes.length + 1,
+          "outbreak_detected": localRisk['containment_protocol_active'],
+        };
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Offline Mode: BitMesh Swarm R0 evaluated locally.')),
+        );
+      }
     } finally {
       setState(() => _loading = false);
     }
@@ -164,18 +198,29 @@ class _CommunityImmunityNetworkScreenState extends State<CommunityImmunityNetwor
                             children: [
                               Text(
                                 'BitMesh: ${_meshData!['risk_level']} RISK',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: _meshData!['outbreak_detected'] == true ? const Color(0xFF78350F) : const Color(0xFF065F46),
+                                ),
                               ),
                               Text(
                                 'R0 = ${_meshData!['estimated_r0'] ?? "1.20"}',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.indigo),
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                  color: _meshData!['outbreak_detected'] == true ? const Color(0xFF92400E) : const Color(0xFF047857),
+                                ),
                               ),
                             ],
                           ),
                           const SizedBox(height: 4),
                           Text(
                             _meshData!['alert_message'] ?? '',
-                            style: const TextStyle(fontSize: 12),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _meshData!['outbreak_detected'] == true ? const Color(0xFF78350F) : const Color(0xFF065F46),
+                            ),
                           ),
                         ],
                       ),

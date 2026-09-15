@@ -688,10 +688,14 @@ class _GroundbreakingSuiteScreenState extends State<GroundbreakingSuiteScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Vitals: ${aggregated['vitals_records_analyzed'] ?? 10} | Burnout: ${aggregated['burnout_assessments_analyzed'] ?? 5} | Checkins: ${aggregated['wellbeing_checkins_analyzed'] ?? 5}',
-                    style: const TextStyle(color: Colors.white38, fontSize: 10),
+                  Expanded(
+                    child: Text(
+                      'Vitals: ${aggregated['vitals_records_analyzed'] ?? 10} | Burnout: ${aggregated['burnout_assessments_analyzed'] ?? 5} | Checkins: ${aggregated['wellbeing_checkins_analyzed'] ?? 5}',
+                      style: const TextStyle(color: Colors.white38, fontSize: 10),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Text(
                     'SHA-256 Verified',
                     style: TextStyle(
@@ -729,19 +733,25 @@ class _GroundbreakingSuiteScreenState extends State<GroundbreakingSuiteScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Icon(icon, color: color, size: 22),
-                  const SizedBox(width: 10),
-                  Text(
-                    name,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14),
-                  ),
-                ],
+              Expanded(
+                child: Row(
+                  children: [
+                    Icon(icon, color: color, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        name,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(

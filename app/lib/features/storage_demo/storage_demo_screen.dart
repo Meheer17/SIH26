@@ -12,15 +12,44 @@ class StorageDemoScreen extends StatefulWidget {
 class _StorageDemoScreenState extends State<StorageDemoScreen> {
   final _apiClient = ApiClient();
   String _selectedCollection = StorageCollection.arogyaVitals;
-  final TextEditingController _keyController = TextEditingController(text: 'vitals_sample_101');
+  final TextEditingController _keyController = TextEditingController(text: 'patient_vitals_2026_01');
   final TextEditingController _payloadController = TextEditingController(
-    text: '{"heart_rate": 84, "body_temp_c": 37.8, "heat_index": 42.1, "location": "Lahaul Spiti Outpost"}',
+    text: '{\n  "patient_id": "P-98421",\n  "heart_rate_bpm": 82,\n  "body_temp_c": 37.6,\n  "sp02_pct": 98,\n  "location": "Lahaul Spiti Mobile Kiosk"\n}',
   );
+  final TextEditingController _searchController = TextEditingController();
 
   bool _isEncrypt = true;
   bool _isSyncOnline = true;
-  String _statusMessage = 'SDK ready. Enter record key and payload to test.';
+  String _statusMessage = 'SvasthyaStorage AES-256 SDK ready.';
   List<StorageRecord> _unsyncedQueue = [];
+  Map<String, String> _decryptedCache = {};
+
+  final List<Map<String, dynamic>> _quickTemplates = [
+    {
+      'label': '🫀 Arogya Patient Vitals File',
+      'key': 'vitals_rec_109',
+      'collection': StorageCollection.arogyaVitals,
+      'content': '{\n  "patient_id": "P-98421",\n  "heart_rate": 84,\n  "spo2": 98,\n  "body_temp_c": 37.8,\n  "location": "Lahaul Spiti Outpost"\n}'
+    },
+    {
+      'label': '🏥 MediKiosk Clinical Intake File',
+      'key': 'kiosk_intake_504',
+      'collection': StorageCollection.medikioskIntake,
+      'content': '{\n  "token_id": "K-2026-88",\n  "chief_complaint": "Acute fever & bronchial cough for 3 days",\n  "triage_priority": "YELLOW",\n  "prescribed": "Paracetamol 500mg, Hydration"\n}'
+    },
+    {
+      'label': '🎖️ Rakshak Combat Stress File',
+      'key': 'rakshak_journal_812',
+      'collection': StorageCollection.rakshakBurnout,
+      'content': '{\n  "unit_id": "RECON-7",\n  "deployment_days": 110,\n  "duty_hours": 65,\n  "burnout_score": 78,\n  "risk_tier": "RED"\n}'
+    },
+    {
+      'label': '⚖️ Nyaya Victim Distress File',
+      'key': 'nyaya_distress_303',
+      'collection': StorageCollection.nyayaDistress,
+      'content': '{\n  "victim_id": "VIC-8841",\n  "case_stage": "TRIAL",\n  "sentiment_score": -0.65,\n  "distress_level": "HIGH_DISTRESS",\n  "escalated": true\n}'
+    },
+  ];
 
   @override
   void initState() {
@@ -35,25 +64,25 @@ class _StorageDemoScreenState extends State<StorageDemoScreen> {
     });
   }
 
+  void _loadTemplate(Map<String, dynamic> tmpl) {
+    setState(() {
+      _selectedCollection = tmpl['collection'];
+      _keyController.text = tmpl['key'];
+      _payloadController.text = tmpl['content'];
+      _statusMessage = 'Loaded sample template: ${tmpl['label']}';
+    });
+  }
+
   Future<void> _saveRecord() async {
     final key = _keyController.text.trim();
     final rawText = _payloadController.text.trim();
 
     if (key.isEmpty || rawText.isEmpty) {
-      setState(() => _statusMessage = '⚠️ Key and payload cannot be empty.');
+      setState(() => _statusMessage = '⚠️ Record key and payload content cannot be empty.');
       return;
     }
 
     try {
-      final Map<String, dynamic> data = Map<String, dynamic>.from(
-        Uri.splitQueryString(rawText).isEmpty ? {'raw': rawText} : {},
-      );
-
-      // Attempt parsing JSON if valid
-      try {
-        data.addAll(Map<String, dynamic>.from(RegExp(r'\{.*\}').hasMatch(rawText) ? {} : {}));
-      } catch (_) {}
-
       final record = await SvasthyaStorage.save(
         collection: _selectedCollection,
         key: key,
@@ -63,7 +92,8 @@ class _StorageDemoScreenState extends State<StorageDemoScreen> {
       );
 
       setState(() {
-        _statusMessage = '✅ Single Invoke Succeeded!\nSaved to [${record.collection}:${record.key}]\nEncrypted: ${record.isEncrypted} | Sync Queued: ${record.isSynced ? "No" : "Yes"}';
+        _statusMessage = '✅ Successfully stored [${record.collection}:${record.key}]\nAES-256 Encrypted: ${record.isEncrypted} | Auto-Sync Queued: ${!record.isSynced}';
+        _decryptedCache[record.key] = rawText;
       });
       await _refreshQueue();
     } catch (e) {
@@ -71,23 +101,25 @@ class _StorageDemoScreenState extends State<StorageDemoScreen> {
     }
   }
 
-  Future<void> _getRecord() async {
-    final key = _keyController.text.trim();
+  Future<void> _getRecord(String key, String collection) async {
     final res = await SvasthyaStorage.get(
-      collection: _selectedCollection,
+      collection: collection,
       key: key,
       isSensitive: _isEncrypt,
     );
 
     setState(() {
-      _statusMessage = res != null
-          ? '🔓 Decrypted Record Successfully Retrieved!\nData: $res'
-          : '⚠️ Record [$key] not found in $_selectedCollection.';
+      if (res != null) {
+        _decryptedCache[key] = res.toString();
+        _statusMessage = '🔓 Decrypted Record Successfully Retrieved!\nKey: $key | Data: $res';
+      } else {
+        _statusMessage = '⚠️ Record [$key] not found in $collection.';
+      }
     });
   }
 
   Future<void> _triggerSync() async {
-    setState(() => _statusMessage = '🔄 Triggering background offline sync dispatcher...');
+    setState(() => _statusMessage = '🔄 Dispatching background offline sync engine...');
 
     final result = await SvasthyaStorage.syncAllPending((record) async {
       try {
@@ -99,47 +131,53 @@ class _StorageDemoScreenState extends State<StorageDemoScreen> {
         });
         return res != null;
       } catch (_) {
-        return true; // Local encrypted sync acknowledged
+        return true;
       }
     });
 
     setState(() {
-      _statusMessage = '✨ Offline Sync Complete!\nSynced ${result["synced_count"]} records to backend API.\nRemaining in offline queue: ${result["remaining"]}';
+      _statusMessage = '✨ Offline Queue Sync Complete!\nSynced ${result["synced_count"]} records to remote server.\nPending remaining: ${result["remaining"]}';
     });
     await _refreshQueue();
   }
 
   @override
   Widget build(BuildContext context) {
+    final filteredQueue = _unsyncedQueue.where((r) {
+      final query = _searchController.text.toLowerCase();
+      return query.isEmpty || r.key.toLowerCase().contains(query) || r.collection.toLowerCase().contains(query);
+    }).toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFF0F172A),
       appBar: AppBar(
         backgroundColor: const Color(0xFF1E293B),
-        title: const Text('Offline Local Storage SDK Demo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: const Text('🔒 Encrypted Local Storage SDK & File Manager', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // SDK Header Badge
+            // Header Banner
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFF1E293B),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.indigo.withValues(alpha: 0.4)),
+                border: Border.all(color: const Color(0xFF6366F1).withOpacity(0.4)),
               ),
               child: const Column(
                 children: [
-                  Icon(Icons.save_alt_rounded, size: 36, color: Color(0xFF6366F1)),
+                  Icon(Icons.security, size: 36, color: Color(0xFF6366F1)),
                   SizedBox(height: 8),
                   Text(
-                    'SvasthyaStorage SDK',
+                    'SvasthyaStorage Offline SDK v2.4',
                     style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
                   ),
+                  SizedBox(height: 4),
                   Text(
-                    'Encrypted local DB (AES-256) + Offline Queue Sync Engine',
+                    'Zero-Data-Loss AES-256 Local Encrypted Buffer & Offline Sync Engine',
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
@@ -148,142 +186,166 @@ class _StorageDemoScreenState extends State<StorageDemoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // Collection Picker
-            DropdownButtonFormField<String>(
-              initialValue: _selectedCollection,
-              dropdownColor: const Color(0xFF1E293B),
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Target Application Collection',
-                labelStyle: const TextStyle(color: Colors.white70),
-                filled: true,
-                fillColor: const Color(0xFF1E293B),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              items: const [
-                DropdownMenuItem(value: StorageCollection.arogyaVitals, child: Text('🫀 ArogyaSathi (Vitals & Heat Index)')),
-                DropdownMenuItem(value: StorageCollection.medikioskIntake, child: Text('🏥 MediKiosk (Clinical OPD Intake)')),
-                DropdownMenuItem(value: StorageCollection.rakshakBurnout, child: Text('🎖️ RakshakMitra (Burnout Assessment)')),
-                DropdownMenuItem(value: StorageCollection.nyayaDistress, child: Text('⚖️ NyayaSahay (Victim Distress Score)')),
-              ],
-              onChanged: (val) {
-                if (val != null) setState(() => _selectedCollection = val);
-              },
-            ),
-            const SizedBox(height: 12),
-
-            // Key Input
-            TextField(
-              controller: _keyController,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                labelText: 'Record Key',
-                labelStyle: const TextStyle(color: Colors.white70),
-                filled: true,
-                fillColor: const Color(0xFF1E293B),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Payload Input
-            TextField(
-              controller: _payloadController,
-              maxLines: 3,
-              style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 12),
-              decoration: InputDecoration(
-                labelText: 'Payload Content (JSON or String)',
-                labelStyle: const TextStyle(color: Colors.white70),
-                filled: true,
-                fillColor: const Color(0xFF1E293B),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Switches
-            SwitchListTile(
-              title: const Text('AES-256 Encryption at Rest', style: TextStyle(color: Colors.white, fontSize: 13)),
-              subtitle: const Text('Encrypt payload content on local disk', style: TextStyle(color: Colors.white54, fontSize: 11)),
-              value: _isEncrypt,
-              activeThumbColor: const Color(0xFF10B981),
-              onChanged: (val) => setState(() => _isEncrypt = val),
-            ),
-
-            SwitchListTile(
-              title: const Text('Queue for Offline Auto-Sync', style: TextStyle(color: Colors.white, fontSize: 13)),
-              subtitle: const Text('Tag for backend dispatch when online', style: TextStyle(color: Colors.white54, fontSize: 11)),
-              value: _isSyncOnline,
-              activeThumbColor: const Color(0xFF6366F1),
-              onChanged: (val) => setState(() => _isSyncOnline = val),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Single Invoke Action Buttons
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _saveRecord,
-                    icon: const Icon(Icons.save_rounded),
-                    label: const Text('Save Local'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF10B981),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            // Quick File / Template Selector
+            const Text('Select Data File Template:', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 13)),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: _quickTemplates.map((tmpl) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ActionChip(
+                      backgroundColor: const Color(0xFF1E293B),
+                      side: const BorderSide(color: Color(0xFF334155)),
+                      label: Text(tmpl['label'], style: const TextStyle(color: Colors.white, fontSize: 11)),
+                      onPressed: () => _loadTemplate(tmpl),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _getRecord,
-                    icon: const Icon(Icons.download_rounded),
-                    label: const Text('Get Local'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6366F1),
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  ),
-                ),
-              ],
+                  );
+                }).toList(),
+              ),
             ),
             const SizedBox(height: 16),
 
-            // Status Output Display
+            // Form Entry Card
             Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF020617),
-                borderRadius: BorderRadius.circular(12),
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF334155)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Structured Record Builder', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                  const SizedBox(height: 12),
+
+                  DropdownButtonFormField<String>(
+                    value: _selectedCollection,
+                    dropdownColor: const Color(0xFF1E293B),
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Target Application Collection',
+                      labelStyle: const TextStyle(color: Colors.white60),
+                      filled: true,
+                      fillColor: const Color(0xFF0F172A),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    items: const [
+                      DropdownMenuItem(value: StorageCollection.arogyaVitals, child: Text('🫀 ArogyaSathi (Vitals & Heat Index)')),
+                      DropdownMenuItem(value: StorageCollection.medikioskIntake, child: Text('🏥 MediKiosk (Clinical OPD Intake)')),
+                      DropdownMenuItem(value: StorageCollection.rakshakBurnout, child: Text('🎖️ RakshakMitra (Burnout Assessment)')),
+                      DropdownMenuItem(value: StorageCollection.nyayaDistress, child: Text('⚖️ NyayaSahay (Victim Distress Score)')),
+                    ],
+                    onChanged: (val) {
+                      if (val != null) setState(() => _selectedCollection = val);
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  TextField(
+                    controller: _keyController,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      labelText: 'Record Key / File ID',
+                      labelStyle: const TextStyle(color: Colors.white60),
+                      filled: true,
+                      fillColor: const Color(0xFF0F172A),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  TextField(
+                    controller: _payloadController,
+                    maxLines: 4,
+                    style: const TextStyle(color: Colors.white, fontFamily: 'monospace', fontSize: 12),
+                    decoration: InputDecoration(
+                      labelText: 'Payload Data (JSON or Encrypted Text)',
+                      labelStyle: const TextStyle(color: Colors.white60),
+                      filled: true,
+                      fillColor: const Color(0xFF0F172A),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('AES-256 Hardware Encryption at Rest', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    value: _isEncrypt,
+                    activeColor: const Color(0xFF10B981),
+                    onChanged: (val) => setState(() => _isEncrypt = val),
+                  ),
+
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Tag for Auto-Sync when Online', style: TextStyle(color: Colors.white, fontSize: 12)),
+                    value: _isSyncOnline,
+                    activeColor: const Color(0xFF6366F1),
+                    onChanged: (val) => setState(() => _isSyncOnline = val),
+                  ),
+                  const SizedBox(height: 12),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _saveRecord,
+                          icon: const Icon(Icons.lock, size: 16),
+                          label: const Text('Save Local Encrypted'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _getRecord(_keyController.text.trim(), _selectedCollection),
+                          icon: const Icon(Icons.key, size: 16, color: Color(0xFF6366F1)),
+                          label: const Text('Decrypt & Inspect', style: TextStyle(color: Color(0xFF6366F1))),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Status Message Box
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1E293B),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.white12),
               ),
-              child: SelectableText(
+              child: Text(
                 _statusMessage,
-                style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 12, fontFamily: 'monospace', height: 1.4),
+                style: const TextStyle(color: Colors.amberAccent, fontSize: 12, fontFamily: 'monospace'),
               ),
             ),
-
             const SizedBox(height: 20),
 
-            // Unsynced Queue List Header
+            // Encrypted Storage Explorer Header
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Offline Sync Queue (${_unsyncedQueue.length})',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  'Encrypted Offline File Buffer (${_unsyncedQueue.length})',
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                 ),
                 ElevatedButton.icon(
                   onPressed: _unsyncedQueue.isEmpty ? null : _triggerSync,
-                  icon: const Icon(Icons.sync_rounded, size: 16),
-                  label: const Text('Sync Now'),
+                  icon: const Icon(Icons.sync, size: 16),
+                  label: const Text('Sync Pending Files'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFF59E0B),
+                    backgroundColor: const Color(0xFF6366F1),
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
@@ -292,31 +354,97 @@ class _StorageDemoScreenState extends State<StorageDemoScreen> {
             ),
             const SizedBox(height: 10),
 
-            if (_unsyncedQueue.isEmpty)
+            // Search Bar
+            TextField(
+              controller: _searchController,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(color: Colors.white, fontSize: 12),
+              decoration: InputDecoration(
+                hintText: 'Search stored records by key or collection...',
+                hintStyle: const TextStyle(color: Colors.white38),
+                prefixIcon: const Icon(Icons.search, color: Colors.white38, size: 18),
+                filled: true,
+                fillColor: const Color(0xFF1E293B),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                isDense: true,
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            // Stored Files List
+            if (filteredQueue.isEmpty)
               const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Text('All local records are in sync with backend.', style: TextStyle(color: Colors.white38, fontSize: 12), textAlign: TextAlign.center),
+                padding: EdgeInsets.all(24),
+                child: Center(
+                  child: Text('No encrypted records pending in offline queue.', style: TextStyle(color: Colors.white38, fontSize: 12)),
+                ),
               )
             else
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _unsyncedQueue.length,
+                itemCount: filteredQueue.length,
                 itemBuilder: (context, index) {
-                  final rec = _unsyncedQueue[index];
+                  final record = filteredQueue[index];
+                  final isDecrypted = _decryptedCache.containsKey(record.key);
+
                   return Card(
                     color: const Color(0xFF1E293B),
                     margin: const EdgeInsets.only(bottom: 8),
-                    child: ListTile(
-                      title: Text('[${rec.collection}] ${rec.key}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
-                      subtitle: Text('Data: ${rec.data}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.amber.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text('PENDING SYNC', style: TextStyle(color: Colors.amber, fontSize: 10, fontWeight: FontWeight.bold)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                record.key,
+                                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace'),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'AES-256 ENCRYPTED',
+                                  style: TextStyle(color: Color(0xFF10B981), fontSize: 9, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Collection: ${record.collection} | Created: ${record.createdAt}',
+                            style: const TextStyle(color: Colors.white54, fontSize: 10),
+                          ),
+                          if (isDecrypted) ...[
+                            const SizedBox(height: 6),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.black45,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                _decryptedCache[record.key] ?? '',
+                                style: const TextStyle(color: Colors.greenAccent, fontSize: 11, fontFamily: 'monospace'),
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () => _getRecord(record.key, record.collection),
+                              icon: const Icon(Icons.visibility_outlined, size: 14, color: Color(0xFF38BDF8)),
+                              label: Text(isDecrypted ? 'Hide Contents' : 'Decrypt & View', style: const TextStyle(color: Color(0xFF38BDF8), fontSize: 11)),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );

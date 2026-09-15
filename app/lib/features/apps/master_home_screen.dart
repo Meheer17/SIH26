@@ -1,0 +1,763 @@
+import 'package:flutter/material.dart';
+import '../../core/auth/auth_service.dart';
+import '../../core/api/api_client.dart';
+import '../creative/voice_stress_studio_screen.dart';
+import '../creative/panic_disguise_screen.dart';
+
+class MasterHomeScreen extends StatefulWidget {
+  final Function(int) onSelectApp;
+
+  const MasterHomeScreen({
+    super.key,
+    required this.onSelectApp,
+  });
+
+  @override
+  State<MasterHomeScreen> createState() => _MasterHomeScreenState();
+}
+
+class _MasterHomeScreenState extends State<MasterHomeScreen> {
+  final _authService = AuthService();
+  final _apiClient = ApiClient();
+  bool _backendConnected = true;
+
+  final List<Map<String, String>> _demoPersonas = const [
+    {
+      'role': 'Victim/Complainant',
+      'email': 'victim_scst@district.gov.in',
+      'label': '⚖️ SC/ST Victim (NHAA 14566)',
+      'color': '#7C3AED'
+    },
+    {
+      'role': 'District Counselor',
+      'email': 'legal_officer@district.gov.in',
+      'label': '👨‍⚕️ Clinical Psychologist / Counselor',
+      'color': '#059669'
+    },
+    {
+      'role': 'District Magistrate/SP',
+      'email': 'dm_varanasi@up.gov.in',
+      'label': '🛡️ District Magistrate / Police SP',
+      'color': '#D97706'
+    },
+    {
+      'role': 'State Nodal Officer',
+      'email': 'nodal_state@up.gov.in',
+      'label': '🏛️ State Nodal Authority',
+      'color': '#2563EB'
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBackend();
+  }
+
+  Future<void> _checkBackend() async {
+    try {
+      final res = await _apiClient.get('health');
+      if (mounted) {
+        setState(() {
+          _backendConnected = res is Map && res['status'] == 'healthy';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _backendConnected = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _switchPersona(String email) async {
+    try {
+      await _authService.login(emailOrPhone: email, password: 'demo123456');
+      if (mounted) {
+        setState(() {});
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: const Color(0xFF059669),
+            content: Text(
+              '✅ Active Persona: ${_authService.currentUser?.fullName} (${_authService.currentUser?.primaryRole})',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.redAccent,
+            content: Text('Persona switch error: ${e.toString()}'),
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = _authService.currentUser;
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: CustomScrollView(
+        slivers: [
+          // App Bar Header
+          SliverAppBar(
+            expandedHeight: 180.0,
+            floating: false,
+            pinned: true,
+            backgroundColor: Colors.white,
+            elevation: 1,
+            flexibleSpace: FlexibleSpaceBar(
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+              title: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'NYAYA-MANAS 14566',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  Text(
+                    'Integrated Multi-Problem Statement Portal',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+              background: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFEEF2FF), Color(0xFFF8FAFC)],
+                    begin: Alignment.topRight,
+                    end: Alignment.bottomLeft,
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: _backendConnected
+                              ? const Color(0xFFD1FAE5)
+                              : const Color(0xFFFEF3C7),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: _backendConnected ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 4,
+                              backgroundColor:
+                                  _backendConnected ? const Color(0xFF059669) : const Color(0xFFD97706),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _backendConnected ? 'API Connected' : 'Local Standalone ML',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: _backendConnected ? const Color(0xFF047857) : const Color(0xFFB45309),
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Active Persona & Common Auth Switcher Banner
+                  _buildPersonaSection(user),
+                  const SizedBox(height: 20),
+
+                  // Quick Action Bar (Emotion AI Studio & Disguised Mode)
+                  _buildQuickActionBanner(context),
+                  const SizedBox(height: 24),
+
+                  // Section Title: Problem Statements
+                  const Text(
+                    'SELECT PROBLEM STATEMENT APP',
+                    style: TextStyle(
+                      color: Color(0xFF475569),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 4 Problem Statement Cards Grid
+                  _buildProblemStatementCard(
+                    context: context,
+                    appIndex: 1,
+                    title: 'Dynamic Mental Health & Distress System',
+                    subtitle: 'NHAA 14566 • Acoustic Biomarkers • DDI Score • XAI Inspector',
+                    description:
+                        'Continuous multimodal distress prediction, e-Courts sync, dialect IVRS, zero-knowledge privacy, and prescriptive SC/ST PoA relief matching.',
+                    icon: Icons.psychology,
+                    gradientColors: [const Color(0xFF4F46E5), const Color(0xFF4338CA)],
+                    badgeText: 'FEATURED APP 1',
+                    badgeColor: const Color(0xFF059669),
+                    features: [
+                      'Acoustic Vocal Biomarker Engine (f₀ tremor)',
+                      'Dynamic Distress Index (DDI 0-100)',
+                      'SHAP/LIME Explainable AI Case Inspector',
+                      'Stealth "Disguised" Calculator UI & Duress PIN',
+                      'Chronological Milestone Predictor (e-Courts)',
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildProblemStatementCard(
+                    context: context,
+                    appIndex: 2,
+                    title: 'Legal Aid & Relief Automation',
+                    subtitle: 'Nyaya Sahay • SC/ST (PoA) Act Relief Disbursement',
+                    description:
+                        'Automated FIR analysis, statutory FIR relief claim generation, automated compensation milestone tracking, and legal aid assistance.',
+                    icon: Icons.gavel,
+                    gradientColors: [const Color(0xFF0284C7), const Color(0xFF0369A1)],
+                    badgeText: 'APP 2',
+                    badgeColor: const Color(0xFF0284C7),
+                    features: [
+                      'Automated Section 15A Relief Calculator',
+                      'FIR Legal Clause Extraction Engine',
+                      'DLSA Legal Aid Attorney Dispatch',
+                      'Direct Benefit Transfer (DBT) Status',
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildProblemStatementCard(
+                    context: context,
+                    appIndex: 3,
+                    title: 'Witness Shield & Protection Cell',
+                    subtitle: 'Rakshak Mitra • Threat Pattern Recognition & SOS',
+                    description:
+                        'Sub-radar retaliation alarms, witness threat level scoring, secure geofenced police dispatch, and intimidation monitoring.',
+                    icon: Icons.security,
+                    gradientColors: [const Color(0xFFDB2777), const Color(0xFFBE185D)],
+                    badgeText: 'APP 3',
+                    badgeColor: const Color(0xFFDB2777),
+                    features: [
+                      'Sub-Radar Witness Intimidation Detector',
+                      'Geofenced Police Protection Request',
+                      'Encrypted Evidence Vault & Log Sanitizer',
+                      'Witness Protection Scheme Category I-III',
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _buildProblemStatementCard(
+                    context: context,
+                    appIndex: 4,
+                    title: 'Health & Wellness Intelligence Hub',
+                    subtitle: 'Arogya Sathi • MediKiosk • Tele-counseling',
+                    description:
+                        'Integrated community health tracking, virtual kiosk triage, tele-psychiatry appointments, and medical relief disbursement.',
+                    icon: Icons.health_and_safety,
+                    gradientColors: [const Color(0xFF059669), const Color(0xFF047857)],
+                    badgeText: 'APP 4',
+                    badgeColor: const Color(0xFF059669),
+                    features: [
+                      'Kiosk Tele-Psychiatry Consultations',
+                      'Disability & Medical Relief Disbursement',
+                      'Trauma-Informed Counselor Routing',
+                      'Community Mental Health Heatmaps',
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Comprehensive Master Feature Specification Matrix
+                  _buildSystemSpecificationSection(),
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPersonaSection(dynamic user) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F0F172A),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.account_circle, color: Color(0xFF4F46E5), size: 24),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  user != null
+                      ? 'Logged in as: ${user.fullName} (${user.primaryRole})'
+                      : 'Not Logged In (Using Guest Context)',
+                  style: const TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Quick Switch Persona Role:',
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 11, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _demoPersonas.map((p) {
+                final isSelected = user?.emailOrPhone == p['email'];
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: FilterChip(
+                    selected: isSelected,
+                    selectedColor: const Color(0xFFEEF2FF),
+                    backgroundColor: const Color(0xFFF8FAFC),
+                    side: BorderSide(
+                      color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0),
+                      width: isSelected ? 1.5 : 1.0,
+                    ),
+                    label: Text(
+                      p['label']!,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isSelected ? const Color(0xFF4F46E5) : const Color(0xFF334155),
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    onSelected: (_) => _switchPersona(p['email']!),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionBanner(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFEEF2FF), Color(0xFFE0E7FF)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFC7D2FE)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.auto_awesome, color: Color(0xFF4F46E5)),
+              SizedBox(width: 8),
+              Text(
+                'AI System Utilities & Emergency Tools',
+                style: TextStyle(
+                  color: Color(0xFF1E1B4B),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4F46E5),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.graphic_eq, size: 18),
+                  label: const Text('Emotions & Stress AI', style: TextStyle(fontSize: 12)),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const VoiceStressStudioScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFE11D48),
+                    side: const BorderSide(color: Color(0xFFFECDD3)),
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  icon: const Icon(Icons.enhanced_encryption, size: 18),
+                  label: const Text('Stealth Disguise', style: TextStyle(fontSize: 12)),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const PanicDisguiseScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProblemStatementCard({
+    required BuildContext context,
+    required int appIndex,
+    required String title,
+    required String subtitle,
+    required String description,
+    required IconData icon,
+    required List<Color> gradientColors,
+    required String badgeText,
+    required Color badgeColor,
+    required List<String> features,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F0F172A),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Gradient
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(colors: gradientColors),
+              ),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.white.withValues(alpha: 0.2),
+                    radius: 22,
+                    child: Icon(icon, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: badgeColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                badgeText,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          subtitle,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Card Body
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    description,
+                    style: const TextStyle(
+                      color: Color(0xFF334155),
+                      fontSize: 12,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Key Features Built In:',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: features.map((f) {
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.check_circle,
+                                color: Color(0xFF059669), size: 12),
+                            const SizedBox(width: 4),
+                            Text(
+                              f,
+                              style: const TextStyle(
+                                color: Color(0xFF1E293B),
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Open App Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: gradientColors.first,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      onPressed: () => widget.onSelectApp(appIndex),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('OPEN $title'.toUpperCase(),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 12)),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSystemSpecificationSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0F0F172A),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.view_headline, color: Color(0xFF4F46E5)),
+              SizedBox(width: 8),
+              Text(
+                'SYSTEM SPECIFICATION MATRIX OVERVIEW',
+                style: TextStyle(
+                  color: Color(0xFF0F172A),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildSpecTile(
+            'Adaptive Interaction & Ingestion',
+            'Dialect-aware voice IVRS 14566, acoustic prosody stress markers, micro-checkin bot with empathetic prompts, disguised calculator UI.',
+            Icons.record_voice_over,
+            const Color(0xFF7C3AED),
+          ),
+          _buildSpecTile(
+            'Multimodal Distress Prediction',
+            'Acoustic Vocal Biomarker engine (f₀ tremor analysis), contextual semantic drift detection, and behavioral passive sensing.',
+            Icons.query_stats,
+            const Color(0xFF0284C7),
+          ),
+          _buildSpecTile(
+            'Predictive Risk & Triggers',
+            'Chronological e-Courts / CCTNS milestone predictor, Dynamic Distress Index (DDI 0-100), and sub-radar witness retaliation alarm.',
+            Icons.timeline,
+            const Color(0xFFDB2777),
+          ),
+          _buildSpecTile(
+            'Automated Intervention & Dispatch',
+            'Role-based SLA alerting, prescriptive statutory relief matcher under SC/ST (PoA) Act, one-touch SOS witness beacon.',
+            Icons.notification_important,
+            const Color(0xFFD97706),
+          ),
+          _buildSpecTile(
+            'Administrative Intelligence & XAI',
+            'Multi-tiered state/district heatmap dashboards, SHAP/LIME Explainable AI case inspector, and relief disbursement tracker.',
+            Icons.analytics,
+            const Color(0xFF059669),
+          ),
+          _buildSpecTile(
+            'Ethics, Privacy & Trust',
+            'Zero-knowledge consent architecture isolating therapy logs from court subpoenas, and trauma-informed safeguard filters.',
+            Icons.lock_person,
+            const Color(0xFF475569),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSpecTile(String title, String desc, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          CircleAvatar(
+            radius: 14,
+            backgroundColor: color.withValues(alpha: 0.15),
+            child: Icon(icon, color: color, size: 14),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Color(0xFF0F172A),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  desc,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 11,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
