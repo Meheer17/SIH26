@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'master_home_screen.dart';
 import 'mental_health_distress/mental_health_app_shell.dart';
 import 'personnel_wellness/personnel_wellness_app_shell.dart';
+import 'opd_kiosk_intelligence/opd_kiosk_app_shell.dart';
+import 'personal_health_companion/personal_health_app_shell.dart';
 import 'legal_aid_app_shell.dart';
 import 'witness_shield_app_shell.dart';
 import 'health_intelligence_app_shell.dart';
@@ -14,7 +16,7 @@ class ProblemStatementShell extends StatefulWidget {
 }
 
 class _ProblemStatementShellState extends State<ProblemStatementShell> {
-  int _selectedAppIndex = 0; // 0: Home / All Features Overview, 1: Mental Health, 2: Personnel Wellness, 3: Witness Shield, 4: Health
+  int _selectedAppIndex = 0; // 0: Home / All Features Overview, 1: Mental Health, 2: Personnel Wellness, 3: OPD Kiosk, 4: Health Companion
 
   final List<Map<String, dynamic>> _problemApps = [
     {
@@ -43,18 +45,18 @@ class _ProblemStatementShellState extends State<ProblemStatementShell> {
     },
     {
       'index': 3,
-      'title': 'App 3: Witness Protection',
-      'subtitle': 'Rakshak Mitra • Retaliation Detector • Stealth UI',
-      'icon': Icons.security_rounded,
-      'color': const Color(0xFFDB2777),
+      'title': 'App 3: OPD Patient Kiosk & Health Intelligence',
+      'subtitle': 'Patient Kiosk • Physician EMR • OPD Operations • System Admin',
+      'icon': Icons.local_hospital_rounded,
+      'color': const Color(0xFF059669),
       'badge': 'APP 3',
     },
     {
       'index': 4,
-      'title': 'App 4: Health & Wellness Hub',
-      'subtitle': 'Arogya Sathi • MediKiosk Tele-Psychiatry',
+      'title': 'App 4: Personal Health & Disaster Companion',
+      'subtitle': 'Continuous Vitals • Heat & AQI Alerts • Fall SOS • Add Patients',
       'icon': Icons.health_and_safety_rounded,
-      'color': const Color(0xFF059669),
+      'color': const Color(0xFFDB2777),
       'badge': 'APP 4',
     },
   ];
@@ -66,9 +68,9 @@ class _ProblemStatementShellState extends State<ProblemStatementShell> {
       case 2:
         return const PersonnelWellnessAppShell();
       case 3:
-        return const WitnessShieldAppShell();
+        return const OpdKioskAppShell();
       case 4:
-        return const HealthIntelligenceAppShell();
+        return const PersonalHealthAppShell();
       case 0:
       default:
         return MasterHomeScreen(
