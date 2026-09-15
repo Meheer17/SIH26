@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'master_home_screen.dart';
 import 'mental_health_distress/mental_health_app_shell.dart';
+import 'personnel_wellness/personnel_wellness_app_shell.dart';
 import 'legal_aid_app_shell.dart';
 import 'witness_shield_app_shell.dart';
 import 'health_intelligence_app_shell.dart';
@@ -13,7 +14,7 @@ class ProblemStatementShell extends StatefulWidget {
 }
 
 class _ProblemStatementShellState extends State<ProblemStatementShell> {
-  int _selectedAppIndex = 0; // 0: Home / All Features Overview, 1: Mental Health, 2: Legal Aid, 3: Witness Shield, 4: Health
+  int _selectedAppIndex = 0; // 0: Home / All Features Overview, 1: Mental Health, 2: Personnel Wellness, 3: Witness Shield, 4: Health
 
   final List<Map<String, dynamic>> _problemApps = [
     {
@@ -34,9 +35,9 @@ class _ProblemStatementShellState extends State<ProblemStatementShell> {
     },
     {
       'index': 2,
-      'title': 'App 2: Legal Aid & Relief',
-      'subtitle': 'Nyaya Sahay • SC/ST (PoA) Statutory Relief Fund',
-      'icon': Icons.gavel_rounded,
+      'title': 'App 2: Personnel Defence & Wellness',
+      'subtitle': 'Personnel View • Commander View • Medical Officer • System Security',
+      'icon': Icons.shield_rounded,
       'color': const Color(0xFF0284C7),
       'badge': 'APP 2',
     },
@@ -63,7 +64,7 @@ class _ProblemStatementShellState extends State<ProblemStatementShell> {
       case 1:
         return const MentalHealthAppShell();
       case 2:
-        return const LegalAidAppShell();
+        return const PersonnelWellnessAppShell();
       case 3:
         return const WitnessShieldAppShell();
       case 4:
