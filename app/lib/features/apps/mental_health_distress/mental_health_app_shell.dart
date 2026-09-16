@@ -32,30 +32,30 @@ class _MentalHealthAppShellState extends State<MentalHealthAppShell> {
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 1,
-        shadowColor: const Color(0x0F0F172A),
+        elevation: 0,
+        scrolledUnderElevation: 0.5,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: const [
-                Icon(Icons.psychology, color: Color(0xFF4F46E5), size: 20),
+                Icon(Icons.psychology_rounded, color: Color(0xFF0D9488), size: 22),
                 SizedBox(width: 8),
                 Text(
-                  'NHAA 14566 Distress System',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                  'Mental Health & Distress Support',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF0F172A), letterSpacing: -0.4),
                 ),
               ],
             ),
             Text(
-              user != null ? 'Role: ${user.primaryRole} (${user.fullName})' : 'Role: Victim / Witness Context',
-              style: const TextStyle(fontSize: 10, color: Color(0xFF64748B)),
+              user != null ? 'Active Role: ${user.primaryRole} (${user.fullName})' : 'NHAA 14566 Distress Support',
+              style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
             ),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.account_circle, color: Color(0xFF4F46E5)),
+            icon: const Icon(Icons.account_circle, color: Color(0xFF0D9488)),
             tooltip: 'Switch Role / Login',
             onPressed: () {
               Navigator.push(
@@ -77,7 +77,6 @@ class _MentalHealthAppShellState extends State<MentalHealthAppShell> {
         children: _tabs,
       ),
 
-      // App 1 Specific Bottom Navigation Bar (Light Theme)
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
@@ -86,7 +85,7 @@ class _MentalHealthAppShellState extends State<MentalHealthAppShell> {
           currentIndex: _currentTabIndex,
           onTap: (idx) => setState(() => _currentTabIndex = idx),
           backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFF4F46E5),
+          selectedItemColor: const Color(0xFF0D9488),
           unselectedItemColor: const Color(0xFF64748B),
           type: BottomNavigationBarType.fixed,
           selectedFontSize: 11,

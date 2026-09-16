@@ -325,36 +325,37 @@ class _GroundbreakingSuiteScreenState extends State<GroundbreakingSuiteScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF090D16),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0F172A),
+        backgroundColor: Colors.white,
         elevation: 0,
+        scrolledUnderElevation: 0.5,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
+          children: const [
+            Text(
               'Longitudinal Health Suite',
               style: TextStyle(
-                  color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                  color: Color(0xFF0F172A), fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: -0.4),
             ),
             Text(
               'Digital Twin • Health Karma • Privacy Mesh',
               style: TextStyle(
-                  color: const Color(0xFF38BDF8).withOpacity(0.8), fontSize: 11),
+                  color: Color(0xFF0D9488), fontSize: 11, fontWeight: FontWeight.w600),
             ),
           ],
         ),
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: Color(0xFF38BDF8)),
+              child: CircularProgressIndicator(color: Color(0xFF0D9488)),
             )
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tab Selector
+                  // Tab Selector - MindBridge Pill Styling
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
                     child: Row(
@@ -388,11 +389,17 @@ class _GroundbreakingSuiteScreenState extends State<GroundbreakingSuiteScreen> {
         label: Text(label),
         selected: isSelected,
         onSelected: (_) => setState(() => _selectedTab = index),
-        selectedColor: const Color(0xFF0284C7),
-        backgroundColor: const Color(0xFF1E293B),
+        selectedColor: const Color(0xFF0D9488),
+        backgroundColor: const Color(0xFFF1F5F9),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: isSelected ? const Color(0xFF0D9488) : const Color(0xFFE2E8F0),
+          ),
+        ),
         labelStyle: TextStyle(
-          color: isSelected ? Colors.white : const Color(0xFF94A3B8),
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? Colors.white : const Color(0xFF475569),
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
           fontSize: 12,
         ),
       ),

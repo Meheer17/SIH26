@@ -103,81 +103,134 @@ class _MasterHomeScreenState extends State<MasterHomeScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const PanicDisguiseScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFFE11D48),
+        elevation: 6,
+        tooltip: 'Emergency SOS Dial',
+        child: const Icon(Icons.phone_in_talk_rounded, color: Colors.white, size: 24),
+      ),
       body: CustomScrollView(
         slivers: [
-          // App Bar Header
+          // App Bar Header - MindBridge Figma Design
           SliverAppBar(
-            expandedHeight: 180.0,
+            expandedHeight: 140.0,
             floating: false,
             pinned: true,
             backgroundColor: Colors.white,
-            elevation: 1,
+            elevation: 0,
+            scrolledUnderElevation: 0.5,
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 14),
               title: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'NYAYA-MANAS 14566',
+                children: [
+                  const Text(
+                    'Good morning 👋',
                     style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: Color(0xFF0F172A),
-                      letterSpacing: -0.3,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF64748B),
                     ),
                   ),
                   Text(
-                    'Integrated Multi-Problem Statement Portal',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Color(0xFF64748B),
+                    user != null ? user.fullName : 'SvasthyaSetu Hub',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 17,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.4,
                     ),
                   ),
                 ],
               ),
               background: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFEEF2FF), Color(0xFFF8FAFC)],
-                    begin: Alignment.topRight,
-                    end: Alignment.bottomLeft,
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: SafeArea(
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: _backendConnected
-                              ? const Color(0xFFD1FAE5)
-                              : const Color(0xFFFEF3C7),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: _backendConnected ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 4,
-                              backgroundColor:
-                                  _backendConnected ? const Color(0xFF059669) : const Color(0xFFD97706),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFCCFBF1),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _backendConnected ? 'API Connected' : 'Local Standalone ML',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: _backendConnected ? const Color(0xFF047857) : const Color(0xFFB45309),
-                                fontWeight: FontWeight.bold,
+                            child: const Icon(Icons.health_and_safety_rounded, color: Color(0xFF0D9488), size: 22),
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            'SvasthyaSetu',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF0D9488),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: _backendConnected ? const Color(0xFFDCFCE7) : const Color(0xFFFEF3C7),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: _backendConnected ? const Color(0xFF86EFAC) : const Color(0xFFFDE68A),
                               ),
                             ),
-                          ],
-                        ),
+                            child: Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 3.5,
+                                  backgroundColor: _backendConnected ? const Color(0xFF15803D) : const Color(0xFFB45309),
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  _backendConnected ? 'API Connected' : 'Edge Standalone',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: _backendConnected ? const Color(0xFF15803D) : const Color(0xFFB45309),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Stack(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF0F172A), size: 24),
+                                onPressed: () {},
+                              ),
+                              Positioned(
+                                right: 10,
+                                top: 10,
+                                child: Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFE11D48),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -192,109 +245,108 @@ class _MasterHomeScreenState extends State<MasterHomeScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Active Persona & Common Auth Switcher Banner
+                  // Active Role & Switcher Banner
                   _buildPersonaSection(user),
+                  const SizedBox(height: 16),
+
+                  // Quick Action Banner
+                  _buildQuickActionBanner(context),
                   const SizedBox(height: 20),
 
-                  // Quick Action Bar (Emotion AI Studio & Disguised Mode)
-                  _buildQuickActionBanner(context),
-                  const SizedBox(height: 24),
-
-                  // Section Title: Problem Statements
+                  // Section Title: Workspaces Overview
                   const Text(
-                    'SELECT PROBLEM STATEMENT APP',
+                    'HEALTH & LEGAL WORKSPACES',
                     style: TextStyle(
-                      color: Color(0xFF475569),
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
+                      color: Color(0xFF64748B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
                     ),
                   ),
                   const SizedBox(height: 12),
 
-                  // 4 Problem Statement Cards Grid
+                  // 4 Integrated Workspaces Cards Grid
                   _buildProblemStatementCard(
                     context: context,
                     appIndex: 1,
-                    title: 'Dynamic Mental Health & Distress System',
-                    subtitle: 'NHAA 14566 • Acoustic Biomarkers • DDI Score • XAI Inspector',
+                    title: 'Mental Health & Distress Support',
+                    subtitle: 'NHAA 14566 • Acoustic Biomarkers • DDI Score • AI Check-In',
                     description:
-                        'Continuous multimodal distress prediction, e-Courts sync, dialect IVRS, zero-knowledge privacy, and prescriptive SC/ST PoA relief matching.',
-                    icon: Icons.psychology,
-                    gradientColors: [const Color(0xFF4F46E5), const Color(0xFF4338CA)],
-                    badgeText: 'FEATURED APP 1',
-                    badgeColor: const Color(0xFF059669),
+                        'Continuous multimodal distress prediction, e-Courts sync, dialect IVRS, zero-knowledge privacy, and SC/ST PoA assistance.',
+                    icon: Icons.psychology_rounded,
+                    gradientColors: [const Color(0xFF0D9488), const Color(0xFF0F766E)],
+                    badgeText: 'DISTRESS CARE',
+                    badgeColor: const Color(0xFF0D9488),
                     features: [
                       'Acoustic Vocal Biomarker Engine (f₀ tremor)',
                       'Dynamic Distress Index (DDI 0-100)',
                       'SHAP/LIME Explainable AI Case Inspector',
                       'Stealth "Disguised" Calculator UI & Duress PIN',
-                      'Chronological Milestone Predictor (e-Courts)',
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   _buildProblemStatementCard(
                     context: context,
                     appIndex: 2,
-                    title: 'Legal Aid & Relief Automation',
-                    subtitle: 'Nyaya Sahay • SC/ST (PoA) Act Relief Disbursement',
+                    title: 'Personnel Defence & Wellness',
+                    subtitle: 'Sentinels • Security Personnel • HRMS Burnout',
                     description:
-                        'Automated FIR analysis, statutory FIR relief claim generation, automated compensation milestone tracking, and legal aid assistance.',
-                    icon: Icons.gavel,
+                        'Duty stress prediction, commander HRMS analytics, sentinel shift rotation, and covert emergency dispatch.',
+                    icon: Icons.shield_rounded,
                     gradientColors: [const Color(0xFF0284C7), const Color(0xFF0369A1)],
-                    badgeText: 'APP 2',
+                    badgeText: 'DEFENCE WORKSPACE',
                     badgeColor: const Color(0xFF0284C7),
                     features: [
-                      'Automated Section 15A Relief Calculator',
-                      'FIR Legal Clause Extraction Engine',
-                      'DLSA Legal Aid Attorney Dispatch',
-                      'Direct Benefit Transfer (DBT) Status',
+                      'Sub-Radar Sentinels Burnout Analytics',
+                      'Commander Personnel Roster Inspection',
+                      'Encrypted Evidence Vault & Log Sanitizer',
+                      'High-Altitude Operational Duty Predictor',
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   _buildProblemStatementCard(
                     context: context,
                     appIndex: 3,
-                    title: 'Witness Shield & Protection Cell',
-                    subtitle: 'Rakshak Mitra • Threat Pattern Recognition & SOS',
+                    title: 'OPD Kiosk & Clinical Health',
+                    subtitle: 'Patient Intake Kiosk • Physician EMR • Dual Prescription',
                     description:
-                        'Sub-radar retaliation alarms, witness threat level scoring, secure geofenced police dispatch, and intimidation monitoring.',
-                    icon: Icons.security,
-                    gradientColors: [const Color(0xFFDB2777), const Color(0xFFBE185D)],
-                    badgeText: 'APP 3',
-                    badgeColor: const Color(0xFFDB2777),
+                        'Automated patient intake, parallel Allopathic + AYUSH dual prescriptions, OPD operations, and clinical triage.',
+                    icon: Icons.local_hospital_rounded,
+                    gradientColors: [const Color(0xFF059669), const Color(0xFF047857)],
+                    badgeText: 'CLINICAL EMR',
+                    badgeColor: const Color(0xFF059669),
                     features: [
-                      'Sub-Radar Witness Intimidation Detector',
-                      'Geofenced Police Protection Request',
-                      'Encrypted Evidence Vault & Log Sanitizer',
-                      'Witness Protection Scheme Category I-III',
+                      'Allopathic + AYUSH Parallel Prescriptions',
+                      'OPD Patient Self-Service Kiosk Intake',
+                      'Physician EMR Triage & Symptom Analyzer',
+                      'ABDM & HL7 FHIR Interoperability',
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
 
                   _buildProblemStatementCard(
                     context: context,
                     appIndex: 4,
-                    title: 'Health & Wellness Intelligence Hub',
-                    subtitle: 'Arogya Sathi • MediKiosk • Tele-counseling',
+                    title: 'Personal Health & Field Companion',
+                    subtitle: 'Vitals Monitoring • ASHA Copilot • Heat Alerts • Digital Twin',
                     description:
-                        'Integrated community health tracking, virtual kiosk triage, tele-psychiatry appointments, and medical relief disbursement.',
-                    icon: Icons.health_and_safety,
-                    gradientColors: [const Color(0xFF059669), const Color(0xFF047857)],
-                    badgeText: 'APP 4',
-                    badgeColor: const Color(0xFF059669),
+                        'Continuous vitals tracking, ASHA worker rural triage, 3D organ health twin, and environmental heat advisories.',
+                    icon: Icons.health_and_safety_rounded,
+                    gradientColors: [const Color(0xFFDB2777), const Color(0xFFBE185D)],
+                    badgeText: 'FIELD CARE',
+                    badgeColor: const Color(0xFFDB2777),
                     features: [
-                      'Kiosk Tele-Psychiatry Consultations',
-                      'Disability & Medical Relief Disbursement',
-                      'Trauma-Informed Counselor Routing',
-                      'Community Mental Health Heatmaps',
+                      '3D Longitudinal Digital Twin Organ Scores',
+                      'ASHA Worker Rural Maternal Triage',
+                      'Continuous Vitals & Fall Detection SOS',
+                      'Real-time WBGT Heat Stress Advisories',
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 28),
 
-                  // Comprehensive Master Feature Specification Matrix
+                  // Specification Section
                   _buildSystemSpecificationSection(),
                   const SizedBox(height: 40),
                 ],
@@ -477,6 +529,8 @@ class _MasterHomeScreenState extends State<MasterHomeScreen> {
     required Color badgeColor,
     required List<String> features,
   }) {
+    final primaryColor = gradientColors.first;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -484,159 +538,143 @@ class _MasterHomeScreenState extends State<MasterHomeScreen> {
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 10,
+            color: Color(0x06000000),
+            blurRadius: 16,
             offset: Offset(0, 4),
           ),
         ],
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header Gradient
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(colors: gradientColors),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                    radius: 22,
-                    child: Icon(icon, color: Colors.white, size: 24),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: badgeColor,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Text(
-                                badgeText,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          title,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          subtitle,
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Card Body
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      color: Color(0xFF334155),
-                      fontSize: 12,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Key Features Built In:',
-                    style: TextStyle(
-                      color: Color(0xFF64748B),
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: features.map((f) {
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.check_circle,
-                                color: Color(0xFF059669), size: 12),
-                            const SizedBox(width: 4),
-                            Text(
-                              f,
-                              style: const TextStyle(
-                                color: Color(0xFF1E293B),
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Open App Button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: gradientColors.first,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      onPressed: () => widget.onSelectApp(appIndex),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                  child: Icon(icon, color: primaryColor, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('OPEN $title'.toUpperCase(),
+                          Expanded(
+                            child: Text(
+                              title,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 12)),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.arrow_forward, size: 16),
+                                color: Color(0xFF0F172A),
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: -0.3,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: primaryColor.withValues(alpha: 0.2)),
+                            ),
+                            child: Text(
+                              badgeText,
+                              style: TextStyle(
+                                color: primaryColor,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: const TextStyle(
+                          color: Color(0xFF64748B),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              description,
+              style: const TextStyle(
+                color: Color(0xFF334155),
+                fontSize: 12.5,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: features.map((f) {
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle_rounded, color: primaryColor, size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        f,
+                        style: const TextStyle(
+                          fontSize: 10.5,
+                          color: Color(0xFF475569),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => widget.onSelectApp(appIndex),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Text(
+                      'Open Workspace',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                    ),
+                    SizedBox(width: 6),
+                    Icon(Icons.arrow_forward_rounded, size: 16),
+                  ],
+                ),
               ),
             ),
           ],
