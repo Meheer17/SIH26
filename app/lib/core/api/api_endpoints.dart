@@ -1,14 +1,9 @@
 import 'package:flutter/foundation.dart';
 
 class ApiEndpoints {
-  // Configurable base URL depending on platform (emulator vs physical device vs web)
+  // Base URL pointing directly to host machine port 8000 (works on desktop, web, and physical Android via ADB reverse)
   static String get baseUrl {
-    if (kIsWeb) {
-      return 'http://localhost:8000/api/v1';
-    } else {
-      // LAN IP for mobile clients / physical devices (e.g. AC2001) / emulators
-      return 'http://192.168.31.202:8000/api/v1';
-    }
+    return 'http://127.0.0.1:8000/api/v1';
   }
 
   // API Routes

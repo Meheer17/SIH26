@@ -10,7 +10,6 @@ class AdminXaiTab extends StatefulWidget {
 class _AdminXaiTabState extends State<AdminXaiTab> {
   // Jurisdiction Level: 0 = National, 1 = State, 2 = District
   int _selectedJurisdictionLevel = 0; 
-  String _selectedDistrictFilter = 'All Districts (UP)';
   String _selectedRiskFilter = 'All Risk Levels';
 
   bool _zeroKnowledgeShieldActive = true;
@@ -373,7 +372,7 @@ class _AdminXaiTabState extends State<AdminXaiTab> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: _monitoredVictims.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (context, idx) {
               final v = _monitoredVictims[idx];
               final isSelected = _selectedVictimIndex == idx;
