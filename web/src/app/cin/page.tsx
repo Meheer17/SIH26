@@ -17,9 +17,32 @@ export default function CommunityImmunityNetworkPage() {
     { id: "90e28f73120b66c9", ttl: 7, rssi: -71, battery: 60, symptoms: ["Asymptomatic"], packet_type: "GOSSIP_INV", hmac: "5e0f9b3a1c4d" },
   ]);
 
+  const fetchActiveNodes = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/cin/nodes");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.nodes) {
+          setSimulatedNodes(data.nodes.map((n: any, idx: number) => ({
+            id: n.anonymized_node_id || n.device_mac_or_uuid || `node-${idx}`,
+            ttl: n.ttl || 7,
+            rssi: -40 - (idx * 8),
+            battery: n.battery || 88,
+            symptoms: n.symptoms || ["Asymptomatic"],
+            packet_type: "EPIDEMIC_TOKEN",
+            hmac: `hmac-${idx}a9f`
+          })));
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const triggerMeshSync = async () => {
     setLoading(true);
     try {
+      await fetchActiveNodes();
       const res = await fetch("http://localhost:8000/api/v1/cin/outbreaks");
       if (res.ok) {
         const data = await res.json();
@@ -36,23 +59,24 @@ export default function CommunityImmunityNetworkPage() {
     setLoading(true);
     try {
       const symptomsList = symptomInput.split(",").map((s) => s.trim());
-      const payload = [
-        {
-          device_mac_or_uuid: `device-web-${Math.floor(Math.random() * 1000)}`,
-          symptoms: symptomsList,
-          fever_celsius: parseFloat(tempInput.toString()),
-          ambient_temp_celsius: 34.5,
-          ttl: 7
-        }
-      ];
-      const res = await fetch("http://localhost:8000/api/v1/cin/sync", {
+      const payload = {
+        device_mac_or_uuid: `BLE-Node-Web-${Math.floor(Math.random() * 9000 + 1000)}`,
+        symptoms: symptomsList,
+        fever_celsius: parseFloat(tempInput.toString()) || 38.2,
+        ambient_temp_celsius: 34.5,
+        contacts_count: 3
+      };
+      const res = await fetch("http://localhost:8000/api/v1/cin/broadcast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
       if (res.ok) {
         const data = await res.json();
-        setSyncData(data);
+        if (data.mesh_outbreak_status) {
+          setSyncData(data.mesh_outbreak_status);
+        }
+        await fetchActiveNodes();
       }
     } catch (err) {
       console.error(err);

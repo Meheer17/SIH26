@@ -126,9 +126,38 @@ export default function RakshakMitraPage() {
 
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState<BurnoutRecord[]>([]);
-  const [heatmap] = useState<HeatmapItem[]>(DEFAULT_HEATMAP_DATA);
+  const [heatmap, setHeatmap] = useState<HeatmapItem[]>(DEFAULT_HEATMAP_DATA);
   const [latestResult, setLatestResult] = useState<BurnoutRecord | null>(null);
   const [heatmapFilter, setHeatmapFilter] = useState<'ALL' | 'RED' | 'ORANGE' | 'GREEN'>('ALL');
+
+  const fetchHeatmap = async () => {
+    try {
+      const res = await fetch("http://localhost:8000/api/v1/apps/rakshak/heatmap");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.garrison_units) {
+          const items: HeatmapItem[] = data.garrison_units.map((g: any) => ({
+            unit: g.name,
+            personnel_count: g.total_strength,
+            average_burnout_index: g.stress_score,
+            critical_risk_count: g.high_stress_soldiers,
+            high_risk_count: Math.ceil(g.high_stress_soldiers * 1.5),
+            status: g.risk_tier === "CRITICAL" ? "RED" : (g.risk_tier === "HIGH" ? "ORANGE" : "GREEN"),
+            avg_duty_hours: 58,
+            avg_leave_gap: 0.6,
+            suggested_action: g.primary_stressor
+          }));
+          setHeatmap(items);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchHeatmap();
+  }, []);
 
   // AI Chat State
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([
