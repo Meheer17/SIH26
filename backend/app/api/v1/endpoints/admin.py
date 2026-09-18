@@ -11,6 +11,8 @@ from app.models.schemas import (
 from app.db.database import get_database, db_manager
 from app.api.deps import require_admin
 
+from app.api.v1.endpoints.auth import safe_role_enum
+
 router = APIRouter()
 
 @router.get("/users", response_model=List[UserProfileResponse])
@@ -23,13 +25,21 @@ async def list_all_users(admin_user: dict = Depends(require_admin)):
         cursor = db.users.find({})
         async for doc in cursor:
             mapped_roles = doc.get("mapped_roles", [doc["primary_role"]])
+            app_val = doc.get("app_context", AppContextEnum.AROGYA_SATHI.value)
+            try:
+                app_ctx = AppContextEnum(app_val)
+            except ValueError:
+                app_ctx = AppContextEnum.NYAYA_MANAS if "nyaya" in str(app_val) or "mental" in str(app_val) else AppContextEnum.AROGYA_SATHI
+
+            prim = safe_role_enum(doc.get("primary_role"))
+
             users_list.append(UserProfileResponse(
                 id=doc["id"],
                 full_name=doc["full_name"],
                 email_or_phone=doc["email_or_phone"],
-                primary_role=RoleEnum(doc["primary_role"]),
-                app_context=AppContextEnum(doc.get("app_context", AppContextEnum.AROGYA_SATHI.value)),
-                mapped_roles=[RoleEnum(r) for r in mapped_roles if r in RoleEnum.__members__],
+                primary_role=prim,
+                app_context=app_ctx,
+                mapped_roles=[safe_role_enum(r) for r in mapped_roles],
                 is_active=doc.get("is_active", True),
                 is_admin=doc.get("is_admin", False),
                 created_at=doc.get("created_at", datetime.now(timezone.utc).isoformat())
@@ -37,13 +47,21 @@ async def list_all_users(admin_user: dict = Depends(require_admin)):
     else:
         for doc in db_manager._in_memory_collections["users"]:
             mapped_roles = doc.get("mapped_roles", [doc["primary_role"]])
+            app_val = doc.get("app_context", AppContextEnum.AROGYA_SATHI.value)
+            try:
+                app_ctx = AppContextEnum(app_val)
+            except ValueError:
+                app_ctx = AppContextEnum.NYAYA_MANAS if "nyaya" in str(app_val) or "mental" in str(app_val) else AppContextEnum.AROGYA_SATHI
+
+            prim = safe_role_enum(doc.get("primary_role"))
+
             users_list.append(UserProfileResponse(
                 id=doc["id"],
                 full_name=doc["full_name"],
                 email_or_phone=doc["email_or_phone"],
-                primary_role=RoleEnum(doc["primary_role"]),
-                app_context=AppContextEnum(doc.get("app_context", AppContextEnum.AROGYA_SATHI.value)),
-                mapped_roles=[RoleEnum(r) for r in mapped_roles if r in RoleEnum.__members__],
+                primary_role=prim,
+                app_context=app_ctx,
+                mapped_roles=[safe_role_enum(r) for r in mapped_roles],
                 is_active=doc.get("is_active", True),
                 is_admin=doc.get("is_admin", False),
                 created_at=doc.get("created_at", datetime.now(timezone.utc).isoformat())
@@ -102,7 +120,7 @@ async def map_user_roles(
         user_id=user_id,
         full_name=target_user["full_name"],
         email_or_phone=target_user["email_or_phone"],
-        primary_role=RoleEnum(target_user["primary_role"]),
-        mapped_roles=[RoleEnum(r) for r in new_str_roles if r in RoleEnum.__members__],
+        primary_role=safe_role_enum(target_user["primary_role"]),
+        mapped_roles=[safe_role_enum(r) for r in new_str_roles],
         updated_at=updated_at_iso
     )

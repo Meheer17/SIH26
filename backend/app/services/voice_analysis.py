@@ -57,11 +57,25 @@ def analyze_voice_stress_and_sentiment(
         except Exception:
             crisis_tier = "SAFE"
 
-    # 2. Linguistic Sentiment, Stress & Fatigue Keyword Analysis
-    high_anxiety_words = ["anxious", "fear", "scared", "threat", "court", "trial", "police", "panic", "suicide", "hopeless", "tremor", "crying", "pain", "beaten", "harassed", "kill", "die", "harm", "attack"]
-    stress_words = ["tense", "worried", "patrol", "shift", "duty", "pressure", "heavy", "delay", "struggling", "danger"]
-    fatigue_words = ["tired", "exhausted", "fatigued", "sleep", "sleepy", "drained", "weak", "weary", "night watch", "burnout", "headache", "dizzy", "unfocused"]
-    calm_words = ["fine", "calm", "good", "better", "safe", "stable", "relax", "supported", "rested", "okay", "happy", "peaceful"]
+    # 2. Linguistic Sentiment, Stress & Fatigue Keyword Analysis (Multilingual English + Hindi/Hinglish)
+    high_anxiety_words = [
+        "anxious", "fear", "scared", "threat", "court", "trial", "police", "panic", "suicide", "hopeless",
+        "tremor", "crying", "pain", "beaten", "harassed", "kill", "die", "harm", "attack", "murder",
+        "dhamki", "maar", "hathiyaar", "goli", "darr", "dar", "peshi", "adalat", "shikayat", "kaap",
+        "pareshan", "chinta", "khauf", "atank", "barbaad", "marna", "khoon", "janleva", "fas gaya"
+    ]
+    stress_words = [
+        "tense", "worried", "patrol", "shift", "duty", "pressure", "heavy", "delay", "struggling", "danger",
+        "rukawat", "deri", "paisa", "muavza", "tarikh", "tareekh", "samay", "intezaar", "kist", "tension"
+    ]
+    fatigue_words = [
+        "tired", "exhausted", "fatigued", "sleep", "sleepy", "drained", "weak", "weary", "night watch", "burnout",
+        "headache", "dizzy", "unfocused", "thaka", "thakaan", "kamzor", "behoshi", "chakkar", "sust", "neend"
+    ]
+    calm_words = [
+        "fine", "calm", "good", "better", "safe", "stable", "relax", "supported", "rested", "okay", "happy", "peaceful",
+        "theek", "shanti", "surakshit", "madad", "chain", "rahat", "achha", "accha", "khush", "sukoon"
+    ]
 
     anxiety_count = sum(1 for w in high_anxiety_words if w in text_clean)
     stress_count = sum(1 for w in stress_words if w in text_clean)

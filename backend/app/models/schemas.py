@@ -8,17 +8,24 @@ class RoleEnum(str, Enum):
     PATIENT = "PATIENT"
     SOLDIER = "SOLDIER"
     VICTIM = "VICTIM"
+    COMPLAINANT = "COMPLAINANT"
     CITIZEN = "CITIZEN"
     
     # Tier 2 - Specialists / Care Providers (Consent bound)
     PHYSICIAN = "PHYSICIAN"
     WELFARE_OFFICER = "WELFARE_OFFICER"
     COUNSELOR = "COUNSELOR"
+    PSYCHOLOGIST = "PSYCHOLOGIST"
+    LEGAL_OFFICER = "LEGAL_OFFICER"
     
     # Tier 3 - Supervisors / Authorities (Anonymized / Escalation view)
     COMMANDER = "COMMANDER"
     DISTRICT_OFFICER = "DISTRICT_OFFICER"
+    DISTRICT_MAGISTRATE = "DISTRICT_MAGISTRATE"
+    POLICE_SP = "POLICE_SP"
     STATE_ADMIN = "STATE_ADMIN"
+    STATE_NODAL_OFFICER = "STATE_NODAL_OFFICER"
+    NATIONAL_ADMINISTRATOR = "NATIONAL_ADMINISTRATOR"
     
     # Tier 4 - System Administrator
     SYSTEM_ADMIN = "SYSTEM_ADMIN"
@@ -28,6 +35,8 @@ class AppContextEnum(str, Enum):
     MEDIKIOSK = "medikiosk"
     RAKSHAK_MITRA = "rakshak_mitra"
     NYAYA_SAHAY = "nyaya_sahay"
+    NYAYA_MANAS = "nyaya_manas"
+    MENTAL_HEALTH_NHAA = "mental_health_nhaa"
     PLATFORM_ADMIN = "platform_admin"
 
 # --- AUTH SCHEMAS ---

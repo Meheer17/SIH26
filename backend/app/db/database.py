@@ -25,7 +25,15 @@ class Database:
         "arogya_vitals": [],
         "medikiosk_intakes": [],
         "rakshak_burnouts": [],
-        "nyaya_distress": []
+        "nyaya_distress": [],
+        "nyaya_victims": [],
+        "nyaya_checkins": [],
+        "nyaya_interventions": [],
+        "nyaya_compensations": [],
+        "nyaya_sos_beacons": [],
+        "nyaya_xai_logs": [],
+        "nyaya_clinical_reports": [],
+        "nyaya_clinical_embeddings": []
     }
 
 
@@ -33,7 +41,7 @@ db_manager = Database()
 
 
 async def seed_test_users():
-    """Seed 5 pre-configured demo test login accounts into MongoDB or in-memory collection."""
+    """Seed pre-configured demo test login accounts into MongoDB or in-memory collection."""
     hashed_pwd = get_password_hash("demo123456")
     now_iso = datetime.now(timezone.utc).isoformat()
 
@@ -83,14 +91,70 @@ async def seed_test_users():
         {
             "_id": "usr-test-004",
             "id": "usr-test-004",
-            "full_name": "Rajesh Kumar",
+            "full_name": "Dr. Ananya Sharma",
             "email_or_phone": "legal_officer@district.gov.in",
             "hashed_password": hashed_pwd,
             "primary_role": "COUNSELOR",
             "app_context": "nyaya_sahay",
-            "mapped_roles": ["COUNSELOR"],
+            "mapped_roles": ["COUNSELOR", "PSYCHOLOGIST"],
             "is_active": True,
             "is_admin": False,
+            "is_verified": True,
+            "created_at": now_iso
+        },
+        {
+            "_id": "usr-victim-001",
+            "id": "usr-victim-001",
+            "full_name": "Savitri Devi",
+            "email_or_phone": "victim_scst@district.gov.in",
+            "hashed_password": hashed_pwd,
+            "primary_role": "VICTIM",
+            "app_context": "nyaya_manas",
+            "mapped_roles": ["VICTIM", "COMPLAINANT"],
+            "is_active": True,
+            "is_admin": False,
+            "is_verified": True,
+            "created_at": now_iso
+        },
+        {
+            "_id": "usr-dm-001",
+            "id": "usr-dm-001",
+            "full_name": "Shri S. Rajalingam, IAS (DM Varanasi)",
+            "email_or_phone": "dm_varanasi@up.gov.in",
+            "hashed_password": hashed_pwd,
+            "primary_role": "DISTRICT_MAGISTRATE",
+            "app_context": "nyaya_manas",
+            "mapped_roles": ["DISTRICT_MAGISTRATE", "POLICE_SP"],
+            "is_active": True,
+            "is_admin": True,
+            "is_verified": True,
+            "created_at": now_iso
+        },
+        {
+            "_id": "usr-nodal-001",
+            "id": "usr-nodal-001",
+            "full_name": "Dr. Harish Chandra, IAS (State Nodal Officer)",
+            "email_or_phone": "nodal_state@up.gov.in",
+            "hashed_password": hashed_pwd,
+            "primary_role": "STATE_NODAL_OFFICER",
+            "app_context": "nyaya_manas",
+            "mapped_roles": ["STATE_NODAL_OFFICER", "WELFARE_OFFICER"],
+            "is_active": True,
+            "is_admin": True,
+            "is_verified": True,
+            "created_at": now_iso
+        },
+        {
+            "_id": "usr-national-001",
+            "id": "usr-national-001",
+            "full_name": "Joint Secretary (Ministry of Social Justice)",
+            "email_or_phone": "national_admin@gov.in",
+            "hashed_password": hashed_pwd,
+            "primary_role": "NATIONAL_ADMINISTRATOR",
+            "app_context": "nyaya_manas",
+            "mapped_roles": ["NATIONAL_ADMINISTRATOR", "SYSTEM_ADMIN"],
+            "is_active": True,
+            "is_admin": True,
             "is_verified": True,
             "created_at": now_iso
         },
@@ -102,7 +166,7 @@ async def seed_test_users():
             "hashed_password": hashed_pwd,
             "primary_role": "SYSTEM_ADMIN",
             "app_context": "arogya_sathi",
-            "mapped_roles": ["SYSTEM_ADMIN", "PHYSICIAN", "WELFARE_OFFICER"],
+            "mapped_roles": ["SYSTEM_ADMIN", "PHYSICIAN", "WELFARE_OFFICER", "NATIONAL_ADMINISTRATOR"],
             "is_active": True,
             "is_admin": True,
             "is_verified": True,

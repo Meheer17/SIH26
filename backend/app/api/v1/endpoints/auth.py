@@ -21,6 +21,18 @@ from app.api.deps import get_current_user
 router = APIRouter()
 
 
+def safe_role_enum(role_val, default: RoleEnum = RoleEnum.PATIENT) -> RoleEnum:
+    if isinstance(role_val, RoleEnum):
+        return role_val
+    if isinstance(role_val, str):
+        if role_val in RoleEnum.__members__:
+            return RoleEnum[role_val]
+        for member in RoleEnum:
+            if member.value == role_val:
+                return member
+    return default
+
+
 def generate_secure_otp() -> str:
     """Generate a cryptographically secure 6-digit numeric OTP."""
     return "".join(secrets.choice("0123456789") for _ in range(6))
@@ -270,8 +282,8 @@ async def verify_otp(req: VerifyOtpRequest):
         user_id=user_doc["id"],
         full_name=user_doc["full_name"],
         email_or_phone=user_doc["email_or_phone"],
-        primary_role=RoleEnum(user_doc["primary_role"]),
-        mapped_roles=[RoleEnum(r) for r in mapped_roles if r in RoleEnum.__members__],
+        primary_role=safe_role_enum(user_doc["primary_role"]),
+        mapped_roles=[safe_role_enum(r) for r in mapped_roles],
         is_admin=is_admin
     )
 
@@ -377,8 +389,8 @@ async def login(req: UserLoginRequest):
         user_id=user_doc["id"],
         full_name=user_doc["full_name"],
         email_or_phone=user_doc["email_or_phone"],
-        primary_role=RoleEnum(user_doc["primary_role"]),
-        mapped_roles=[RoleEnum(r) for r in mapped_roles if r in RoleEnum.__members__],
+        primary_role=safe_role_enum(user_doc["primary_role"]),
+        mapped_roles=[safe_role_enum(r) for r in mapped_roles],
         is_admin=is_admin
     )
 
@@ -454,8 +466,8 @@ async def refresh_session(req: RefreshTokenRequest):
         user_id=user_doc["id"],
         full_name=user_doc["full_name"],
         email_or_phone=user_doc["email_or_phone"],
-        primary_role=RoleEnum(user_doc["primary_role"]),
-        mapped_roles=[RoleEnum(r) for r in mapped_roles if r in RoleEnum.__members__],
+        primary_role=safe_role_enum(user_doc["primary_role"]),
+        mapped_roles=[safe_role_enum(r) for r in mapped_roles],
         is_admin=is_admin
     )
 
@@ -481,13 +493,22 @@ async def logout(current_user: dict = Depends(get_current_user)):
 async def get_my_profile(current_user: dict = Depends(get_current_user)):
     """Fetch profile details of current authenticated user."""
     mapped_roles = current_user.get("mapped_roles", [current_user["primary_role"]])
+    
+    app_ctx_val = current_user.get("app_context", AppContextEnum.AROGYA_SATHI.value)
+    try:
+        app_ctx = AppContextEnum(app_ctx_val)
+    except ValueError:
+        app_ctx = AppContextEnum.NYAYA_MANAS if "nyaya" in str(app_ctx_val) or "mental" in str(app_ctx_val) else AppContextEnum.AROGYA_SATHI
+
+    prim_role = safe_role_enum(current_user.get("primary_role"))
+
     return UserProfileResponse(
         id=current_user["id"],
         full_name=current_user["full_name"],
         email_or_phone=current_user["email_or_phone"],
-        primary_role=RoleEnum(current_user["primary_role"]),
-        app_context=AppContextEnum(current_user.get("app_context", AppContextEnum.AROGYA_SATHI.value)),
-        mapped_roles=[RoleEnum(r) for r in mapped_roles if r in RoleEnum.__members__],
+        primary_role=prim_role,
+        app_context=app_ctx,
+        mapped_roles=[safe_role_enum(r) for r in mapped_roles],
         is_active=current_user.get("is_active", True),
         is_admin=current_user.get("is_admin", False),
         is_verified=current_user.get("is_verified", False),
