@@ -37,11 +37,11 @@ class _ProblemStatementShellState extends State<ProblemStatementShell> {
     },
     {
       'index': 2,
-      'title': 'Personnel Defence & Wellness',
-      'subtitle': 'Sentinel View • Commander HRMS • Sentinels & Field Security',
+      'title': 'Personnel Stress & Welfare (Raksha Setu)',
+      'subtitle': 'MHA Track • Assessments • Sahayak AI • Commander Heatmap',
       'icon': Icons.shield_rounded,
       'color': const Color(0xFF0284C7),
-      'badge': 'DEFENCE',
+      'badge': 'RAKSHA SETU',
     },
     {
       'index': 3,

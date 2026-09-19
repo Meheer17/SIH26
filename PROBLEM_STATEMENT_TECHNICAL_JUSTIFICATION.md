@@ -326,7 +326,132 @@ flowchart LR
 
 ---
 
-## 🗂️ 7. Complete Codebase & API Traceability Directory
+## 💰 8. Financial Distress Identification, Statutory Grants & Portal Integration
+
+### 8.1 How We Identify If the Victim Is Facing Financial Issues
+Victims of caste-based atrocities frequently experience acute economic collapse due to medical expenses, destruction of homes/property, loss of daily agricultural wages, travel expenses for court hearings, or organized village-level economic boycotts. **Nyaya-Manas** detects and quantifies financial distress through a **6-point multi-channel detection pipeline**:
+
+```mermaid
+flowchart TD
+    subgraph MultiSignal["Financial Distress Ingestion Signals"]
+        S1["💬 1. Multilingual NLP Token Analysis\n(paisa, muavza, kist, karza, loan, bhukhmari, ration, kaam chhut gaya)"]
+        S2["⏱️ 2. Rule 12(4) Compensation Delay Clock\n(Days elapsed since FIR without mandatory 25%/50% interim relief)"]
+        S3["⚖️ 3. SC/ST PoA Offense Classification\n(Arson Sec 3(2)(va), Social/Economic Boycott Sec 3(1)(za), Crop Destruction)"]
+        S4["📞 4. IVRS 14566 & Chatbot Proactive Prompts\n(DTMF Keypress 4: 'Compensation & Relief Assistance')"]
+        S5["📄 5. Medical OCR Extraction\n(Inability to afford psychotropic meds, hospital bills, travel fare)"]
+        S6["📊 6. CUS Engagement & Recency Drops\n(Loss of daily wages due to repeated court appearances)"]
+    end
+
+    subgraph Scoring["Algorithmic Scoring Impact"]
+        S1 & S2 & S3 & S4 & S5 & S6 --> DDS_ADD["DDS Factor F5 (+10% Compensation Delay)\n+ NLP Distress Token Multipliers"]
+        DDS_ADD --> AUTO_TRIG["Automatic Fast-Track Financial Relief Directive Generated"]
+    end
+```
+
+1. **Multilingual NLP & Speech Sentiment Analysis**:
+   - The NLP engine scans voice check-in transcripts, SMS, and chatbot messages for economic duress keywords in English, Hindi, and regional dialects:
+     * *Financial duress tokens*: `paisa`, `muavza`, `kist`, `deri`, `rupaye`, `karza` (debt), `loan`, `bhukhmari` (starvation), `chulha nahi jala`, `ration`, `fas gaya`, `kaam chhut gaya` (job loss), `kharche`, `rozgari`.
+   - Frequency and emotional valence of these tokens directly penalize the sentiment score ($S_{\text{sentiment}}$) and elevate the Dynamic Distress Score.
+2. **Statutory Compensation Delay Penalty ($F_5$ in the 7-Factor DDS)**:
+   - Evaluates days elapsed since FIR registration against the statutory Rule 12(4) deadline (mandatory 25% interim relief within 7 days of FIR).
+   - If the payment is delayed, an automatic penalty adder ($+10.0\text{ pts}$) is injected into the Dynamic Distress Score.
+3. **Offense-Based Vulnerability Weighting**:
+   - Specific atrocity offenses inherently entail catastrophic financial destruction:
+     * **Section 3(2)(va) Arson of Dwelling**: Immediate destruction of home, clothes, and sustenance.
+     * **Section 3(1)(za) Social & Economic Boycott**: Denial of village common resources, denial of agricultural employment, denial of water access.
+   - These offenses assign high statutory severity weights ($\delta \ge 0.95$) in the Composite Urgency Score (CUS).
+4. **Interactive Check-In & IVRS Telephony Prompts**:
+   - Chatbot prompt: *"क्या आपको घटना के बाद दैनिक खर्चों, इलाज या काम में आर्थिक तंगी का सामना करना पड़ रहा है?"* (*"Are you facing financial difficulties for daily expenses or medical treatment after the incident?"*)
+   - Dialect IVRS (`14566`): Dedicated **Keypress 4** for *"Compensation Status, Bank Account Linkage & Financial Relief Check"*.
+5. **Clinical Medical OCR Extraction**:
+   - Parses doctor intake notes for economic distress markers (e.g., *"Patient discontinued Tab Escitalopram due to inability to afford pharmacy costs"*, *"Family unable to afford bus fare for Special Court trial appearance"*).
+6. **Behavioral Touchpoint Lapses**:
+   - Unscheduled drops in check-in frequency often correlate with migration in search of daily-wage work or phone service disconnections due to unpaid mobile recharges.
+
+---
+
+### 8.2 How We Let Victims Get the Grant (Disbursement Pipeline)
+The system eliminates bureaucratic bottlenecks by transforming statutory entitlements into an **automated, milestone-driven Direct Benefit Transfer (DBT) workflow**:
+
+```mermaid
+sequenceDiagram
+    participant V as Atrocity Victim / Complainant
+    participant NM as Nyaya-Manas Engine
+    participant DM as District Magistrate & Welfare Cell
+    participant PFMS as State Treasury / PFMS (DBT Gateway)
+    participant Bank as Victim Aadhaar-Linked Bank Account
+
+    V->>NM: Registers FIR / Reports Financial Distress
+    NM->>NM: Calculate Entitlement under Annexure-I (e.g. ₹8,25,000)
+    NM->>DM: Push "Fast-Track Rule 12(4) DBT Recommendation" to DM Dashboard
+    DM->>DM: Reviews Case Dossier & Taps "Approve & Disburse Compensation"
+    DM->>PFMS: POST /compensation/disburse (Stage, Amount, Treasury Ref)
+    PFMS->>Bank: Electronic Direct Benefit Transfer (RBI e-Kuber / PFMS)
+    Bank-->>V: Instant SMS Alert: Relief Credited to Bank Account
+    NM-->>V: Visual Progress Bar Updated in Mobile App (e.g. 50% Disbursed)
+```
+
+* **Step 1: Automatic Entitlement Calculation**:
+  - The system checks the registered FIR section against the statutory schedule (e.g. Rape $\rightarrow$ ₹8,25,000; Murder $\rightarrow$ ₹8,50,000; Arson $\rightarrow$ ₹4,00,000).
+* **Step 2: Milestone-Triggered Tranches under Rule 12(4)**:
+  - **Tranche 1 (25% to 50%)**: Disbursed within 7 days of FIR registration (pre-chargesheet immediate survival grant).
+  - **Tranche 2 (50% to 25%)**: Disbursed upon filing of Chargesheet (monitored by the Rule 7 60-day countdown timer).
+  - **Tranche 3 (Remaining 25%)**: Disbursed upon conviction or conclusion of trial in the Special Court.
+* **Step 3: AI Auto-Decide Recommendation**:
+  - The AI Decision Engine (`POST /cases/auto-decide`) automatically generates statutory intervention packages:
+    * `"Fast-Track 50% Rule 12(4) Statutory Relief Disbursement (₹4,12,500)"`.
+* **Step 4: One-Click Magistrate Authorization**:
+  - In `district_magistrate_view_screen.dart`, the District Magistrate reviews the case and taps **"Approve & Disburse Compensation"**.
+  - Calls `POST /api/v1/nyaya-manas/compensation/disburse`, logging an immutable record in `nyaya_compensations`.
+* **Step 5: Direct Benefit Transfer (DBT)**:
+  - Generates an official Treasury/PFMS transfer reference number (e.g. `DBT-TREASURY-UP-2026-8812`) and credits the victim's Aadhaar-linked bank account without middleman leakage.
+
+---
+
+### 8.3 Where Are We Listing the Grants From? (Statutory Schedules & Portals)
+
+#### 1. The Statutory Master Schedule (Where the Grant Amounts Come From)
+All compensation numbers in Nyaya-Manas are grounded in statutory Indian law:
+* **Statutory Source**: **Annexure-I of the Scheduled Castes and the Scheduled Tribes (Prevention of Atrocities) Amendment Rules, 2016** (notified in the Gazette of India by the **Ministry of Social Justice and Empowerment - MoSJE**, Govt. of India).
+* **Entitlement Slabs**:
+  - **Murder / Death of victim (Sec 3(2)(v))**: **₹8,50,000** + monthly pension of ₹5,000/month to surviving spouse/children + employment + educational support.
+  - **Rape / Gang Rape (Sec 3(2)(v))**: **₹8,25,000** (50% on medical report, 50% on chargesheet).
+  - **Permanent Incapacity / Grievous Hurt (Sec 3(2)(va))**: **₹5,00,000** to **₹8,50,000** depending on disability percentage.
+  - **Arson / Destruction of Dwelling (Sec 3(2)(va))**: **₹4,00,000** to **₹8,50,000** + full reconstruction of brick house under Pradhan Mantri Awas Yojana (PMAY).
+  - **Caste Insult, Intimidation & Public Humiliation (Sec 3(1)(r), 3(1)(s))**: **₹1,00,000** to **₹2,00,000**.
+  - **Social & Economic Boycott (Sec 3(1)(za))**: **₹1,00,000** + restoration of livelihood and agricultural access.
+
+---
+
+#### 2. Official Government Portals Used for Listing & Processing Grants
+
+| # | Government Portal Name | Portal URL / Authority | How Nyaya-Manas Integrates / Uses It |
+|---|:---|:---|:---|
+| **1** | **National Helpline for Atrocity Alleviation (NHAA) Portal** | **`14566.in`**<br>*(Ministry of Social Justice & Empowerment - MoSJE)* | The central grievance portal where atrocity dockets and relief sanctions are tracked at the national level. |
+| **2** | **Public Financial Management System (PFMS) & DBT Bharat** | **`pfms.nic.in`** / **`dbtbharat.gov.in`**<br>*(Ministry of Finance & Cabinet Secretariat)* | Electronic payment gateway for disbursing relief directly into Aadhaar-seeded bank accounts (e-Kuber / RBI). |
+| **3** | **Integrated Atrocity Management & State SC/ST Welfare Portals** | **`socialjustice.gov.in`** & State e-District Portals<br>*(State SC/ST Welfare Depts)* | District Magistrate portal where budget appropriations and treasury sanctions are authorized. |
+| **4** | **National Legal Services Authority (NALSA) Portal** | **`nalsa.gov.in`**<br>*(Supreme Court of India / Legal Services)* | Integrates the **Victim Compensation Scheme under Section 357A CrPC / Bharatiya Nagarik Suraksha Sanhita (BNSS)** for interim legal aid grants. |
+| **5** | **MyScheme Government Portal** | **`myscheme.gov.in`**<br>*(Ministry of Electronics & IT / Digital India)* | National centralized repository listing all Central & State welfare, rehabilitation, educational, and livelihood schemes for SC/ST beneficiaries. |
+
+---
+
+#### 3. Where Grants Are Displayed & Managed in Our App Screens
+
+* **1. Dedicated SC/ST Relief Portal Screen (`sc_st_relief_screen.dart`)**:
+  - Full statutory compensation calculator based on Annexure-I of the 2016 Amendment Rules.
+  - Select offense type (`rape`, `murder`, `grievous_hurt`, `arson`, `caste_violence`) and stage (`fir`, `chargesheet`, `conviction`).
+  - Displays total entitlement, current tranche amount, caste verification status, and DBT readiness.
+* **2. Victim View Screen (`victim_view_screen.dart` Tab 2: "Relief & Courts")**:
+  - Live animated visual progress bar tracking statutory relief (e.g. `₹4,12,500 / ₹8,25,000 Disbursed`).
+  - Highlights current milestone and indicates when the next tranche will be unlocked upon chargesheet submission.
+* **3. Counsellor View Screen (`counsellor_view_screen.dart` Tab 2: "AI Decision Engine")**:
+  - Ingests financial distress findings and auto-generates statutory relief dispatch directives for the District Welfare Cell.
+* **4. District Magistrate Command Screen (`district_magistrate_view_screen.dart`)**:
+  - Actionable table of pending compensation requests with a one-click **"Approve & Disburse Compensation"** button that executes the payment order.
+
+---
+
+## 🗂️ 9. Complete Codebase & API Traceability Directory
 
 ```
 SIH26 Repository

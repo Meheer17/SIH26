@@ -156,8 +156,14 @@ class _PersonnelWellnessTabState extends State<PersonnelWellnessTab> with Single
             'Full granular control over what metrics are synced. Revoke any permission at any time with total institutional trust.',
             style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
           ),
-          const SizedBox(height: 12),
-
+          SwitchListTile(
+            title: const Text('Air-Gapped Local Enclave Processing', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            subtitle: const Text('Process all acoustic & diary telemetry strictly inside device enclave.', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+            value: _airGappedLocalEnclave,
+            activeTrackColor: const Color(0xFF0284C7),
+            onChanged: (v) => setState(() => _airGappedLocalEnclave = v),
+          ),
+          const Divider(color: Color(0xFFE2E8F0)),
           SwitchListTile(
             title: const Text('Wearable Vitals Sync (RHR & HRV)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
             subtitle: const Text('Sync fitness tracker data for physical recovery tracking.', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
