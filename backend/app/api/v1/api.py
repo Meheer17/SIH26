@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, auth, admin, consent, ai, alerts, sos, apps, cin, screening, clinical, epidemic, covert_sos, mind_family, nyaya_manas, raksha_setu, medikiosk
+from app.api.v1.endpoints import health, auth, admin, consent, ai, alerts, sos, apps, cin, screening, clinical, epidemic, covert_sos, mind_family, nyaya_manas, raksha_setu, medikiosk, phc, digital_twin
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["Health Check"])
@@ -18,6 +18,9 @@ api_router.include_router(raksha_setu.router, prefix="/personnel-wellness", tags
 api_router.include_router(medikiosk.router, prefix="/medikiosk", tags=["MediKiosk AI Clinical History & OPD Intelligence"])
 api_router.include_router(medikiosk.router, prefix="/apps/medikiosk", tags=["MediKiosk AI Clinical History & OPD Intelligence"])
 api_router.include_router(medikiosk.router, prefix="/opd-kiosk", tags=["MediKiosk AI Clinical History & OPD Intelligence"])
+api_router.include_router(phc.router, prefix="/phc", tags=["Personal Health Companion (PHC)"])
+api_router.include_router(phc.router, prefix="/apps/phc", tags=["Personal Health Companion (PHC)"])
+api_router.include_router(phc.router, prefix="/personal-health", tags=["Personal Health Companion (PHC)"])
 api_router.include_router(cin.router, prefix="/cin", tags=["Community Immunity Network (CIN)"])
 api_router.include_router(screening.router, prefix="/screening", tags=["Non-Invasive Diagnostic Screening"])
 api_router.include_router(clinical.router, prefix="/clinical", tags=["Clinical Engine & Dual-Path Prescriptions"])
@@ -25,6 +28,9 @@ api_router.include_router(epidemic.router, prefix="/epidemic", tags=["Epidemic H
 api_router.include_router(covert_sos.router, prefix="/covert-sos", tags=["Covert Stealth SOS & Dead Man Switch"])
 api_router.include_router(mind_family.router, prefix="/mind-family", tags=["Cultural AI Counselor & Family Health Graph"])
 api_router.include_router(mind_family.router, prefix="/mind", tags=["Cultural AI Counselor & Family Health Graph"])
+api_router.include_router(digital_twin.router, prefix="/digital-twin", tags=["Longitudinal 3D Digital Twin & Health Simulation Engine"])
+api_router.include_router(digital_twin.router, prefix="/apps/digital-twin", tags=["Longitudinal 3D Digital Twin & Health Simulation Engine"])
+api_router.include_router(digital_twin.router, prefix="/twin", tags=["Longitudinal 3D Digital Twin & Health Simulation Engine"])
 
 
 

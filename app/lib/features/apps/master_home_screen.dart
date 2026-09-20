@@ -3,6 +3,7 @@ import '../../core/auth/auth_service.dart';
 import '../../core/api/api_client.dart';
 import '../creative/voice_stress_studio_screen.dart';
 import '../creative/panic_disguise_screen.dart';
+import '../twin/digital_twin_screen.dart';
 
 class MasterHomeScreen extends StatefulWidget {
   final Function(int) onSelectApp;
@@ -329,19 +330,20 @@ class _MasterHomeScreenState extends State<MasterHomeScreen> {
                   _buildProblemStatementCard(
                     context: context,
                     appIndex: 4,
-                    title: 'Personal Health & Field Companion',
-                    subtitle: 'Vitals Monitoring • ASHA Copilot • Heat Alerts • Digital Twin',
+                    title: 'Personal Health Companion (PHC)',
+                    subtitle: 'Continuous Vitals • On-Device Edge AI • IMD Disaster Sentinel • SOS',
                     description:
-                        'Continuous vitals tracking, ASHA worker rural triage, 3D organ health twin, and environmental heat advisories.',
+                        'Privacy-first, AI-powered health monitoring platform for disaster-prone and underserved populations. Continuous physiological tracking, on-device TFLite anomaly engine, hyperlocal environmental fusion, lockscreen Medical ID, and Ayushman PM-JAY integration.',
                     icon: Icons.health_and_safety_rounded,
                     gradientColors: [const Color(0xFFDB2777), const Color(0xFFBE185D)],
-                    badgeText: 'FIELD CARE',
+                    badgeText: 'PHC EDGE AI',
                     badgeColor: const Color(0xFFDB2777),
                     features: [
-                      '3D Longitudinal Digital Twin Organ Scores',
-                      'ASHA Worker Rural Maternal Triage',
-                      'Continuous Vitals & Fall Detection SOS',
-                      'Real-time WBGT Heat Stress Advisories',
+                      'Continuous PPG, SpO2 & Wearable BLE Sensor Fusion',
+                      'On-Device Edge AI (<50ms TFLite Anomaly Engine)',
+                      'IMD Heatwave Orange Alert & AQI Pollution Sentinel',
+                      'Emergency SOS with 30s Countdown & Lockscreen Medical ID',
+                      'Caregiver Remote Monitoring & Ayushman Tele-Sanjeevani',
                     ],
                   ),
                   const SizedBox(height: 28),
@@ -462,6 +464,64 @@ class _MasterHomeScreenState extends State<MasterHomeScreen> {
             ],
           ),
           const SizedBox(height: 12),
+          // 3D Digital Twin & Human Avatar Primary Button
+          InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const DigitalTwinScreen()),
+              );
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF38BDF8), width: 1.2),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x220284C7), blurRadius: 8, offset: Offset(0, 2)),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0284C7).withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.hub_rounded, color: Color(0xFF38BDF8), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          '🧠 3D Patient Digital Twin & Talking Avatar',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          'Feature 12 • 5-Organ Simulation • What-If Engine • AI Voice Briefing',
+                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFF38BDF8), size: 14),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Row(
             children: [
               Expanded(

@@ -4,9 +4,6 @@ import 'mental_health_distress/mental_health_app_shell.dart';
 import 'personnel_wellness/personnel_wellness_app_shell.dart';
 import 'opd_kiosk_intelligence/opd_kiosk_app_shell.dart';
 import 'personal_health_companion/personal_health_app_shell.dart';
-import 'legal_aid_app_shell.dart';
-import 'witness_shield_app_shell.dart';
-import 'health_intelligence_app_shell.dart';
 
 class ProblemStatementShell extends StatefulWidget {
   const ProblemStatementShell({super.key});
@@ -53,11 +50,11 @@ class _ProblemStatementShellState extends State<ProblemStatementShell> {
     },
     {
       'index': 4,
-      'title': 'Personal Health & Field Companion',
-      'subtitle': 'Continuous Vitals • ASHA Copilot • Heat Alerts • Digital Twin',
+      'title': 'Personal Health Companion (PHC)',
+      'subtitle': 'Continuous Vitals • Edge AI • IMD Disaster Sentinel • SOS',
       'icon': Icons.health_and_safety_rounded,
       'color': const Color(0xFFDB2777),
-      'badge': 'FIELD CARE',
+      'badge': 'PHC EDGE AI',
     },
   ];
 
