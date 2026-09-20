@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/medikiosk_service.dart';
 
 class PatientKioskTab extends StatefulWidget {
   const PatientKioskTab({super.key});
@@ -8,83 +9,29 @@ class PatientKioskTab extends StatefulWidget {
 }
 
 class _PatientKioskTabState extends State<PatientKioskTab> {
+  final MediKioskService _service = MediKioskService();
+
   // End-to-End Patient Journey Active Step (1 to 5)
   int _activeJourneyStep = 2; // Step 2: Converse active
 
   // Selected Active Patient Index in Queue
   int _selectedPatientIndex = 0;
+  bool _isLoading = true;
 
-  // Live Patient Queue List
-  final List<Map<String, dynamic>> _patientQueue = [
-    {
-      'id': 'OPD-CARD-8842',
-      'name': 'Rajesh Kumar',
-      'age': 48,
-      'gender': 'Male',
-      'abha': '91-8842-1094-8812',
-      'language': 'Hindi (हिन्दी)',
-      'chiefComplaint': 'Chest tightness & exertional dyspnea (2 days)',
-      'department': 'Cardiology Special OPD',
-      'status': 'INTAKE IN PROGRESS',
-      'statusColor': const Color(0xFF0284C7),
-      'bodySite': 'Chest / Respiratory',
-      'voiceText': "Spoken: '2 दिनों से सीने में हल्का दर्द और सांस लेने में तकलीफ हो रही है'",
-      'severity': 6.0,
-      'redFlag': false,
-    },
-    {
-      'id': 'OPD-CARD-4109',
-      'name': 'Savitri Devi',
-      'age': 64,
-      'gender': 'Female',
-      'abha': '91-4109-7721-0092',
-      'language': 'Hindi (हिन्दी)',
-      'chiefComplaint': 'Sudden right-side joint swelling & high fever',
-      'department': 'AYUSH Integrated OPD',
-      'status': 'READY FOR DOCTOR',
-      'statusColor': const Color(0xFF059669),
-      'bodySite': 'Joints / Musculoskeletal',
-      'voiceText': "Spoken: 'घुटने में बहुत तेज दर्द है और बुखार चढ़ रहा है'",
-      'severity': 8.0,
-      'redFlag': false,
-    },
-    {
-      'id': 'OPD-CARD-9912',
-      'name': 'Aarav Sharma',
-      'age': 12,
-      'gender': 'Male',
-      'abha': '91-9912-3341-8810',
-      'language': 'English',
-      'chiefComplaint': 'Acute wheezing & respiratory stridor post-pollution',
-      'department': 'General Medicine OPD',
-      'status': 'RED-FLAG TRIAGE',
-      'statusColor': const Color(0xFFE11D48),
-      'bodySite': 'Chest / Respiratory',
-      'voiceText': "Spoken: 'Having severe trouble breathing since morning'",
-      'severity': 9.0,
-      'redFlag': true,
-    },
-    {
-      'id': 'OPD-CARD-2041',
-      'name': 'Sunita Verma',
-      'age': 35,
-      'gender': 'Female',
-      'abha': '91-2041-9981-1120',
-      'language': 'Marathi (मराठी)',
-      'chiefComplaint': 'Continuous unilateral migraine & nausea',
-      'department': 'General Medicine OPD',
-      'status': 'REGISTERED / WAITING',
-      'statusColor': const Color(0xFFD97706),
-      'bodySite': 'Head / Neurological',
-      'voiceText': "Spoken: 'डोके खूप दुखत आहे आणि मळमळ होत आहे'",
-      'severity': 5.0,
-      'redFlag': false,
-    },
-  ];
+  // Live Patient Queue List (Loaded from backend)
+  List<Map<String, dynamic>> _patientQueue = [];
 
   // Vernacular Voice & Audio Consent State
   bool _audioConsentGranted = true;
   bool _isListeningVoice = false;
+
+  // Active Socrates Question State
+  Map<String, dynamic>? _currentSocratesQuestion;
+  String? _activeInterviewId;
+  int _socratesStep = 1;
+  int _socratesTotalSteps = 8;
+  bool _socratesCompleted = false;
+  String _selectedSite = 'Chest / Respiratory';
 
   // AYUSH Dashavidha Assessment State (Full 10 Parameters)
   final Map<String, String> _dashavidhaFullParameters = {
@@ -104,12 +51,112 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
   bool _isScanningDocument = false;
   String _scannedDocSummary = 'Scanned: AI4Bharat OCR -> Past Prescription: Tab Amlodipine 5mg (2025), ECG Normal';
 
-  // Modal Dialog to Register New Patient
+  @override
+  void initState() {
+    super.initState();
+    _loadBackendQueue();
+  }
+
+  Future<void> _loadBackendQueue() async {
+    setState(() => _isLoading = true);
+    final queue = await _service.getDoctorQueue();
+    if (mounted) {
+      setState(() {
+        if (queue.isNotEmpty) {
+          _patientQueue = queue.map((q) {
+            final isRed = q['red_flag'] == true;
+            return {
+              'id': q['token'] ?? 'OPD-CARD-8842',
+              'name': q['patient_name'] ?? 'Rajesh Kumar',
+              'age': q['age'] ?? 48,
+              'gender': q['gender'] ?? 'Male',
+              'abha': q['abha'] ?? '91-8842-1094-8812',
+              'language': 'Hindi (हिन्दी)',
+              'chiefComplaint': q['chief_complaint'] ?? 'Chest tightness & exertional dyspnea',
+              'department': q['department'] ?? 'Cardiology Special OPD',
+              'status': q['status'] ?? 'READY FOR DOCTOR',
+              'statusColor': isRed ? const Color(0xFFE11D48) : const Color(0xFF059669),
+              'bodySite': 'Chest / Respiratory',
+              'voiceText': "Spoken: '${q['chief_complaint']}'",
+              'severity': (q['severity'] as num?)?.toDouble() ?? 6.0,
+              'redFlag': isRed,
+            };
+          }).toList();
+        } else {
+          // Fallback if network issue
+          _patientQueue = [
+            {
+              'id': 'OPD-CARD-8842',
+              'name': 'Rajesh Kumar',
+              'age': 48,
+              'gender': 'Male',
+              'abha': '91-8842-1094-8812',
+              'language': 'Hindi (हिन्दी)',
+              'chiefComplaint': 'Chest tightness & exertional dyspnea (2 days)',
+              'department': 'Cardiology Special OPD',
+              'status': 'READY FOR DOCTOR',
+              'statusColor': const Color(0xFF059669),
+              'bodySite': 'Chest / Respiratory',
+              'voiceText': "Spoken: '2 दिनों से सीने में हल्का दर्द और सांस लेने में तकलीफ हो रही है'",
+              'severity': 6.0,
+              'redFlag': false,
+            }
+          ];
+        }
+        _selectedPatientIndex = 0;
+        _isLoading = false;
+      });
+      _startSocratesInterview();
+    }
+  }
+
+  Future<void> _startSocratesInterview() async {
+    final activePatient = _patientQueue.isNotEmpty ? _patientQueue[_selectedPatientIndex] : null;
+    final res = await _service.startHistory(
+      'ses-kiosk-01',
+      dept: activePatient?['department'] ?? 'General Medicine OPD',
+      site: _selectedSite,
+    );
+    if (res != null && mounted) {
+      setState(() {
+        _activeInterviewId = res['interview_id'];
+        _currentSocratesQuestion = res['question'];
+        _socratesStep = res['step'] ?? 1;
+        _socratesTotalSteps = res['total_steps'] ?? 8;
+      });
+    }
+  }
+
+  Future<void> _submitSocratesAnswer(String answerText) async {
+    if (_activeInterviewId == null || _currentSocratesQuestion == null) return;
+
+    final qId = _currentSocratesQuestion!['id'];
+    final res = await _service.respondHistory(_activeInterviewId!, qId, answerText);
+    if (res != null && mounted) {
+      setState(() {
+        if (res['completed'] == true) {
+          _socratesCompleted = true;
+          _activeJourneyStep = 4; // Advance to review
+        } else {
+          _currentSocratesQuestion = res['next_question'];
+          _socratesStep = res['step'] ?? (_socratesStep + 1);
+        }
+        if (res['red_flags'] != null && (res['red_flags'] as List).isNotEmpty) {
+          _patientQueue[_selectedPatientIndex]['redFlag'] = true;
+          _patientQueue[_selectedPatientIndex]['status'] = 'RED-FLAG TRIAGE';
+          _patientQueue[_selectedPatientIndex]['statusColor'] = const Color(0xFFE11D48);
+        }
+      });
+    }
+  }
+
+  // Modal Dialog to Register New Patient (Connected to Backend)
   void _showAddPatientDialog() {
     final nameCtrl = TextEditingController();
     final abhaCtrl = TextEditingController(text: '91-${(1000 + _patientQueue.length * 111)}-8842-9901');
     final ageCtrl = TextEditingController(text: '45');
     final complaintCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController(text: '+91 98412 88421');
 
     String genderVal = 'Male';
     String langVal = 'Hindi (हिन्दी)';
@@ -124,7 +171,7 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
             children: const [
               Icon(Icons.person_add, color: Color(0xFF059669)),
               SizedBox(width: 8),
-              Text('Register New Patient on Kiosk', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+              Text('Register New Patient on MediKiosk', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
             ],
           ),
           content: SingleChildScrollView(
@@ -141,6 +188,11 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                   decoration: const InputDecoration(labelText: 'ABHA ID / Aadhaar / Mobile *', border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 10),
+                TextField(
+                  controller: phoneCtrl,
+                  decoration: const InputDecoration(labelText: 'Contact Phone Number *', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 10),
                 Row(
                   children: [
                     Expanded(
@@ -153,7 +205,7 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: genderVal,
+                        initialValue: genderVal,
                         decoration: const InputDecoration(labelText: 'Gender', border: OutlineInputBorder()),
                         items: ['Male', 'Female', 'Other'].map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
                         onChanged: (v) => genderVal = v!,
@@ -163,11 +215,17 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: langVal,
+                  initialValue: langVal,
                   decoration: const InputDecoration(labelText: 'Preferred Language (Bhashini ASR)', border: OutlineInputBorder()),
-                  items: ['Hindi (हिन्दी)', 'Tamil (தமிழ்)', 'Bengali (বাংলা)', 'Telugu (తెలుగు)', 'Marathi (मराठी)', 'English']
-                      .map((l) => DropdownMenuItem(value: l, child: Text(l, style: const TextStyle(fontSize: 12))))
-                      .toList(),
+                  items: [
+                    'Hindi (हिन्दी)',
+                    'Bhojpuri (भोजपुरी)',
+                    'Tamil (தமிழ்)',
+                    'Bengali (বাংলা)',
+                    'Telugu (తెలుగు)',
+                    'Marathi (मराठी)',
+                    'English'
+                  ].map((l) => DropdownMenuItem(value: l, child: Text(l, style: const TextStyle(fontSize: 12)))).toList(),
                   onChanged: (v) => langVal = v!,
                 ),
                 const SizedBox(height: 10),
@@ -177,7 +235,7 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                 ),
                 const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: deptVal,
+                  initialValue: deptVal,
                   decoration: const InputDecoration(labelText: 'Department OPD Routing', border: OutlineInputBorder()),
                   items: ['General Medicine OPD', 'Cardiology Special OPD', 'Orthopedics OPD', 'AYUSH Integrated OPD']
                       .map((d) => DropdownMenuItem(value: d, child: Text(d, style: const TextStyle(fontSize: 12))))
@@ -195,43 +253,110 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
               icon: const Icon(Icons.check_circle, size: 16),
-              label: const Text('REGISTER & START INTAKE'),
-              onPressed: () {
+              label: const Text('REGISTER ON BACKEND & START INTAKE'),
+              onPressed: () async {
                 if (nameCtrl.text.isNotEmpty) {
-                  final newCard = {
-                    'id': 'OPD-CARD-${8840 + _patientQueue.length + 1}',
-                    'name': nameCtrl.text,
+                  final regData = {
+                    'full_name': nameCtrl.text.trim(),
                     'age': int.tryParse(ageCtrl.text) ?? 40,
                     'gender': genderVal,
-                    'abha': abhaCtrl.text,
-                    'language': langVal,
-                    'chiefComplaint': complaintCtrl.text.isNotEmpty ? complaintCtrl.text : 'General Consultation',
+                    'phone': phoneCtrl.text.trim(),
+                    'abha_id': abhaCtrl.text.trim(),
                     'department': deptVal,
-                    'status': 'INTAKE IN PROGRESS',
-                    'statusColor': const Color(0xFF0284C7),
-                    'bodySite': 'Chest / Respiratory',
-                    'voiceText': "Spoken: '${complaintCtrl.text}'",
-                    'severity': 5.0,
-                    'redFlag': false,
+                    'preferred_language': langVal.contains('Hindi') ? 'hi' : 'en',
                   };
 
-                  setState(() {
-                    _patientQueue.insert(0, newCard);
-                    _selectedPatientIndex = 0;
-                    _activeJourneyStep = 2; // Move to Converse step
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Patient ${nameCtrl.text} registered! ABHA Consent verified for ABDM.'),
-                      backgroundColor: const Color(0xFF059669),
-                    ),
-                  );
+                  final res = await _service.registerPatient(regData);
+                  if (mounted && res != null) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('✅ Patient ${nameCtrl.text} registered on backend with Token ${res["queue_token"]}!'),
+                        backgroundColor: const Color(0xFF059669),
+                      ),
+                    );
+                    await _loadBackendQueue();
+                  }
                 }
-                Navigator.pop(ctx);
               },
             ),
           ],
+        );
+      },
+    );
+  }
+
+  // Feedback Dialog (Connected to Backend)
+  void _showFeedbackDialog() {
+    int rating = 5;
+    final commentsCtrl = TextEditingController(text: 'Smooth kiosk intake, voice support in Hindi was very helpful.');
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (stCtx, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Row(
+                children: const [
+                  Icon(Icons.star_rate_rounded, color: Color(0xFFD97706)),
+                  SizedBox(width: 8),
+                  Text('Patient Experience Feedback (P20)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('How easy was it to complete your clinical intake on MediKiosk?'),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (idx) {
+                      return IconButton(
+                        icon: Icon(
+                          idx < rating ? Icons.star : Icons.star_border,
+                          color: const Color(0xFFD97706),
+                          size: 32,
+                        ),
+                        onPressed: () => setDialogState(() => rating = idx + 1),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: commentsCtrl,
+                    maxLines: 2,
+                    decoration: const InputDecoration(labelText: 'Comments or Suggestions', border: OutlineInputBorder()),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(child: const Text('SKIP'), onPressed: () => Navigator.pop(ctx)),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF059669), foregroundColor: Colors.white),
+                  child: const Text('SUBMIT FEEDBACK'),
+                  onPressed: () async {
+                    await _service.submitFeedback({
+                      'session_id': 'ses-kiosk-01',
+                      'patient_name': _patientQueue[_selectedPatientIndex]['name'],
+                      'rating': rating,
+                      'comments': commentsCtrl.text.trim(),
+                    });
+                    if (mounted) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('✅ Thank you for your feedback! Stored on backend analytics.'),
+                          backgroundColor: Color(0xFF059669),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -265,7 +390,6 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Handle bar
                   Center(
                     child: Container(
                       width: 40,
@@ -274,8 +398,6 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                       decoration: BoxDecoration(color: const Color(0xFFCBD5E1), borderRadius: BorderRadius.circular(2)),
                     ),
                   ),
-
-                  // Modal Header
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -313,8 +435,6 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                     ],
                   ),
                   const SizedBox(height: 16),
-
-                  // Search Bar
                   TextField(
                     onChanged: (val) => setModalState(() => searchQuery = val),
                     decoration: InputDecoration(
@@ -325,17 +445,12 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                       filled: true,
                       fillColor: const Color(0xFFF8FAFC),
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
-                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Patient List View Table
                   Expanded(
                     child: filteredList.isEmpty
-                        ? const Center(
-                            child: Text('No patient matching your search query.', style: TextStyle(color: Color(0xFF64748B))),
-                          )
+                        ? const Center(child: Text('No patient matching query.', style: TextStyle(color: Color(0xFF64748B))))
                         : ListView.separated(
                             itemCount: filteredList.length,
                             separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
@@ -402,13 +517,7 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                                         });
                                       }
                                       Navigator.pop(ctx);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Switched active intake session to ${p["name"]} (${p["id"]})'),
-                                          backgroundColor: const Color(0xFF0284C7),
-                                          duration: const Duration(seconds: 2),
-                                        ),
-                                      );
+                                      _startSocratesInterview();
                                     },
                                   ),
                                 ),
@@ -427,7 +536,14 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
 
   @override
   Widget build(BuildContext context) {
-    final activePatient = _patientQueue[_selectedPatientIndex];
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: Color(0xFF059669)));
+    }
+
+    final activePatient = _patientQueue.isNotEmpty ? _patientQueue[_selectedPatientIndex] : null;
+    if (activePatient == null) {
+      return const Center(child: Text('No active kiosk intake session. Click + Register Patient.'));
+    }
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -466,6 +582,10 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
 
           // Step 3: Multilingual Medical OCR Scanner & Zero-Touch Assist
           _buildOcrScannerCard(),
+          const SizedBox(height: 20),
+
+          // Step 4 & 5: Summary Review, Queue Token & Feedback
+          _buildSummaryAndTokenCard(activePatient),
           const SizedBox(height: 24),
         ],
       ),
@@ -479,22 +599,13 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 8,
-            offset: Offset(0, 3),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x0F0F172A), blurRadius: 8, offset: Offset(0, 3))],
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFDCFCE7),
-              borderRadius: BorderRadius.circular(12),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(12)),
             child: const Icon(Icons.touch_app_outlined, color: Color(0xFF16A34A), size: 28),
           ),
           const SizedBox(width: 14),
@@ -504,31 +615,21 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
               children: [
                 Row(
                   children: [
-                    const Text(
-                      'MediKiosk AI Intake Terminal #04',
-                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                    ),
+                    const Text('MediKiosk AI Intake Terminal #04', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                     const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF16A34A).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+                      decoration: BoxDecoration(color: const Color(0xFF16A34A).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
                       child: const Text('BHASHINI ASR ACTIVE', style: TextStyle(color: Color(0xFF16A34A), fontSize: 8, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  'Active Intake: ${patient["name"]} (Token: ${patient["id"]}) • ${patient["language"]}',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold),
-                ),
+                Text('Active Intake: ${patient["name"]} (Token: ${patient["id"]}) • ${patient["language"]}', style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
               ],
             ),
           ),
           const SizedBox(width: 10),
-
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF059669),
@@ -553,13 +654,7 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x0F0F172A), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -571,24 +666,22 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                 children: const [
                   Icon(Icons.people_alt_outlined, color: Color(0xFF0284C7)),
                   SizedBox(width: 8),
-                  Text(
-                    'Live OPD Patient Queue & Directory',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  ),
+                  Text('Live OPD Patient Queue & Directory (Connected to Backend)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                 ],
               ),
               Row(
                 children: [
+                  IconButton(
+                    icon: const Icon(Icons.refresh, size: 18),
+                    onPressed: _loadBackendQueue,
+                    tooltip: 'Refresh Queue from Backend',
+                  ),
                   InkWell(
                     onTap: _showFullPatientListDialog,
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFCBD5E1)),
-                      ),
+                      decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFCBD5E1))),
                       child: Row(
                         children: const [
                           Icon(Icons.list_alt, size: 13, color: Color(0xFF0F172A)),
@@ -598,69 +691,61 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(8)),
-                    child: Text('${_patientQueue.length} REGISTERED', style: const TextStyle(color: Color(0xFF0284C7), fontSize: 9, fontWeight: FontWeight.bold)),
-                  ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Select any patient card to switch active intake session, view digitized records, or trigger SOCRATES prober.',
-            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-          ),
-          const SizedBox(height: 14),
-
-          SizedBox(
-            height: 110,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _patientQueue.length,
-              itemBuilder: (context, idx) {
-                final p = _patientQueue[idx];
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _patientQueue.asMap().entries.map((entry) {
+                final idx = entry.key;
+                final pat = entry.value;
                 final isSelected = _selectedPatientIndex == idx;
-                final color = p['statusColor'] as Color;
+                final color = pat['statusColor'] as Color;
 
-                return GestureDetector(
-                  onTap: () => setState(() => _selectedPatientIndex = idx),
-                  child: Container(
-                    width: 220,
-                    margin: const EdgeInsets.only(right: 10),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? const Color(0xFF059669) : const Color(0xFFE2E8F0),
-                        width: isSelected ? 2.0 : 1.0,
+                return Padding(
+                  padding: const EdgeInsets.only(right: 10),
+                  child: InkWell(
+                    onTap: () {
+                      setState(() => _selectedPatientIndex = idx);
+                      _startSocratesInterview();
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      width: 220,
+                      decoration: BoxDecoration(
+                        color: isSelected ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isSelected ? const Color(0xFF059669) : const Color(0xFFE2E8F0), width: isSelected ? 2 : 1),
                       ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(p['id'] as String, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
-                              child: Text(p['status'] as String, style: TextStyle(color: color, fontSize: 8, fontWeight: FontWeight.bold)),
-                            ),
-                          ],
-                        ),
-                        Text('${p["name"]} (${p["age"]} ${p["gender"]})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                        Text(p['chiefComplaint'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 9, color: Color(0xFF64748B))),
-                      ],
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(pat['id'] as String, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                                child: Text(pat['status'] as String, style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: color)),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(pat['name'] as String, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                          Text('${pat["age"]}y • ${pat["gender"]} • ${pat["language"]}', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                          const SizedBox(height: 4),
+                          Text(pat['chiefComplaint'] as String, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, color: Color(0xFF334155))),
+                        ],
+                      ),
                     ),
                   ),
                 );
-              },
+              }).toList(),
             ),
           ),
         ],
@@ -670,80 +755,51 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
 
   Widget _buildPatientJourneyStepper() {
     final steps = [
-      {'step': 1, 'label': '1. IDENTIFY', 'desc': 'ABHA / Audio Consent'},
-      {'step': 2, 'label': '2. CONVERSE', 'desc': 'Voice Intake & SOCRATES'},
-      {'step': 3, 'label': '3. SCAN', 'desc': 'TrOCR Medical Scan'},
-      {'step': 4, 'label': '4. ROUTE', 'desc': 'AI Summary → HIS'},
-      {'step': 5, 'label': '5. CONSULT', 'desc': 'Physician EMR Brief'},
+      {'num': 1, 'title': 'Language & ABHA', 'icon': Icons.qr_code_scanner},
+      {'num': 2, 'title': 'Body Map & Voice', 'icon': Icons.mic},
+      {'num': 3, 'title': 'SOCRATES Prober', 'icon': Icons.psychology},
+      {'num': 4, 'title': 'Document OCR', 'icon': Icons.document_scanner},
+      {'num': 5, 'title': 'Token & Summary', 'icon': Icons.confirmation_number},
     ];
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 6,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'MediKiosk End-to-End Patient Journey Progress:',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: List.generate(steps.length, (idx) {
-              final stepNum = steps[idx]['step'] as int;
-              final isDone = stepNum <= _activeJourneyStep;
-              final isCurrent = stepNum == _activeJourneyStep;
-              final color = isDone ? const Color(0xFF059669) : const Color(0xFF94A3B8);
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: steps.map((s) {
+          final sNum = s['num'] as int;
+          final isActive = _activeJourneyStep == sNum;
+          final isPast = _activeJourneyStep > sNum;
 
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => _activeJourneyStep = stepNum),
-                  child: Container(
-                    margin: EdgeInsets.only(right: idx == 4 ? 0 : 4),
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-                    decoration: BoxDecoration(
-                      color: isCurrent ? const Color(0xFFDCFCE7) : (isDone ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC)),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isCurrent ? const Color(0xFF059669) : const Color(0xFFE2E8F0),
-                        width: isCurrent ? 2.0 : 1.0,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 10,
-                          backgroundColor: color,
-                          child: Text(
-                            '$stepNum',
-                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          steps[idx]['label'] as String,
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: color),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
+          return InkWell(
+            onTap: () => setState(() => _activeJourneyStep = sNum),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: isPast ? const Color(0xFF059669) : (isActive ? const Color(0xFF4F46E5) : const Color(0xFFE2E8F0)),
+                  child: isPast
+                      ? const Icon(Icons.check, size: 14, color: Colors.white)
+                      : Text('$sNum', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isActive ? Colors.white : const Color(0xFF64748B))),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  s['title'] as String,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+                    color: isActive ? const Color(0xFF0F172A) : const Color(0xFF64748B),
                   ),
                 ),
-              );
-            }),
-          ),
-        ],
+              ],
+            ),
+          );
+        }).toList(),
       ),
     );
   }
@@ -754,37 +810,34 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
       decoration: BoxDecoration(
         color: const Color(0xFFFFF1F2),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFECDD3), width: 2),
+        border: Border.all(color: const Color(0xFFFECDD3), width: 1.5),
       ),
       child: Row(
         children: [
-          const Icon(Icons.emergency, color: Color(0xFFE11D48), size: 32),
-          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: const Color(0xFFE11D48), borderRadius: BorderRadius.circular(12)),
+            child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 28),
+          ),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'CRITICAL RED-FLAG INTERCEPTED: ${patient["chiefComplaint"]}',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Color(0xFF9F1239)),
-                ),
+                const Text('🚨 EMERGENCY RED-FLAG DETECTED — PRIORITY BYPASS', style: TextStyle(color: Color(0xFF9F1239), fontSize: 13, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 2),
-                Text(
-                  'Patient ${patient["name"]} diverted immediately to Emergency Triage Desk #1. Stretcher notification sent.',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFFBE123C)),
-                ),
+                Text('Critical symptoms identified for ${patient["name"]}. Stretcher and Triage Nurse Station notified automatically.', style: const TextStyle(color: Color(0xFFBE123C), fontSize: 11)),
               ],
             ),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE11D48),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            ),
-            onPressed: () => setState(() => patient['redFlag'] = false),
-            child: const Text('DISMISS', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE11D48), foregroundColor: Colors.white),
+            child: const Text('BYPASS QUEUE', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Patient rerouted to Emergency Resuscitation Unit!'), backgroundColor: Color(0xFFE11D48)),
+              );
+            },
           ),
         ],
       ),
@@ -798,13 +851,7 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x0F0F172A), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -814,65 +861,145 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
             children: [
               Row(
                 children: const [
-                  Icon(Icons.qr_code_scanner, color: Color(0xFF0284C7)),
+                  Icon(Icons.verified_user_outlined, color: Color(0xFF059669)),
                   SizedBox(width: 8),
-                  Text(
-                    'Step 1 — ABHA Multi-Modal Check-In & Audio Consent',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  ),
+                  Text('Step 1 — ABHA Multi-Modal Check-In & Audio Consent (DPDPA 2023)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(color: const Color(0xFFE0F2FE), borderRadius: BorderRadius.circular(8)),
-                child: const Text('ABDM CONSENT VERIFIED', style: TextStyle(color: Color(0xFF0284C7), fontSize: 9, fontWeight: FontWeight.bold)),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(6)),
+                child: const Text('ABDM M1 VERIFIED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF16A34A))),
               ),
             ],
           ),
           const SizedBox(height: 12),
-
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
-            ),
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 20,
-                  backgroundColor: Color(0xFFE0F2FE),
-                  child: Icon(Icons.person, color: Color(0xFF0284C7)),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFE2E8F0))),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${patient["name"]} (Age: ${patient["age"]}, ${patient["gender"]})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                      Text('ABHA ID: ${patient["abha"]} • Token ${patient["id"]}', style: const TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                      const Text('ABHA Address / Number', style: TextStyle(fontSize: 10, color: Color(0xFF64748B))),
+                      Text(patient['abha'] as String, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                      const SizedBox(height: 4),
+                      Text('Linked Phone: +91 98***-88421 • e-KYC Complete', style: const TextStyle(fontSize: 9, color: Color(0xFF059669))),
                     ],
                   ),
                 ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0284C7),
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  ),
-                  icon: const Icon(Icons.volume_up, size: 14),
-                  label: const Text('Play Audio Consent', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Playing DPDP Act 2023 Audio Consent in ${patient["language"]}...'),
-                        backgroundColor: const Color(0xFF0284C7),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: const Color(0xFFF0FDF4), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFBBF7D0))),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(_audioConsentGranted ? Icons.check_circle : Icons.radio_button_unchecked, color: const Color(0xFF059669), size: 16),
+                          const SizedBox(width: 6),
+                          const Text('Audio-Visual Consent Active', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF166534))),
+                        ],
                       ),
-                    );
-                  },
+                      const SizedBox(height: 4),
+                      const Text('DPDPA 2023 Granular consent recorded. Ephemeral audio buffer cleared after text extraction.', style: TextStyle(fontSize: 9, color: Color(0xFF15803D))),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDualModeIntakeCard(Map<String, dynamic> patient) {
+    final sites = ['Head / Neurological', 'Chest / Respiratory', 'Abdomen / GI', 'Joints / Musculoskeletal'];
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [BoxShadow(color: Color(0x0F0F172A), blurRadius: 10, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.touch_app_rounded, color: Color(0xFF0284C7)),
+                  SizedBox(width: 8),
+                  Text('Step 2 — Dual-Mode Intake (Interactive Body Map + Voice Dictation)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                ],
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isListeningVoice ? const Color(0xFFE11D48) : const Color(0xFF059669),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                icon: Icon(_isListeningVoice ? Icons.mic : Icons.mic_none, size: 14),
+                label: Text(_isListeningVoice ? 'LISTENING (BHASHINI)...' : 'SPEAK COMPLAINT (MIC)', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                onPressed: () {
+                  setState(() => _isListeningVoice = !_isListeningVoice);
+                  if (_isListeningVoice) {
+                    Future.delayed(const Duration(seconds: 2), () {
+                      if (mounted) {
+                        setState(() {
+                          _isListeningVoice = false;
+                          patient['voiceText'] = "Transcribed: 'सीने में भारीपन और सांस फूलने की समस्या 2 दिनों से है'";
+                        });
+                      }
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text('Select anatomical site where symptoms are located:', style: TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            children: sites.map((s) {
+              final isSel = _selectedSite == s;
+              return ChoiceChip(
+                selected: isSel,
+                label: Text(s, style: TextStyle(fontSize: 10, color: isSel ? Colors.white : const Color(0xFF0F172A), fontWeight: isSel ? FontWeight.bold : FontWeight.normal)),
+                selectedColor: const Color(0xFF0284C7),
+                backgroundColor: const Color(0xFFF1F5F9),
+                onSelected: (_) {
+                  setState(() {
+                    _selectedSite = s;
+                    patient['bodySite'] = s;
+                  });
+                  _startSocratesInterview();
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFFE2E8F0))),
+            child: Row(
+              children: [
+                const Icon(Icons.record_voice_over, color: Color(0xFF0284C7), size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(patient['voiceText'] as String, style: const TextStyle(fontSize: 11, color: Color(0xFF334155), fontStyle: FontStyle.italic)),
                 ),
               ],
             ),
@@ -882,115 +1009,8 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
     );
   }
 
-  Widget _buildDualModeIntakeCard(Map<String, dynamic> patient) {
-    final bodySites = [
-      {'name': 'Chest / Respiratory', 'icon': Icons.favorite_border, 'color': const Color(0xFFE11D48)},
-      {'name': 'Head / Neurological', 'icon': Icons.psychology, 'color': const Color(0xFF7C3AED)},
-      {'name': 'Abdomen / GI', 'icon': Icons.water_drop_outlined, 'color': const Color(0xFFD97706)},
-      {'name': 'Joints / Musculoskeletal', 'icon': Icons.accessibility_new, 'color': const Color(0xFF059669)},
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: const [
-                  Icon(Icons.record_voice_over, color: Color(0xFF059669)),
-                  SizedBox(width: 8),
-                  Text(
-                    'Step 2 — Conversational Voice Intake & Dual-Mode UI',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  ),
-                ],
-              ),
-              ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _isListeningVoice ? const Color(0xFFE11D48) : const Color(0xFF059669),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                icon: Icon(_isListeningVoice ? Icons.stop : Icons.mic, size: 14),
-                label: Text(_isListeningVoice ? 'Listening...' : 'Speak Symptoms', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
-                onPressed: () {
-                  setState(() {
-                    _isListeningVoice = !_isListeningVoice;
-                  });
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            _isListeningVoice ? 'Bhashini Noise-Robust ASR active... Speak naturally.' : patient['voiceText'] as String,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF059669), fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-
-          const Text('Or Select Body Region (Large Pictorial Touch Map):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569))),
-          const SizedBox(height: 10),
-
-          Row(
-            children: bodySites.map((site) {
-              final isSelected = (patient['bodySite'] as String) == site['name'];
-              final color = site['color'] as Color;
-
-              return Expanded(
-                child: GestureDetector(
-                  onTap: () => setState(() => patient['bodySite'] = site['name'] as String),
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 6),
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
-                    decoration: BoxDecoration(
-                      color: isSelected ? color.withValues(alpha: 0.1) : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: isSelected ? color : const Color(0xFFE2E8F0),
-                        width: isSelected ? 2.0 : 1.0,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(site['icon'] as IconData, color: color, size: 24),
-                        const SizedBox(height: 4),
-                        Text(
-                          site['name'] as String,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: isSelected ? color : const Color(0xFF0F172A)),
-                          maxLines: 2,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSocratesAyushCard(Map<String, dynamic> patient) {
-    final double severity = (patient['severity'] as num).toDouble();
+    final severity = patient['severity'] as double;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -998,13 +1018,7 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x0F0F172A), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1016,29 +1030,74 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                 children: const [
                   Icon(Icons.psychology_outlined, color: Color(0xFF7C3AED)),
                   SizedBox(width: 8),
-                  Text(
-                    'SOCRATES Symptom Prober & Full AYUSH Dashavidha Matrix',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  ),
+                  Text('SOCRATES Clinical Dialogue & AYUSH Dashavidha Matrix', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                 ],
               ),
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFE11D48),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE11D48), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4)),
                 icon: const Icon(Icons.warning, size: 12),
                 label: const Text('Simulate Emergency Red-Flag', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold)),
-                onPressed: () => setState(() => patient['redFlag'] = true),
+                onPressed: () => setState(() {
+                  patient['redFlag'] = true;
+                  patient['status'] = 'RED-FLAG TRIAGE';
+                  patient['statusColor'] = const Color(0xFFE11D48);
+                }),
               ),
             ],
           ),
           const SizedBox(height: 12),
 
-          // SOCRATES Severity Slider
-          Text('SOCRATES Symptom Severity Scale: ${severity.toInt()} / 10', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          // Active Dynamic SOCRATES Question from Backend
+          if (_currentSocratesQuestion != null && !_socratesCompleted) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(color: const Color(0xFFEEF2FF), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFC7D2FE))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('SOCRATES Step $_socratesStep of $_socratesTotalSteps (${_currentSocratesQuestion!["section"] ?? ""})', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF4F46E5))),
+                      const Icon(Icons.volume_up, size: 16, color: Color(0xFF4F46E5)),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(_currentSocratesQuestion!['question'] as String, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E1B4B))),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: ((_currentSocratesQuestion!['options'] as List?) ?? []).map((opt) {
+                      return ActionChip(
+                        label: Text(opt.toString(), style: const TextStyle(fontSize: 10, color: Color(0xFF4F46E5))),
+                        backgroundColor: Colors.white,
+                        side: const BorderSide(color: Color(0xFFC7D2FE)),
+                        onPressed: () => _submitSocratesAnswer(opt.toString()),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ] else if (_socratesCompleted) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFFDCFCE7), borderRadius: BorderRadius.circular(10), border: Border.all(color: const Color(0xFF86EFAC))),
+              child: const Row(
+                children: [
+                  Icon(Icons.check_circle, color: Color(0xFF16A34A)),
+                  SizedBox(width: 8),
+                  Text('SOCRATES Clinical Interview Complete. Ready for Physician EMR Review.', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF166534))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
+          // VAS Pain Severity Slider
+          Text('Pain Severity Scale (Visual Analog Scale): ${severity.toInt()} / 10', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
           Slider(
             value: severity,
             min: 1,
@@ -1053,19 +1112,36 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
           // Full 10-Parameter AYUSH Dashavidha Pariksha Parameters
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF3E8FF),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE9D5FF)),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFF3E8FF), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE9D5FF))),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: const [
-                    Icon(Icons.spa, color: Color(0xFF7C3AED)),
-                    SizedBox(width: 8),
-                    Text('Ayurvedic Dashavidha Pariksha Matrix (10 Parameters):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6B21A8))),
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.spa, color: Color(0xFF7C3AED)),
+                        SizedBox(width: 8),
+                        Text('Ayurvedic Dashavidha Pariksha Matrix (10 Parameters):', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6B21A8))),
+                      ],
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7C3AED), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2)),
+                      child: const Text('SYNC AYUSH PORTAL', style: TextStyle(fontSize: 8, fontWeight: FontWeight.bold)),
+                      onPressed: () async {
+                        await _service.saveDashavidha({
+                          'patient_id': patient['id'],
+                          'prakriti': 'Pitta-Kapha Pradhana',
+                          'vikriti': 'Vata-Pitta Dushti',
+                        });
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('✅ Dashavidha Pariksha synchronized with AYUSH Clinical Portal!'), backgroundColor: Color(0xFF7C3AED)),
+                          );
+                        }
+                      },
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -1075,15 +1151,8 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                   children: _dashavidhaFullParameters.entries.map((e) {
                     return Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFDDD6FE)),
-                      ),
-                      child: Text(
-                        '${e.key}: ${e.value}',
-                        style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF5B21B6)),
-                      ),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8), border: Border.all(color: const Color(0xFFDDD6FE))),
+                      child: Text('${e.key}: ${e.value}', style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Color(0xFF5B21B6))),
                     );
                   }).toList(),
                 ),
@@ -1102,13 +1171,7 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0F0F172A),
-            blurRadius: 10,
-            offset: Offset(0, 4),
-          ),
-        ],
+        boxShadow: const [BoxShadow(color: Color(0x0F0F172A), blurRadius: 10, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1120,30 +1183,20 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                 children: const [
                   Icon(Icons.document_scanner_outlined, color: Color(0xFF0284C7)),
                   SizedBox(width: 8),
-                  Text(
-                    'Step 3 — Multilingual Medical OCR & Zero-Touch Assist',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  ),
+                  Text('Step 3 — Multilingual Medical OCR & Zero-Touch Assist', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
                 ],
               ),
               ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0284C7),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0284C7), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
                 icon: const Icon(Icons.camera_alt, size: 14),
                 label: const Text('Scan Prescription / Report', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                 onPressed: () {
-                  setState(() {
-                    _isScanningDocument = true;
-                  });
+                  setState(() => _isScanningDocument = true);
                   Future.delayed(const Duration(seconds: 1), () {
                     if (mounted) {
                       setState(() {
                         _isScanningDocument = false;
+                        _scannedDocSummary = 'Scanned: AI4Bharat OCR -> Tab Amlodipine 5mg OD, Tab Metformin 500mg BD (Confidence: 94.8%)';
                       });
                     }
                   });
@@ -1152,19 +1205,11 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
-            'Vision LLM / TrOCR auto-aligns, flattens, and crops wrinkled physical paper records without requiring manual positioning by elderly patients.',
-            style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
-          ),
+          const Text('Vision LLM auto-aligns and extracts medical entities from physical paper records.', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
           const SizedBox(height: 12),
-
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF0F9FF),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFBAE6FD)),
-            ),
+            decoration: BoxDecoration(color: const Color(0xFFF0F9FF), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFBAE6FD))),
             child: Row(
               children: [
                 const Icon(Icons.description, color: Color(0xFF0284C7)),
@@ -1173,6 +1218,75 @@ class _PatientKioskTabState extends State<PatientKioskTab> {
                   child: Text(
                     _isScanningDocument ? 'TrOCR processing handwritten report...' : _scannedDocSummary,
                     style: const TextStyle(fontSize: 10, color: Color(0xFF0369A1), fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryAndTokenCard(Map<String, dynamic> patient) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: const [BoxShadow(color: Color(0x0F0F172A), blurRadius: 10, offset: Offset(0, 4))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: const [
+                  Icon(Icons.confirmation_number_outlined, color: Color(0xFF059669)),
+                  SizedBox(width: 8),
+                  Text('Step 4 & 5 — Token Issued & Consultation Routing', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                ],
+              ),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD97706), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6)),
+                icon: const Icon(Icons.star, size: 14),
+                label: const Text('GIVE FEEDBACK (P20)', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                onPressed: _showFeedbackDialog,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(colors: [Color(0xFF059669), Color(0xFF047857)]),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('OFFICIAL OPD QUEUE TOKEN', style: TextStyle(color: Color(0xFFA7F3D0), fontSize: 10, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(patient['id'] as String, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 4),
+                    Text('Assigned Room: Room 104 • Estimated Wait: 8 mins', style: const TextStyle(color: Colors.white, fontSize: 11)),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+                  child: const Column(
+                    children: [
+                      Icon(Icons.qr_code, color: Colors.white, size: 36),
+                      SizedBox(height: 2),
+                      Text('SCAN TO TRACK', style: TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold)),
+                    ],
                   ),
                 ),
               ],

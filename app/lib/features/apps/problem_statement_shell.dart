@@ -45,11 +45,11 @@ class _ProblemStatementShellState extends State<ProblemStatementShell> {
     },
     {
       'index': 3,
-      'title': 'OPD Kiosk & Clinical Health',
-      'subtitle': 'Patient Intake Kiosk • Physician EMR • Dual Prescription',
+      'title': 'MediKiosk: AI Clinical History & OPD Platform',
+      'subtitle': 'Pre-Consultation Intake • Voice SOCRATES • Medical OCR • Physician Dual-EMR',
       'icon': Icons.local_hospital_rounded,
       'color': const Color(0xFF059669),
-      'badge': 'CLINICAL EMR',
+      'badge': 'MEDIKIOSK AI',
     },
     {
       'index': 4,

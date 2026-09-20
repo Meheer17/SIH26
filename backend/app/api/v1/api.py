@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, auth, admin, consent, ai, alerts, sos, apps, cin, screening, clinical, epidemic, covert_sos, mind_family, nyaya_manas, raksha_setu
+from app.api.v1.endpoints import health, auth, admin, consent, ai, alerts, sos, apps, cin, screening, clinical, epidemic, covert_sos, mind_family, nyaya_manas, raksha_setu, medikiosk
 
 api_router = APIRouter()
 api_router.include_router(health.router, tags=["Health Check"])
@@ -15,6 +15,9 @@ api_router.include_router(nyaya_manas.router, prefix="/apps/nyaya-manas", tags=[
 api_router.include_router(raksha_setu.router, prefix="/rakshak", tags=["Raksha Setu: Personnel Stress & Welfare System"])
 api_router.include_router(raksha_setu.router, prefix="/apps/rakshak", tags=["Raksha Setu: Personnel Stress & Welfare System"])
 api_router.include_router(raksha_setu.router, prefix="/personnel-wellness", tags=["Raksha Setu: Personnel Stress & Welfare System"])
+api_router.include_router(medikiosk.router, prefix="/medikiosk", tags=["MediKiosk AI Clinical History & OPD Intelligence"])
+api_router.include_router(medikiosk.router, prefix="/apps/medikiosk", tags=["MediKiosk AI Clinical History & OPD Intelligence"])
+api_router.include_router(medikiosk.router, prefix="/opd-kiosk", tags=["MediKiosk AI Clinical History & OPD Intelligence"])
 api_router.include_router(cin.router, prefix="/cin", tags=["Community Immunity Network (CIN)"])
 api_router.include_router(screening.router, prefix="/screening", tags=["Non-Invasive Diagnostic Screening"])
 api_router.include_router(clinical.router, prefix="/clinical", tags=["Clinical Engine & Dual-Path Prescriptions"])

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'screens/patient_kiosk_tab.dart';
+import 'screens/all_patients_tab.dart';
 import 'screens/physician_emr_tab.dart';
+import 'screens/triage_nursing_tab.dart';
 import 'screens/opd_operations_tab.dart';
 import 'screens/system_admin_tab.dart';
 
@@ -14,11 +16,16 @@ class OpdKioskAppShell extends StatefulWidget {
 class _OpdKioskAppShellState extends State<OpdKioskAppShell> {
   int _currentTabIndex = 0;
 
-  final List<Widget> _tabs = const [
-    PatientKioskTab(),
-    PhysicianEmrTab(),
-    OpdOperationsTab(),
-    SystemAdminTab(),
+  late final List<Widget> _tabs = [
+    const PatientKioskTab(),
+    AllPatientsTab(
+      onSwitchToEmr: () => setState(() => _currentTabIndex = 2),
+      onSwitchToKiosk: () => setState(() => _currentTabIndex = 0),
+    ),
+    const PhysicianEmrTab(),
+    const TriageNursingTab(),
+    const OpdOperationsTab(),
+    const SystemAdminTab(),
   ];
 
   @override
@@ -34,16 +41,16 @@ class _OpdKioskAppShellState extends State<OpdKioskAppShell> {
           children: const [
             Row(
               children: [
-                Icon(Icons.local_hospital, color: Color(0xFF059669), size: 20),
+                Icon(Icons.local_hospital_rounded, color: Color(0xFF059669), size: 20),
                 SizedBox(width: 8),
                 Text(
-                  'Arogya Sathi • Patient Kiosk & OPD Health Intelligence',
+                  'MediKiosk • AI Clinical History & OPD Intelligence',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
                 ),
               ],
             ),
             Text(
-              'Patient Intake Kiosk • Physician EMR • OPD Triage Operations • ABDM System Admin',
+              'Pre-Consultation Intake • Multilingual Voice • Medical OCR • Physician Dual-EMR • ABDM FHIR',
               style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
             ),
           ],
@@ -54,7 +61,7 @@ class _OpdKioskAppShellState extends State<OpdKioskAppShell> {
         children: _tabs,
       ),
 
-      // App 3 Specific Bottom Navigation Bar (Light Theme)
+      // App 3 Bottom Navigation Bar with All Stakeholder Roles & All Patients Hub
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
@@ -76,14 +83,24 @@ class _OpdKioskAppShellState extends State<OpdKioskAppShell> {
               label: 'Patient Kiosk',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.badge_outlined),
-              activeIcon: Icon(Icons.badge),
+              icon: Icon(Icons.people_alt_outlined),
+              activeIcon: Icon(Icons.people_alt),
+              label: 'All Patients',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.medical_services_outlined),
+              activeIcon: Icon(Icons.medical_services),
               label: 'Physician EMR',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.local_hospital_outlined),
-              activeIcon: Icon(Icons.local_hospital),
-              label: 'OPD Operations',
+              icon: Icon(Icons.emergency_outlined),
+              activeIcon: Icon(Icons.emergency),
+              label: 'Triage Nurse',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.analytics_outlined),
+              activeIcon: Icon(Icons.analytics),
+              label: 'Hospital Admin',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.admin_panel_settings_outlined),
