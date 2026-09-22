@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SvasthyaSetu 3D Patient Digital Twin - Ramesh Patel</title>
+  <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.4.0/model-viewer.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html {
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 50% 30%, #1e293b 0%, #0f172a 70%, #020617 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #f8fafc;
+      overflow: hidden;
+    }
+    #viewer-container {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    model-viewer {
+      width: 100%;
+      height: 100%;
+      --poster-color: transparent;
+      outline: none;
+    }
+    .hud-header {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 20;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      border-radius: 16px;
+      padding: 16px 22px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      max-width: 420px;
+    }
+    .hud-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 800;
+      color: #38bdf8;
+      letter-spacing: -0.3px;
+    }
+    .pulse-dot {
+      width: 10px;
+      height: 10px;
+      background: #4ade80;
+      border-radius: 50%;
+      box-shadow: 0 0 12px #4ade80;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(74, 222, 128, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(74, 222, 128, 0); }
+    }
+    .hud-subtitle {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+    .hud-tags {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      background: rgba(2, 132, 199, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #7dd3fc;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .controls-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(15, 23, 42, 0.92);
+      backdrop-filter: blur(16px);
+      border: 1px solid #334155;
+      border-radius: 40px;
+      padding: 8px 14px;
+      box-shadow: 0 12px 35px rgba(0,0,0,0.6);
+    }
+    .btn {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #475569;
+      border-radius: 24px;
+      padding: 10px 18px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      user-select: none;
+    }
+    .btn:hover {
+      background: #334155;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+    .btn.active {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #ffffff;
+      box-shadow: 0 0 15px rgba(56, 189, 248, 0.4);
+    }
+    .btn-icon {
+      font-size: 16px;
+    }
+    .telemetry-card {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      z-index: 20;
+      background: rgba(15, 23, 42, 0.88);
+      backdrop-filter: blur(16px);
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      min-width: 200px;
+    }
+    .telemetry-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+    .telemetry-label { color: #94a3b8; }
+    .telemetry-val { color: #38bdf8; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div id="viewer-container">
+    <div class="hud-header">
+      <div class="hud-title">
+        <span class="pulse-dot"></span>
+        <span>Ramesh Patel (3D Patient Twin)</span>
+      </div>
+      <div class="hud-subtitle">
+        High-fidelity skeletal rigged GLB digital twin loaded from local bundle.
+      </div>
+      <div class="hud-tags">
+        <span class="tag">Rigged GLB</span>
+        <span class="tag">Action: TALKING</span>
+        <span class="tag">Action: WALKING</span>
+        <span class="tag">WebGL 3D Studio</span>
+      </div>
+    </div>
+
+    <div class="telemetry-card">
+      <div class="telemetry-row">
+        <span class="telemetry-label">Biological Age:</span>
+        <span class="telemetry-val">31.4 yrs</span>
+      </div>
+      <div class="telemetry-row">
+        <span class="telemetry-label">Health Score:</span>
+        <span class="telemetry-val" style="color:#4ade80;">89 / 100</span>
+      </div>
+      <div class="telemetry-row">
+        <span class="telemetry-label">Cardiac Strain:</span>
+        <span class="telemetry-val">12.4% (Normal)</span>
+      </div>
+      <div class="telemetry-row">
+        <span class="telemetry-label">Active Visemes:</span>
+        <span class="telemetry-val" id="viseme-state">Talking</span>
+      </div>
+    </div>
+
+    <model-viewer
+      id="avatar-viewer"
+      src="/lowpoly_old_man.glb"
+      alt="3D Rigged Patient Twin - Ramesh Patel"
+      auto-rotate
+      camera-controls
+      autoplay
+      animation-name="talking"
+      shadow-intensity="1.2"
+      shadow-softness="0.7"
+      exposure="1.2"
+      camera-orbit="0deg 75deg 3.5m"
+      interaction-prompt="none"
+    ></model-viewer>
+
+    <div class="controls-panel">
+      <button id="btn-talk" class="btn active" onclick="switchAnimation('talking')">
+        <span class="btn-icon">🗣️</span>
+        <span>Talk Action</span>
+      </button>
+      <button id="btn-walk" class="btn" onclick="switchAnimation('walking')">
+        <span class="btn-icon">🚶</span>
+        <span>Walk Action</span>
+      </button>
+      <button id="btn-pause" class="btn" onclick="togglePlayPause()">
+        <span class="btn-icon" id="play-pause-icon">⏸️</span>
+        <span id="play-pause-text">Pause</span>
+      </button>
+      <button id="btn-orbit" class="btn active" onclick="toggleOrbit()">
+        <span class="btn-icon">🔄</span>
+        <span>360° Orbit</span>
+      </button>
+      <button id="btn-reset" class="btn" onclick="resetCamera()">
+        <span class="btn-icon">🎯</span>
+        <span>Reset View</span>
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const mv = document.getElementById('avatar-viewer');
+    const btnTalk = document.getElementById('btn-talk');
+    const btnWalk = document.getElementById('btn-walk');
+    const btnPause = document.getElementById('btn-pause');
+    const playPauseIcon = document.getElementById('play-pause-icon');
+    const playPauseText = document.getElementById('play-pause-text');
+    const btnOrbit = document.getElementById('btn-orbit');
+    const visemeState = document.getElementById('viseme-state');
+
+    function switchAnimation(name) {
+      mv.animationName = name;
+      mv.play();
+      btnTalk.classList.toggle('active', name === 'talking');
+      btnWalk.classList.toggle('active', name === 'walking');
+      playPauseIcon.textContent = '⏸️';
+      playPauseText.textContent = 'Pause';
+      visemeState.textContent = name === 'talking' ? 'Talking' : 'Walking';
+    }
+
+    function togglePlayPause() {
+      if (mv.paused) {
+        mv.play();
+        playPauseIcon.textContent = '⏸️';
+        playPauseText.textContent = 'Pause';
+      } else {
+        mv.pause();
+        playPauseIcon.textContent = '▶️';
+        playPauseText.textContent = 'Play';
+      }
+    }
+
+    function toggleOrbit() {
+      mv.autoRotate = !mv.autoRotate;
+      btnOrbit.classList.toggle('active', mv.autoRotate);
+    }
+
+    function resetCamera() {
+      mv.cameraOrbit = '0deg 75deg 3.5m';
+      mv.cameraTarget = 'auto auto auto';
+    }
+
+    // Auto-fallback if /lowpoly_old_man.glb fails to load locally
+    mv.addEventListener('error', (event) => {
+      console.warn('Local GLB path failed, attempting fallback to assets/lowpoly_old_man.glb', event);
+      if (mv.src !== 'assets/lowpoly_old_man.glb' && mv.src !== '/assets/lowpoly_old_man.glb') {
+        mv.src = 'assets/lowpoly_old_man.glb';
+      }
+    });
+  </script>
+</body>
+</html>

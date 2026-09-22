@@ -1,8 +1,14 @@
 import 'dart:math' as math;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:model_viewer_plus/model_viewer_plus.dart';
+import 'package:webview_flutter_platform_interface/webview_flutter_platform_interface.dart';
 import '../../core/api/api_client.dart';
+import 'character_3d_viewer_screen.dart';
+import 'local_3d_server.dart';
+import 'lowpoly_mesh_avatar.dart';
 
 class DigitalTwinScreen extends StatefulWidget {
   const DigitalTwinScreen({super.key});
@@ -16,12 +22,87 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
   final ApiClient _apiClient = ApiClient();
   final FlutterTts _flutterTts = FlutterTts();
 
+  // Free 3D Avatar Models including local bundled GLB asset
+  static final List<Map<String, dynamic>> _defaultAvatarPresets = [
+    {
+      'id': 'lowpoly_old_man',
+      'name': 'Ramesh Patel (3D Rigged Patient Twin)',
+      'category': 'Patient Biological Twin',
+      'gender': 'Male',
+      'model_url': 'assets/lowpoly_old_man.glb',
+      'is_local': true,
+      'engine': 'Flutter ModelViewer (GLB / glTF)',
+      'format': 'GLB 2.0 Rigged',
+      'animations': ['talking', 'walking'],
+      'morph_targets': ['viseme_aa', 'jawOpen', 'talking', 'walking'],
+      'license': 'Bundled Local 3D Asset',
+      'description': 'Real-time rigged 3D character controller with synchronized talking visemes and walking gait animation.',
+    },
+    {
+      'id': 'dr_svasthya_ai',
+      'name': 'Dr. Svasthya (Clinical AI Physician)',
+      'category': 'Medical Specialist',
+      'gender': 'Female',
+      'model_url': 'https://models.readyplayer.me/6460d95f5605dd25daab301a.glb',
+      'thumbnail_url': 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=300&q=80',
+      'engine': 'Three.js / TalkingHead / WebGL',
+      'format': 'GLB / glTF 2.0',
+      'animations': ['talking'],
+      'morph_targets': ['viseme_aa', 'viseme_E', 'viseme_I', 'viseme_O', 'viseme_U', 'jawOpen', 'mouthSmile'],
+      'license': 'Free / Open Developer Tier',
+      'description': 'Certified AI Doctor avatar with synchronized lip movement, empathetic facial gestures, and clinical stethoscope attire.',
+    },
+    {
+      'id': 'anatomical_organ_mesh',
+      'name': '3D Transparent Multi-Organ Twin',
+      'category': 'Anatomical Hologram',
+      'gender': 'Neutral',
+      'model_url': 'assets/lowpoly_old_man.glb',
+      'thumbnail_url': 'https://images.unsplash.com/photo-1530497610245-94d3c16cda28?auto=format&fit=crop&w=300&q=80',
+      'engine': 'WebGL / Shader Canvas / Three.js',
+      'format': 'GLB / Procedural Three.js Shaders',
+      'animations': ['talking', 'walking'],
+      'morph_targets': ['heartPulse', 'lungExpand', 'liverGlow', 'brainSignal', 'kidneyFlow'],
+      'license': 'Open Source CC-BY 4.0',
+      'description': 'Procedural anatomical digital twin visualizing glowing heart valves, breathing lung parenchyma, neural pathways, and renal perfusion in real-time.',
+    },
+    {
+      'id': 'asha_didiji_counselor',
+      'name': 'ASHA Didi (Community Wellness Guide)',
+      'category': 'Community Counselor',
+      'gender': 'Female',
+      'model_url': 'https://models.readyplayer.me/658b417df81d8f1e58129c5a.glb',
+      'thumbnail_url': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
+      'engine': 'Three.js / TalkingHead / WebGL',
+      'format': 'GLB / glTF 2.0',
+      'animations': ['talking'],
+      'morph_targets': ['viseme_aa', 'viseme_E', 'viseme_I', 'viseme_O', 'viseme_U', 'jawOpen'],
+      'license': 'Free / Open Developer Tier',
+      'description': 'Warm, culturally relatable rural health counselor speaking in vernacular dialects with soothing reassuring cadence.',
+    },
+  ];
+
   bool _isLoading = true;
   bool _isSpeaking = false;
   String _selectedOrgan = 'cardiovascular';
   String? _activeIntervention;
   String _selectedMetric = 'composite_health';
   double _avatarRotationY = 0.0;
+
+  // 3D GLB Character Controller & Animation State
+  String _activeAnimation = 'talking';
+  bool _isPlayingAnimation = true;
+  bool _autoRotate = false;
+  bool _isGlbMode = true;
+
+  bool get _isEmbeddedGlbSupported {
+    if (kIsWeb) return true;
+    try {
+      return WebViewPlatform.instance != null;
+    } catch (_) {
+      return false;
+    }
+  }
 
   Map<String, dynamic>? _statusData;
   Map<String, dynamic>? _forecastData;
@@ -36,6 +117,9 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
   @override
   void initState() {
     super.initState();
+    _avatarPresets = List.from(_defaultAvatarPresets);
+    _activeAvatar = Map<String, dynamic>.from(_defaultAvatarPresets.first);
+
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1400),
@@ -58,6 +142,31 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
     super.dispose();
   }
 
+  void _switchAnimation(String animName) {
+    setState(() {
+      _activeAnimation = animName;
+      _isPlayingAnimation = true;
+    });
+  }
+
+  void _togglePlayPauseAnimation() {
+    setState(() {
+      _isPlayingAnimation = !_isPlayingAnimation;
+    });
+  }
+
+  void _toggleAutoRotate() {
+    setState(() {
+      _autoRotate = !_autoRotate;
+    });
+  }
+
+  void _toggleViewMode() {
+    setState(() {
+      _isGlbMode = !_isGlbMode;
+    });
+  }
+
   Future<void> _initTts() async {
     try {
       await _flutterTts.setLanguage("en-IN");
@@ -66,7 +175,11 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
 
       _flutterTts.setStartHandler(() {
         if (mounted) {
-          setState(() => _isSpeaking = true);
+          setState(() {
+            _isSpeaking = true;
+            _activeAnimation = 'talking';
+            _isPlayingAnimation = true;
+          });
           _talkingController.repeat(reverse: true);
         }
       });
@@ -102,10 +215,16 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
           _statusData = Map<String, dynamic>.from(statusRes as Map);
           _forecastData = Map<String, dynamic>.from(forecastRes as Map);
           if (modelsRes is Map && modelsRes['avatars'] is List) {
-            _avatarPresets = modelsRes['avatars'] as List;
-            if (_avatarPresets.isNotEmpty) {
-              _activeAvatar = Map<String, dynamic>.from(_avatarPresets.first as Map);
-            }
+            final serverAvatars = modelsRes['avatars'] as List;
+            _avatarPresets = [
+              _defaultAvatarPresets.first,
+              ...serverAvatars.where((a) => a['id'] != 'lowpoly_old_man'),
+            ];
+          } else {
+            _avatarPresets = List.from(_defaultAvatarPresets);
+          }
+          if (_activeAvatar == null && _avatarPresets.isNotEmpty) {
+            _activeAvatar = Map<String, dynamic>.from(_avatarPresets.first as Map);
           }
           _isLoading = false;
         });
@@ -238,7 +357,10 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
 
                   return InkWell(
                     onTap: () {
-                      setState(() => _activeAvatar = Map<String, dynamic>.from(av as Map));
+                      setState(() {
+                        _activeAvatar = Map<String, dynamic>.from(av as Map);
+                        _isGlbMode = true;
+                      });
                       Navigator.pop(ctx);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
@@ -263,11 +385,13 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
                             radius: 20,
                             backgroundColor: const Color(0xFF0284C7).withValues(alpha: 0.2),
                             child: Icon(
-                              av['category'] == 'Medical Specialist'
-                                  ? Icons.medical_services_rounded
-                                  : (av['category'] == 'Anatomical Hologram'
-                                      ? Icons.blur_on
-                                      : Icons.face_rounded),
+                              av['is_local'] == true
+                                  ? Icons.view_in_ar_rounded
+                                  : (av['category'] == 'Medical Specialist'
+                                      ? Icons.medical_services_rounded
+                                      : (av['category'] == 'Anatomical Hologram'
+                                          ? Icons.blur_on
+                                          : Icons.face_rounded)),
                               color: const Color(0xFF38BDF8),
                             ),
                           ),
@@ -276,13 +400,39 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  av['name'] ?? '',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        av['name'] ?? '',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (av['is_local'] == true) ...[
+                                      const SizedBox(width: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF059669).withValues(alpha: 0.25),
+                                          borderRadius: BorderRadius.circular(6),
+                                          border: Border.all(color: const Color(0xFF10B981), width: 0.8),
+                                        ),
+                                        child: const Text(
+                                          'LOCAL GLB',
+                                          style: TextStyle(
+                                            color: Color(0xFF4ADE80),
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
@@ -299,6 +449,36 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
                     ),
                   );
                 },
+              ),
+              const SizedBox(height: 14),
+              // Open Full-screen 3D Character Studio Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => Character3DViewerScreen(
+                          modelPath: _activeAvatar?['model_url'] ?? 'assets/lowpoly_old_man.glb',
+                          title: _activeAvatar?['name'] ?? '3D Patient Twin Controller',
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.threed_rotation_rounded, size: 18),
+                  label: const Text(
+                    'Launch Fullscreen 3D Character Studio',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0284C7),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
               ),
               const SizedBox(height: 10),
             ],
@@ -351,6 +531,21 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
           ],
         ),
         actions: [
+          IconButton(
+            tooltip: 'Fullscreen 3D Studio',
+            icon: const Icon(Icons.threed_rotation_rounded, color: Color(0xFF38BDF8)),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => Character3DViewerScreen(
+                    modelPath: _activeAvatar?['model_url'] ?? 'assets/lowpoly_old_man.glb',
+                    title: _activeAvatar?['name'] ?? '3D Patient Twin Controller',
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Choose 3D Avatar Rig',
             icon: const Icon(Icons.view_in_ar_rounded, color: Color(0xFF38BDF8)),
@@ -410,11 +605,12 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
   }
 
   Widget _build3dAvatarViewport() {
-    final avatarName = _activeAvatar?['name'] ?? 'Dr. Svasthya (Clinical AI)';
+    final avatarName = _activeAvatar?['name'] ?? 'Ramesh Patel (3D Rigged Patient Twin)';
+    final modelUrl = _activeAvatar?['model_url'] ?? 'assets/lowpoly_old_man.glb';
 
     return Container(
       width: double.infinity,
-      height: 330,
+      height: 380,
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
         borderRadius: BorderRadius.circular(24),
@@ -432,86 +628,264 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
             ),
           ),
 
-          // Interactive 3D Holographic Human Anatomical Canvas
-          GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                _avatarRotationY += details.delta.dx * 0.012;
-              });
-            },
-            child: Center(
-              child: AnimatedBuilder(
-                animation: _pulseController,
-                builder: (context, _) {
-                  return CustomPaint(
-                    size: const Size(220, 290),
-                    painter: _Holographic3dAvatarPainter(
-                      rotationY: _avatarRotationY,
-                      pulseVal: _pulseController.value,
-                      selectedOrgan: _selectedOrgan,
-                      isSpeaking: _isSpeaking,
-                      talkingVal: _talkingController.value,
+          // Central 3D Canvas
+          Positioned.fill(
+            top: 48,
+            bottom: 60,
+            child: _isGlbMode
+                ? (_isEmbeddedGlbSupported
+                    ? ModelViewer(
+                        key: ValueKey('${_activeAvatar?['id'] ?? 'lowpoly_old_man'}-$_activeAnimation-$_isPlayingAnimation-$_autoRotate'),
+                        src: modelUrl,
+                        alt: '3D Patient Digital Twin Character',
+                        ar: true,
+                        autoRotate: _autoRotate,
+                        cameraControls: true,
+                        backgroundColor: const Color(0xFF0F172A),
+                        animationName: _isPlayingAnimation ? (_isSpeaking ? 'talking' : _activeAnimation) : null,
+                        autoPlay: _isPlayingAnimation,
+                        shadowIntensity: 1.0,
+                        shadowSoftness: 0.8,
+                        exposure: 1.2,
+                      )
+                    : LowpolyMeshAvatar(
+                        activeAnimation: _activeAnimation,
+                        isPlaying: _isPlayingAnimation,
+                        autoRotate: _autoRotate,
+                        isSpeaking: _isSpeaking,
+                        selectedOrgan: _selectedOrgan,
+                        showControlsOverlay: false,
+                        onToggleWalk: () => _switchAnimation('walking'),
+                        onToggleTalk: () => _switchAnimation('talking'),
+                      ))
+                : GestureDetector(
+                    onPanUpdate: (details) {
+                      setState(() {
+                        _avatarRotationY += details.delta.dx * 0.012;
+                      });
+                    },
+                    child: Center(
+                      child: AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, _) {
+                          return CustomPaint(
+                            size: const Size(220, 260),
+                            painter: _Holographic3dAvatarPainter(
+                              rotationY: _avatarRotationY,
+                              pulseVal: _pulseController.value,
+                              selectedOrgan: _selectedOrgan,
+                              isSpeaking: _isSpeaking,
+                              talkingVal: _talkingController.value,
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  );
-                },
-              ),
+                  ),
+          ),
+
+          // Top Header Bar Inside 3D Viewport
+          Positioned(
+            top: 12,
+            left: 12,
+            right: 12,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Avatar Name & Action Badge
+                InkWell(
+                  onTap: _showAvatarSelectorModal,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B).withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _isSpeaking ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8).withValues(alpha: 0.4),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: _isSpeaking ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 150),
+                          child: Text(
+                            avatarName,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 2),
+                        const Icon(Icons.arrow_drop_down, color: Color(0xFF94A3B8), size: 16),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Right controls: View Mode Switcher & Fullscreen Button
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Mode Toggle: 3D GLB vs Organ Hologram
+                    Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E293B).withValues(alpha: 0.9),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF334155)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          InkWell(
+                            onTap: () {
+                              if (!_isGlbMode) _toggleViewMode();
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _isGlbMode ? const Color(0xFF0284C7) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.view_in_ar, size: 12, color: Colors.white),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'GLB 3D',
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () {
+                              if (_isGlbMode) _toggleViewMode();
+                            },
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: !_isGlbMode ? const Color(0xFF0284C7) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: const [
+                                  Icon(Icons.hub_rounded, size: 12, color: Colors.white),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Organs',
+                                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+
+                    // Launch WebGL 3D Studio Button
+                    IconButton(
+                      tooltip: 'Launch WebGL 3D Studio (Browser)',
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      padding: const EdgeInsets.all(4),
+                      icon: const Icon(Icons.open_in_browser_rounded, color: Color(0xFF38BDF8), size: 19),
+                      onPressed: () => Local3dStudioServer.instance.launchInBrowser(),
+                    ),
+                    const SizedBox(width: 2),
+
+                    // Fullscreen 3D Viewer Button
+                    IconButton(
+                      tooltip: 'Expand 3D Studio',
+                      constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                      padding: const EdgeInsets.all(4),
+                      icon: const Icon(Icons.fullscreen_rounded, color: Color(0xFF38BDF8), size: 20),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => Character3DViewerScreen(
+                              modelPath: modelUrl,
+                              title: avatarName,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
 
-          // Top Info: Avatar Model Badge
+          // Floating Action Bar for 3D Animations (Walk, Talk, Pause, Orbit)
           Positioned(
-            top: 14,
-            left: 14,
+            bottom: 64,
+            left: 12,
+            right: 12,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E293B).withValues(alpha: 0.85),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _isSpeaking ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8),
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    avatarName,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                color: const Color(0xFF1E293B).withValues(alpha: 0.9),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF334155)),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black38, blurRadius: 8, offset: Offset(0, 2)),
                 ],
               ),
-            ),
-          ),
-
-          // Top Right: Rotation Hint
-          Positioned(
-            top: 14,
-            right: 14,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.black45,
-                borderRadius: BorderRadius.circular(8),
-              ),
               child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.rotate_90_degrees_ccw, color: Color(0xFF94A3B8), size: 14),
-                  SizedBox(width: 4),
-                  Text(
-                    'Drag to Rotate 360°',
-                    style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // Walk Action
+                  _buildViewportActionButton(
+                    label: 'Walk',
+                    icon: Icons.directions_walk_rounded,
+                    isActive: _activeAnimation == 'walking' && _isPlayingAnimation,
+                    onTap: () => _switchAnimation('walking'),
+                  ),
+
+                  // Talk Action
+                  _buildViewportActionButton(
+                    label: 'Talk',
+                    icon: Icons.record_voice_over_rounded,
+                    isActive: _activeAnimation == 'talking' && _isPlayingAnimation,
+                    onTap: () => _switchAnimation('talking'),
+                  ),
+
+                  // Play/Pause
+                  _buildViewportActionButton(
+                    label: _isPlayingAnimation ? 'Pause' : 'Play',
+                    icon: _isPlayingAnimation ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                    isActive: false,
+                    onTap: _togglePlayPauseAnimation,
+                  ),
+
+                  // Auto Rotate Toggle
+                  _buildViewportActionButton(
+                    label: _autoRotate ? 'Orbit On' : 'Orbit',
+                    icon: Icons.threed_rotation_rounded,
+                    isActive: _autoRotate,
+                    onTap: _toggleAutoRotate,
                   ),
                 ],
               ),
@@ -520,14 +894,14 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
 
           // Speaking Lip Sync & Audio Briefing Floating Overlay
           Positioned(
-            bottom: 12,
-            left: 14,
-            right: 14,
+            bottom: 8,
+            left: 12,
+            right: 12,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF0F172A).withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(16),
+                color: const Color(0xFF0F172A).withValues(alpha: 0.95),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: _isSpeaking ? const Color(0xFF4ADE80) : const Color(0xFF334155),
                   width: _isSpeaking ? 1.5 : 1.0,
@@ -536,36 +910,36 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
               child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 16,
+                    radius: 14,
                     backgroundColor: _isSpeaking
                         ? const Color(0xFF4ADE80).withValues(alpha: 0.2)
                         : const Color(0xFF38BDF8).withValues(alpha: 0.15),
                     child: Icon(
                       _isSpeaking ? Icons.graphic_eq_rounded : Icons.record_voice_over_rounded,
                       color: _isSpeaking ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8),
-                      size: 18,
+                      size: 16,
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           _isSpeaking
-                              ? '3D Twin Speaking (Live Lip-Sync Active)...'
+                              ? '3D Avatar Speaking (Lip-Sync Active)...'
                               : 'AI Clinical Audio Consultation',
                           style: TextStyle(
                             color: _isSpeaking ? const Color(0xFF4ADE80) : Colors.white,
-                            fontSize: 11,
+                            fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
                           _isSpeaking
-                              ? 'Synthesizing physiological recommendations in real-time.'
-                              : 'Tap "Brief Me" to listen to personalized guidance.',
-                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                              ? 'Speech visemes dynamically driving 3D facial expressions.'
+                              : 'Tap "Brief Me" to hear personalized guidance.',
+                          style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 9),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -576,14 +950,14 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isSpeaking ? const Color(0xFFE11D48) : const Color(0xFF0284C7),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       minimumSize: Size.zero,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                     ),
                     onPressed: _triggerGeneralBriefing,
                     child: Text(
                       _isSpeaking ? 'Mute' : 'Brief Me',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
@@ -591,6 +965,44 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildViewportActionButton({
+    required String label,
+    required IconData icon,
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: isActive ? const Color(0xFF0284C7) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isActive ? const Color(0xFF38BDF8) : const Color(0xFF334155),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 14, color: isActive ? Colors.white : const Color(0xFF94A3B8)),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive ? Colors.white : const Color(0xFFCBD5E1),
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1203,25 +1615,57 @@ class _DigitalTwinScreenState extends State<DigitalTwinScreen>
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFF1E293B)),
       ),
-      child: Row(
-        children: const [
-          Icon(Icons.developer_board, color: Color(0xFF38BDF8), size: 24),
-          SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Open Talking 3D Model Architecture',
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.developer_board, color: Color(0xFF38BDF8), size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text(
+                      '3D GLB Model & Rigged Character Architecture',
+                      style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Bundled Model: assets/lowpoly_old_man.glb (Ramesh Patel). Supports Flutter ModelViewer, TalkingHead visemes, skeletal walk/talk animations, and on-device TTS audio lip sync.',
+                      style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 2),
-                Text(
-                  'Supports TalkingHead (met4citizen), Ready Player Me / MetaPerson GLBs, WebGL Viseme Morphing, and on-device Flutter TTS audio sync.',
-                  style: TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => Character3DViewerScreen(
+                        modelPath: _activeAvatar?['model_url'] ?? 'assets/lowpoly_old_man.glb',
+                        title: _activeAvatar?['name'] ?? '3D Patient Twin Controller',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.open_in_full_rounded, size: 14),
+                label: const Text('Launch Dedicated 3D Controller', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0284C7),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
